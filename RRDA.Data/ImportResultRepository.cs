@@ -18,7 +18,8 @@ namespace RRDA.Data
             string fullPath,
             ImportResult importResult,
             RRDADbContext db,
-            Action<string>? logger = null)
+            Action<string>? logger = null,
+            string? user = null)
         {
             if (db == null) throw new ArgumentNullException(nameof(db));
             if (importResult == null) throw new ArgumentNullException(nameof(importResult));
@@ -41,7 +42,7 @@ namespace RRDA.Data
                     UploadedAt = DateTime.UtcNow,
                     ReportTypeId = reportType.Id,
                     ReportType = reportType,
-                    ImportedBy = null,
+                    ImportedBy = user,
                     Entities = new List<ReportEntity>()
                 };
 

@@ -310,7 +310,7 @@ namespace RRDA.RepImp
                     catch (Exception ex)
                     {
                         Log($"Errore cancellazione file '{fi.FullPath}': {ex.Message}");
-                        MessageBox.Show(this, $"Impossibile cancellare il file:{Environment.NewLine}{ex.Message}", "Errore", MessageBoxButton.OK, MessageBoxImage.Error);
+                        MessageBox.Show(this, $"Impossibile cancellare il file:{Environment.NewLine}{ex.Message}", "Errore cancellazione", MessageBoxButton.OK, MessageBoxImage.Error);
                     }
                 }
             }
@@ -322,16 +322,56 @@ namespace RRDA.RepImp
 
         private async void File_Import_Click(object? sender, RoutedEventArgs e)
         {
-            if (FilesListView.SelectedItem is not FileItem fi)
+            string user = Environment.UserName;
+
+            var selectedItems = FilesListView.SelectedItems?.OfType<FileItem>().ToList();
+            
+            if (selectedItems == null || selectedItems.Count == 0)
             {
-                MessageBox.Show(this, "Seleziona un file da importare.", "Nessun file selezionato", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(this, "Seleziona almeno un file da importare.", "Nessun file selezionato", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
+            int successCount = 0;
+            int failCount = 0;
+
+            // Importiamo i file selezionati in sequenza (evita concorrenza su risorse condivise)
+            foreach (var fi in selectedItems)
+            {
+                try
+                {
+                    Log($"Avvio import per file selezionato: {fi.Name}");
+                    
+                    bool ok = await ImportReport(fi, user);
+                    
+                    if (ok)
+                    {
+                        successCount++;
+                    }
+                    else
+                    {
+                        failCount++;
+                        
+                        Log($"Import non completato per '{fi.Name}'.");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    failCount++;
+
+                    Log($"Eccezione durante import di '{fi.Name}': {ex.Message}");
+                }
+            }
+
+            Log($"Import multiplo completato. Successi: {successCount}, Falliti: {failCount}.");
+        }
+
+        private async Task<bool> ImportReport(FileItem fi, string? user = null)
+        {
             if (string.IsNullOrWhiteSpace(fi.Tipo))
             {
                 MessageBox.Show(this, "Nessun plugin associato a questo file.", "Import non disponibile", MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
+                return false;
             }
 
             var plugin = _plugins.FirstOrDefault(p => string.Equals(p.Name, fi.Tipo, StringComparison.OrdinalIgnoreCase));
@@ -339,7 +379,7 @@ namespace RRDA.RepImp
             {
                 Log($"Nessun plugin caricato con nome '{fi.Tipo}' per importare il file '{fi.Name}'.");
                 MessageBox.Show(this, $"Plugin '{fi.Tipo}' non trovato fra i plugin caricati.", "Plugin mancante", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
+                return false;
             }
 
             Log($"Avvio import per '{fi.Name}' usando plugin '{plugin.Name}'...");
@@ -354,12 +394,12 @@ namespace RRDA.RepImp
 
                 // Tentiamo di trovare un file di configurazione XML per il plugin nella cartella dei plugin
                 var pluginsFolder = Properties.Settings.Default.PluginsFolder;
-                
+
                 if (string.IsNullOrWhiteSpace(pluginsFolder))
                     pluginsFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "plugins");
 
                 string? possibleConfigPath = null;
-                
+
                 if (!string.IsNullOrWhiteSpace(pluginsFolder) && Directory.Exists(pluginsFolder))
                 {
                     // nomi possibili: {pluginName}.xml oppure {pluginName}.config.xml
@@ -405,13 +445,13 @@ namespace RRDA.RepImp
                     Log($"Eccezione durante ImportAsync per '{fi.Name}' con plugin '{plugin.Name}': {ex.Message}");
                     if (ex.InnerException != null)
                         Log($"InnerException: {ex.InnerException.Message}");
-                    return;
+                    return false;
                 }
 
                 if (resultObj == null)
                 {
                     Log($"ImportAsync ha restituito null per file '{fi.Name}'.");
-                    return;
+                    return false;
                 }
 
                 // Logging robusto usando reflection per leggere campi comuni (Success, Errors, Entities, ReportTypeKey)
@@ -484,7 +524,7 @@ namespace RRDA.RepImp
                             await using (db)
                             {
                                 var (reportFileId, entitiesSaved, propertiesSaved) =
-                                    await ImportResultRepository.SaveAsync(fi.Name, fi.FullPath, importResult, db, Log);
+                                    await ImportResultRepository.SaveAsync(fi.Name, fi.FullPath, importResult, db, Log, user);
 
                                 Log($"Persistenza completata: ReportFileId={reportFileId}, Entities={entitiesSaved}, Properties={propertiesSaved}.");
                             }
@@ -514,6 +554,8 @@ namespace RRDA.RepImp
                 try { validationStream?.Dispose(); } catch { }
                 try { fileStream?.Dispose(); } catch { }
             }
+
+            return true;
         }
 
         private void File_ExportValidator_Click(object? sender, RoutedEventArgs e)
