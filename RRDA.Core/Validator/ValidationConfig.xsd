@@ -1,0 +1,91 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+	<xs:element name="ValidationConfig">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="Sheets" minOccurs="0">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="Sheet" maxOccurs="unbounded">
+								<xs:complexType>
+									<xs:attribute name="Name" type="xs:string" use="required" />
+								</xs:complexType>
+							</xs:element>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+				<xs:element name="FieldMappings" minOccurs="0">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="Map" maxOccurs="unbounded">
+								<xs:complexType>
+									<xs:attribute name="definedName" type="xs:string" use="required" />
+									<xs:attribute name="field" type="xs:string" use="required" />
+								</xs:complexType>
+							</xs:element>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+				<xs:element name="FieldRules">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="Field" maxOccurs="unbounded">
+								<xs:complexType>
+									<xs:sequence>
+										<xs:element name="Range" minOccurs="0" >
+											<xs:complexType>
+												<xs:attribute name="rowCount" type="xs:integer" default="1"/>
+												<xs:attribute name="colCount" type="xs:integer" default="1"/>
+											</xs:complexType>
+										</xs:element>
+									</xs:sequence>
+									<xs:attribute name="definedName" type="xs:string" use="required"/>
+									<xs:attribute name="required" type="xs:boolean" use="optional"/>
+									<xs:attribute name="type" type="xs:string" use="optional"/>
+									<xs:attribute name="min" type="xs:string" use="optional"/>
+									<xs:attribute name="max" type="xs:string" use="optional"/>
+									<xs:attribute name="pattern" type="xs:string" use="optional"/>
+									<xs:attribute name="format" type="xs:string" use="optional"/>
+									<xs:attribute name="unit" type="xs:string" use="optional"/>
+									<xs:attribute name="maxLength" type="xs:integer" use="optional"/>
+									<xs:attribute name="table" type="xs:string" use="optional"/>
+									<xs:attribute name="column" type="xs:string" use="optional"/>
+								</xs:complexType>
+							</xs:element>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+				<xs:element name="RowRules" minOccurs="0">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="Rule" maxOccurs="unbounded">
+								<xs:complexType>
+									<xs:sequence>
+										<xs:element name="Condition" type="xs:string"/>
+										<xs:element name="Message" type="xs:string"/>
+									</xs:sequence>
+									<xs:attribute name="name" type="xs:string" use="optional"/>
+									<xs:attribute name="severity" type="xs:string" use="optional"/>
+								</xs:complexType>
+							</xs:element>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+				<xs:element name="CustomValidators" minOccurs="0">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="Validator" maxOccurs="unbounded">
+								<xs:complexType>
+									<xs:attribute name="key" type="xs:string" use="required"/>
+									<xs:attribute name="type" type="xs:string" use="required"/>
+									<xs:attribute name="failIfMissing" type="xs:boolean" use="optional"/>
+								</xs:complexType>
+							</xs:element>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+			</xs:sequence>
+			<xs:attribute name="failOnError" type="xs:boolean" use="optional"/>
+			<xs:attribute name="culture" type="xs:string" use="optional"/>
+		</xs:complexType>
+	</xs:element>
+</xs:schema>

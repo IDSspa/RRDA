@@ -1,0 +1,29 @@
+<Project>
+  <PropertyGroup>
+    <!-- Cartella comune per tutti gli output dei progetti (plugin e dipendenze) -->
+    <SharedPluginsArtifactDir>$(SolutionDir)artifacts\plugins\$(Configuration)\$(TargetFramework)\</SharedPluginsArtifactDir>
+  </PropertyGroup>
+
+  <Target Name="CollectProjectArtifacts" AfterTargets="Build" Condition=" '$(SharedPluginsArtifactDir)' != '' And '$(CopyToSharedArtifacts)' == 'true' ">
+    <Message Importance="Normal" Text="Copia output di $(MSBuildProjectName) in $(SharedPluginsArtifactDir)..." />
+
+    <!-- crea la directory comune se non esiste -->
+    <MakeDir Directories="$(SharedPluginsArtifactDir)" />
+
+    <!-- raccoglie tutti i file nella cartella di output del progetto (inclusi DLL delle ProjectReference) -->
+    <ItemGroup>
+      <ProjectOutputFiles Include="$(TargetDir)**\*.*" />
+    </ItemGroup>
+
+    <!-- copia TUTTI i file nella cartella comune (senza creare sottocartelle per progetto) -->
+    <Copy
+      SourceFiles="@(ProjectOutputFiles)"
+      DestinationFiles="@(ProjectOutputFiles->'$(SharedPluginsArtifactDir)%(Filename)%(Extension)')"
+      SkipUnchangedFiles="true" />
+
+    <!-- log sintetico per diagnostica -->
+    <WriteLinesToFile File="$(SharedPluginsArtifactDir)postbuild.log"
+                      Lines="Built $(MSBuildProjectName) | Configuration=$(Configuration) | Framework=$(TargetFramework)"
+                      Overwrite="false" />
+  </Target>
+</Project>

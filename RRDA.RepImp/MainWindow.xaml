@@ -1,0 +1,139 @@
+﻿<Window x:Class="RRDA.RepImp.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="RRDA RepImp" Height="600" Width="900">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <!-- Colonna sinistra: elenco cartelle + plugins -->
+            <ColumnDefinition Width="300"/>
+            <!-- Colonna per GridSplitter -->
+            <ColumnDefinition Width="5"/>
+            <!-- Colonna destra: contenuto (files + log) -->
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- Sinistra: elenco cartelle e plugins (diviso verticalmente) -->
+        <Border Grid.Column="0" BorderThickness="1" BorderBrush="Gray" Padding="6" Margin="6">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <!-- Elenco cartelle -->
+                    <RowDefinition Height="*"/>
+                    <!-- Splitter tra cartelle e plugins -->
+                    <RowDefinition Height="5"/>
+                    <!-- Elenco plugins (altezza iniziale) -->
+                    <RowDefinition Height="200"/>
+                </Grid.RowDefinitions>
+
+                <!-- Sezione cartelle -->
+                <DockPanel Grid.Row="0" LastChildFill="True">
+                    <TextBlock Text="Cartelle disponibili" FontWeight="Bold" DockPanel.Dock="Top" Margin="0,0,0,6"/>
+                    <ListBox x:Name="FoldersListBox"
+                             SelectionChanged="FoldersListBox_SelectionChanged"
+                             DisplayMemberPath="Name"
+                             HorizontalContentAlignment="Stretch">
+                        <ListBox.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="Seleziona cartella radice" Click="SelectRootFolder_Click"/>
+                            </ContextMenu>
+                        </ListBox.ContextMenu>
+                    </ListBox>
+                </DockPanel>
+
+                <!-- GridSplitter verticale interno (tra cartelle e plugins) -->
+                <GridSplitter Grid.Row="1"
+                              Height="5"
+                              HorizontalAlignment="Stretch"
+                              VerticalAlignment="Center"
+                              Background="LightGray"
+                              ShowsPreview="True"
+                              ResizeDirection="Rows"
+                              ResizeBehavior="PreviousAndNext"/>
+
+                <!-- Sezione plugins -->
+                <DockPanel Grid.Row="2" LastChildFill="True" Margin="0,8,0,0">
+                    <TextBlock Text="Plugins" FontWeight="Bold" DockPanel.Dock="Top" Margin="0,0,0,6"/>
+                    <ListBox x:Name="PluginsListBox"
+                             SelectionChanged="PluginsListBox_SelectionChanged"
+                             DisplayMemberPath="Name"
+                             HorizontalContentAlignment="Stretch"/>
+                </DockPanel>
+            </Grid>
+        </Border>
+
+        <!-- GridSplitter verticale principale tra colonne -->
+        <GridSplitter Grid.Column="1"
+                      Width="5"
+                      HorizontalAlignment="Stretch"
+                      VerticalAlignment="Stretch"
+                      Background="LightGray"
+                      ShowsPreview="True"
+                      ResizeDirection="Columns"
+                      ResizeBehavior="PreviousAndNext"/>
+
+        <!-- Destra: area divisa verticalmente in due (file sopra, log sotto) -->
+        <Border Grid.Column="2" BorderThickness="1" BorderBrush="Gray" Padding="6" Margin="6">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <!-- File list -->
+                    <RowDefinition Height="*"/>
+                    <!-- Splitter tra file e log -->
+                    <RowDefinition Height="5"/>
+                    <!-- Log -->
+                    <RowDefinition Height="150"/>
+                </Grid.RowDefinitions>
+
+                <!-- Parte superiore: file -->
+                <DockPanel Grid.Row="0">
+                    <TextBlock Text="File nella cartella selezionata" FontWeight="Bold" DockPanel.Dock="Top" Margin="0,0,0,6"/>
+                    <ListView x:Name="FilesListView"
+                              SelectionChanged="FilesListView_SelectionChanged"
+                              ContextMenuOpening="FilesListView_ContextMenuOpening">
+                        <ListView.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="Cancella" Click="File_Delete_Click"/>
+                                <MenuItem x:Name="FileImportMenuItem" Header="Importa" Click="File_Import_Click" IsEnabled="False"/>
+                                <MenuItem x:Name="FileExportValidatorMenuItem" Header="Esporta validatore" Click="File_ExportValidator_Click" IsEnabled="False"/>
+                            </ContextMenu>
+                        </ListView.ContextMenu>
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn Header="Nome" Width="300" DisplayMemberBinding="{Binding Name}"/>
+                                <GridViewColumn Header="Tipo" Width="200" DisplayMemberBinding="{Binding Tipo}"/>
+                                <GridViewColumn Header="Dimensione" Width="100" DisplayMemberBinding="{Binding Length}"/>
+                                <GridViewColumn Header="Ultima modifica" Width="180" DisplayMemberBinding="{Binding LastWriteTime}"/>
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
+                </DockPanel>
+
+                <!-- GridSplitter orizzontale tra file e log -->
+                <GridSplitter Grid.Row="1"
+                              Height="5"
+                              HorizontalAlignment="Stretch"
+                              VerticalAlignment="Center"
+                              Background="LightGray"
+                              ShowsPreview="True"
+                              ResizeDirection="Rows"
+                              ResizeBehavior="PreviousAndNext"/>
+
+                <!-- Parte inferiore: log -->
+                <DockPanel Grid.Row="2" LastChildFill="True">
+                    <TextBlock Text="Log" FontWeight="Bold" DockPanel.Dock="Top" Margin="0,0,0,6"/>
+                    <TextBox x:Name="LogTextBox"
+                             IsReadOnly="True"
+                             TextWrapping="Wrap"
+                             VerticalScrollBarVisibility="Auto"
+                             HorizontalScrollBarVisibility="Auto"
+                             AcceptsReturn="True">
+                        <TextBox.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="Cancella" Click="ClearLog_Click"/>
+                                <MenuItem Header="Salva..." Click="SaveLog_Click"/>
+                            </ContextMenu>
+                        </TextBox.ContextMenu>
+                    </TextBox>
+                </DockPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

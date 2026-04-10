@@ -1,0 +1,50 @@
+<Solution>
+  <Folder Name="/Elementi di soluzione/">
+    <File Path="Directory.Build.targets" />
+  </Folder>
+  <Folder Name="/RRDA.Plugins/">
+    <Project Path="RRDA.Plugins.Common/RRDA.Plugins.Common.csproj" Id="4b9e852e-531a-41e5-b6bc-b916cb5d8bfc" />
+  </Folder>
+  <Folder Name="/RRDA.Plugins/ALI/">
+    <Project Path="RRDA.Plugins.ALI/RRDA.Plugins.ALI.csproj" Id="03fc7545-3c0a-41d9-824b-e191fafd668d" />
+  </Folder>
+  <Folder Name="/RRDA.Plugins/ALI_CIR/">
+    <Project Path="RRDA.Plugins.ALI_CIR/RRDA.Plugins.ALI_CIR.csproj" Id="55df0722-306d-4162-90cd-a810fd915b4e" />
+  </Folder>
+  <Folder Name="/RRDA.Plugins/DCDC_24TO12/">
+    <Project Path="RRDA.Plugins.DCDC_24TO12/RRDA.Plugins.DCDC_24TO12.csproj" Id="6eae1d67-d758-4042-940a-c77a5e7f8dd2" />
+  </Folder>
+  <Folder Name="/RRDA.Plugins/DIG/">
+    <Project Path="RRDA.Plugins.DIG/RRDA.Plugins.DIG_5.0.csproj" Id="a4d8c1b9-9556-468f-a7ac-0c077b26065e" />
+    <Project Path="RRDA.Plugins.DIG_3.1/RRDA.Plugins.DIG_3.1.csproj" Id="75914f47-a665-4139-b0b7-f57f60e527b8" />
+  </Folder>
+  <Folder Name="/RRDA.Plugins/DIG_PM/">
+    <Project Path="RRDA.Plugins.DIG_PM/RRDA.Plugins.DIG_PM.csproj" Id="ff69393d-a740-4bdd-8983-8b8809c71858" />
+  </Folder>
+  <Folder Name="/RRDA.Plugins/DRX/">
+    <Project Path="RRDA.Plugins.DRX/RRDA.Plugins.DRX.csproj" Id="04f314c6-8154-4775-a739-409e0d945287" />
+  </Folder>
+  <Folder Name="/RRDA.Plugins/Dummy/">
+    <Project Path="RRDA.Plugin.Dummy/RRDA.Plugins.Dummy.csproj" Id="dbc80d59-8e6e-4a8c-9cce-cc5dad5b1f8d" />
+  </Folder>
+  <Folder Name="/RRDA.Plugins/MAN/">
+    <Project Path="Plugins.MAN_CIR/RRDA.Plugins.MAN_CIR.csproj" Id="620c02ad-3af2-4b2a-ae7d-7a99d358a3fc" />
+    <Project Path="RRDA.Plugins.MAN_2LIV/RRDA.Plugins.MAN_2LIV.csproj" Id="f8a02431-5766-4912-aaed-ccfdf450e312" />
+  </Folder>
+  <Folder Name="/RRDA.Plugins/RCB/">
+    <Project Path="RRDA.Plugins.RCB/RRDA.Plugins.RCB.csproj" Id="b2ca448a-ae11-43a6-ba83-1503b1b7ca6a" />
+  </Folder>
+  <Folder Name="/RRDA.Plugins/SBS/">
+    <Project Path="RRDA.Plugins.SBS/RRDA.Plugins.SBS.csproj" Id="ec1a8881-2289-49c9-8343-1dd5a5bb6469" />
+  </Folder>
+  <Folder Name="/RRDA.Plugins/SBX/">
+    <Project Path="RRDA.Plugins.SBX/RRDA.Plugins.SBX.csproj" Id="3f2ac50d-77ed-4b54-aaa6-cb7b6b8df6ab" />
+  </Folder>
+  <Folder Name="/RRDA.Plugins/UDX/">
+    <Project Path="UDX/RRDA.Plugins.UDX.csproj" Id="548a767b-aec3-49e3-a61e-7bed5a5e048c" />
+  </Folder>
+  <Project Path="RRDA.Core/RRDA.Core.csproj" />
+  <Project Path="RRDA.Data/RRDA.Data.csproj" />
+  <Project Path="RRDA.RepImp/RRDA.RepImp.csproj" Id="d0da7b7f-4ff2-42ed-b582-3b6268cee7f5" />
+  <Project Path="RRDA.Web/RRDA.Web.csproj" />
+</Solution>
