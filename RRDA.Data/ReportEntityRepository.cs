@@ -2,11 +2,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace RRDA.Data
 {
-    public class ReportEntityRepository
+    public class ReportEntityRepository(RRDADbContext db)
     {
-        private readonly RRDADbContext _db;
-
-        public ReportEntityRepository(RRDADbContext db) => _db = db;
+        private readonly RRDADbContext _db = db;
 
         public async Task<ReportEntity?> GetByIdAsync(int id) =>
             await _db.ReportEntities.Include(e => e.Properties).FirstOrDefaultAsync(e => e.Id == id);

@@ -60,5 +60,17 @@ namespace RRDA.RepImp.Properties {
                 this["ConnectionString"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
+        public int RecurseDepth {
+            get {
+                return ((int)(this["RecurseDepth"]));
+            }
+            set {
+                this["RecurseDepth"] = value;
+            }
+        }
     }
 }

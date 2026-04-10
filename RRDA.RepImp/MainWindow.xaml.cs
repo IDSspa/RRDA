@@ -5,6 +5,7 @@ using RRDA.Core.Validator;
 using RRDA.Data;
 using System.Data;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -68,7 +69,7 @@ namespace RRDA.RepImp
                     .ToList();
 
                 folders = drives;
-                Log($"Cartella '{_reportsRoot}' non trovata. Visualizzate {folders.Count} unità log come fallback.");
+                Log($"Cartella '{_reportsRoot}' non trovata. Visualizzate {folders.Count} unità logiche come fallback.");
             }
 
             FoldersListBox.ItemsSource = folders;
@@ -136,10 +137,67 @@ namespace RRDA.RepImp
                     return;
                 }
 
-                var fileInfos = new DirectoryInfo(folderPath)
-                    .GetFiles("*.xlsx") // considera solo .xlsx
-                    .OrderBy(f => f.Name)
-                    .ToList();
+                // Legge la profondità massima di ricorsione dalle impostazioni (0 = solo cartella corrente)
+                int maxDepth = Properties.Settings.Default.RecurseDepth;
+                if (maxDepth < 0) maxDepth = 0;
+
+                // Colleziona tutti i file *.xlsx visitando le sottocartelle fino a maxDepth
+                var fileInfos = new List<FileInfo>();
+
+                var stack = new Stack<(string Path, int Depth)>();
+                stack.Push((folderPath, 0));
+
+                while (stack.Count > 0)
+                {
+                    var (currentPath, depth) = stack.Pop();
+
+                    try
+                    {
+                        var dirInfo = new DirectoryInfo(currentPath);
+
+                        // Aggiungi file della cartella corrente
+                        FileInfo[] fis;
+                        try
+                        {
+                            fis = dirInfo.GetFiles("*.xlsx");
+                        }
+                        catch (Exception ex)
+                        {
+                            Log($"Impossibile enumerare i file in '{currentPath}': {ex.Message}");
+                            fis = [];
+                        }
+
+                        fileInfos.AddRange(fis);
+
+                        // Se non abbiamo raggiunto la profondità massima, enqueue delle sottocartelle
+                        if (depth < maxDepth)
+                        {
+                            DirectoryInfo[] subdirs;
+                            try
+                            {
+                                subdirs = dirInfo.GetDirectories();
+                            }
+                            catch (Exception ex)
+                            {
+                                Log($"Impossibile enumerare le sottocartelle in '{currentPath}': {ex.Message}");
+                                subdirs = [];
+                            }
+
+                            foreach (var sd in subdirs)
+                            {
+                                stack.Push((sd.FullName, depth + 1));
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        // Non interrompere l'elenco per una cartella non accessibile
+                        Log($"Errore accesso cartella '{currentPath}': {ex.Message}");
+                    }
+                }
+
+                // Ordina i file per nome
+                fileInfos = [.. fileInfos.OrderBy(f => f.Name)];
 
                 var fileItems = new List<FileItem>(fileInfos.Count);
 
@@ -170,7 +228,7 @@ namespace RRDA.RepImp
                 }
 
                 FilesListView.ItemsSource = fileItems;
-                Log($"Caricati {fileItems.Count} file *.xlsx da '{folderPath}'. Plugin applicabili trovati per {fileItems.Count(fi => !string.IsNullOrEmpty(fi.Tipo))} file.");
+                Log($"Caricati {fileItems.Count} file *.xlsx da '{folderPath}' (profondità ricorsione={maxDepth}). Plugin applicabili trovati per {fileItems.Count(f => !string.IsNullOrEmpty(f.Tipo))} file.");
             }
             catch (Exception ex)
             {
@@ -517,7 +575,7 @@ namespace RRDA.RepImp
                             else
                             {
                                 // fallback alla factory design-time che contiene una connection string di default
-                                db = new RRDAContextFactory().CreateDbContext(Array.Empty<string>());
+                                db = new RRDAContextFactory().CreateDbContext([]);
                                 Log("ConnectionString non impostata; usata la connection string della RRDAContextFactory come fallback.");
                             }
 
@@ -677,5 +735,37 @@ namespace RRDA.RepImp
             }
         }
 
+        private void OpenSettings_Click(object? sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var dlg = new SettingsDialog
+                {
+                    Owner = this
+                };
+
+                var res = dlg.ShowDialog();
+                if (res == true)
+                {
+                    // Ricarica le impostazioni applicate dall'utente
+                    try
+                    {
+                        // Ricarica cartelle e plugin secondo le nuove impostazioni
+                        LoadFolders();
+                        LoadPluginsFromSettings();
+                        Log("Impostazioni aggiornate dall'utente e ricaricate.");
+                    }
+                    catch (Exception ex)
+                    {
+                        Log($"Errore ricaricamento impostazioni dopo salvataggio: {ex.Message}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"Errore apertura dialog impostazioni: {ex.Message}");
+                MessageBox.Show(this, $"Impossibile aprire le impostazioni:{Environment.NewLine}{ex.Message}", "Errore", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
     }
 }

@@ -22,6 +22,6 @@
         public string? ImportedBy { get; set; }
 
         // Entità contenute nel file
-        public required ICollection<ReportEntity> Entities { get; set; } = new List<ReportEntity>();
+        public required ICollection<ReportEntity> Entities { get; set; } = [];
     }
 }

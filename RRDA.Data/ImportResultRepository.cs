@@ -21,8 +21,8 @@ namespace RRDA.Data
             Action<string>? logger = null,
             string? user = null)
         {
-            if (db == null) throw new ArgumentNullException(nameof(db));
-            if (importResult == null) throw new ArgumentNullException(nameof(importResult));
+            ArgumentNullException.ThrowIfNull(db);
+            ArgumentNullException.ThrowIfNull(importResult);
             if (string.IsNullOrWhiteSpace(fileName)) throw new ArgumentException("FileName non valido.", nameof(fileName));
 
             // transazione EF
@@ -43,7 +43,7 @@ namespace RRDA.Data
                     ReportTypeId = reportType.Id,
                     ReportType = reportType,
                     ImportedBy = user,
-                    Entities = new List<ReportEntity>()
+                    Entities = []
                 };
 
                 var entitiesSaved = 0;
@@ -58,7 +58,7 @@ namespace RRDA.Data
                             EntityKind = dto.EntityKind ?? string.Empty,
                             Key = dto.Key ?? string.Empty,
                             ReportFile = reportFile,
-                            Properties = new List<ReportProperty>()
+                            Properties = []
                         };
 
                         if (dto.Properties != null && dto.Properties.Count > 0)

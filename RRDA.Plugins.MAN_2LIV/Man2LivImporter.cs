@@ -10,8 +10,8 @@ namespace RRDA.Plugins.MAN_2Liv
         public string Name => "MAN_2Liv";
         public string Version => "1.0.0";
         public string SupportedFileExtension => ".xlsx";
-        public string MatchingPattern => "NCH_PAIPL_MAN_2Liv";
-        public string EntityKind => "TestMeasurement";
+        public static string MatchingPattern => "NCH_PAIPL_MAN_2Liv";
+        public static string EntityKind => "TestMeasurement";
         public Task<bool> CanImportAsync(string fileName, Stream? fileStream = null, Stream? validationConfigXml = null)
         {
             if (string.IsNullOrWhiteSpace(fileName))
@@ -28,7 +28,7 @@ namespace RRDA.Plugins.MAN_2Liv
 
             // Controlla se il nome (senza estensione) contiene il pattern definito (case-insensitive)
             var nameWithoutExt = Path.GetFileNameWithoutExtension(actualFileName) ?? string.Empty;
-            var matches = nameWithoutExt.IndexOf(MatchingPattern, StringComparison.OrdinalIgnoreCase) >= 0;
+            var matches = nameWithoutExt.Contains(MatchingPattern, StringComparison.OrdinalIgnoreCase);
 
             return Task.FromResult(matches);
         }

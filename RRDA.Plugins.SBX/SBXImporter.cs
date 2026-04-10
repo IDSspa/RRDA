@@ -7,8 +7,8 @@ namespace RRDA.Plugins.SBX
         public string Name => "SBX";
         public string Version => "1.0.0";
         public string SupportedFileExtension => ".xlsx";
-        public string MatchingPattern => "NCH_2022_004_1_3_LXOD-RS_SBX";
-        public string EntityKind => "TestMeasurement";
+        public static string MatchingPattern => "NCH_2022_004_1_3_LXOD-RS_SBX";
+        public static string EntityKind => "TestMeasurement";
 
         public Task<bool> CanImportAsync(string fileName, Stream? fileStream = null, Stream? validationConfigXml = null)
         {
@@ -26,7 +26,7 @@ namespace RRDA.Plugins.SBX
 
             // Controlla se il nome (senza estensione) contiene il pattern definito (case-insensitive)
             var nameWithoutExt = Path.GetFileNameWithoutExtension(actualFileName) ?? string.Empty;
-            var matches = nameWithoutExt.IndexOf(MatchingPattern, StringComparison.OrdinalIgnoreCase) >= 0;
+            var matches = nameWithoutExt.Contains(MatchingPattern, StringComparison.OrdinalIgnoreCase);
 
             return Task.FromResult(matches);
         }

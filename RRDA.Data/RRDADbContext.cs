@@ -2,10 +2,8 @@
 
 namespace RRDA.Data
 {
-    public class RRDADbContext : DbContext
+    public class RRDADbContext(DbContextOptions<RRDADbContext> options) : DbContext(options)
     {
-        public RRDADbContext(DbContextOptions<RRDADbContext> options) : base(options) { }
-
         public DbSet<ReportFile> ReportFiles { get; set; } = null!;
         public DbSet<ReportEntity> ReportEntities { get; set; } = null!;
         public DbSet<ReportProperty> ReportProperties { get; set; } = null!;

@@ -11,9 +11,9 @@ public static class ExcelRowMapper
         string entityKind,
         Func<IDictionary<string, string>, string> keySelector)
     {
-        if (row is null) throw new ArgumentNullException(nameof(row));
-        if (cfg is null) throw new ArgumentNullException(nameof(cfg));
-        if (keySelector is null) throw new ArgumentNullException(nameof(keySelector));
+        ArgumentNullException.ThrowIfNull(row);
+        ArgumentNullException.ThrowIfNull(cfg);
+        ArgumentNullException.ThrowIfNull(keySelector);
         if (string.IsNullOrWhiteSpace(entityKind)) throw new ArgumentNullException(nameof(entityKind));
 
         var key = keySelector(row) ?? string.Empty;

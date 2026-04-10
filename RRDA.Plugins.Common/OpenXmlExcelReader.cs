@@ -125,7 +125,7 @@ public static class OpenXmlExcelReader
         var index = new Dictionary<string, WorksheetPart>(StringComparer.OrdinalIgnoreCase);
 
         foreach (Sheet sheet in workbook.Sheets?.Elements<Sheet>()
-                                         ?? Enumerable.Empty<Sheet>())
+                                         ?? [])
         {
             if (sheet.Name is null || sheet.Id?.Value is null)
                 continue;
@@ -148,7 +148,7 @@ public static class OpenXmlExcelReader
         var index = new Dictionary<string, (string, string)>(StringComparer.OrdinalIgnoreCase);
 
         var definedNames = workbook.DefinedNames?.Elements<DefinedName>()
-                           ?? Enumerable.Empty<DefinedName>();
+                           ?? [];
 
         foreach (var dn in definedNames)
         {
@@ -183,8 +183,8 @@ public static class OpenXmlExcelReader
     /// </summary>
     public static (int Row, int Col) ParseCellReference(string cellRef)
     {
-        var colStr = new string(cellRef.Where(char.IsLetter).ToArray());
-        var rowStr = new string(cellRef.Where(char.IsDigit).ToArray());
+        var colStr = new string([.. cellRef.Where(char.IsLetter)]);
+        var rowStr = new string([.. cellRef.Where(char.IsDigit)]);
 
         int row = int.TryParse(rowStr, out var r) ? r : 1;
         int col = ColLettersToIndex(colStr);
@@ -273,13 +273,10 @@ public static class OpenXmlExcelReader
     public static string? ReadSingleValue(SpreadsheetDocument doc, string namedRange)
     {
         // Trova il defined name
-        var definedName = doc.WorkbookPart.Workbook
+        var definedName = (doc.WorkbookPart.Workbook
             .DefinedNames?
             .Elements<DefinedName>()
-            .FirstOrDefault(d => d.Name == namedRange);
-
-        if (definedName == null)
-            throw new Exception($"NamedRange '{namedRange}' non trovato.");
+            .FirstOrDefault(d => d.Name == namedRange)) ?? throw new Exception($"NamedRange '{namedRange}' non trovato.");
 
         // Esempio ref: "Report_01!$B$7"
         var def = definedName.Text;
@@ -290,11 +287,7 @@ public static class OpenXmlExcelReader
 
         // Trova il foglio
         var sheet = doc.WorkbookPart.Workbook.Descendants<Sheet>()
-            .FirstOrDefault(s => s.Name == sheetName);
-
-        if (sheet == null)
-            throw new Exception($"Sheet '{sheetName}' non trovato.");
-
+            .FirstOrDefault(s => s.Name == sheetName) ?? throw new Exception($"Sheet '{sheetName}' non trovato.");
         var wsPart = (WorksheetPart)doc.WorkbookPart.GetPartById(sheet.Id);
         var ws = wsPart.Worksheet;
 

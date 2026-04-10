@@ -8,11 +8,9 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddAuthentication(NegotiateDefaults.AuthenticationScheme)
    .AddNegotiate();
 
-builder.Services.AddAuthorization(options =>
-{
-    options.AddPolicy("RequireSupervisor", policy => policy.RequireRole("DOMAIN\\SupervisorsGroup"));
-    options.AddPolicy("RequireOperator", policy => policy.RequireRole("DOMAIN\\OperatorsGroup"));
-});
+builder.Services.AddAuthorizationBuilder()
+    .AddPolicy("RequireSupervisor", policy => policy.RequireRole("DOMAIN\\SupervisorsGroup"))
+    .AddPolicy("RequireOperator", policy => policy.RequireRole("DOMAIN\\OperatorsGroup"));
 
 builder.Services.AddRazorPages();
 

@@ -38,8 +38,8 @@ namespace RRDA.Core.Validator
         /// <param name="culture">Valore dell'attributo culture (default: CultureInfo.CurrentCulture.DefinedName).</param>
         public static void CreateFromStream(Stream xlsxStream, Stream outputXmlStream, bool failOnError = true, string? culture = null)
         {
-            if (xlsxStream == null) throw new ArgumentNullException(nameof(xlsxStream));
-            if (outputXmlStream == null) throw new ArgumentNullException(nameof(outputXmlStream));
+            ArgumentNullException.ThrowIfNull(xlsxStream);
+            ArgumentNullException.ThrowIfNull(outputXmlStream);
 
             // SpreadsheetDocument richiede uno stream seekable: copiamo se necessario
             Stream input = xlsxStream;

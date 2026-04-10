@@ -16,6 +16,6 @@
         public string Description { get; set; } = string.Empty;
 
         // Navigazione verso i file associati
-        public required ICollection<ReportFile> Files { get; set; } = new List<ReportFile>();
+        public required ICollection<ReportFile> Files { get; set; } = [];
     }
 }
