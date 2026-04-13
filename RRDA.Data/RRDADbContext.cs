@@ -8,6 +8,7 @@ namespace RRDA.Data
         public DbSet<ReportEntity> ReportEntities { get; set; } = null!;
         public DbSet<ReportProperty> ReportProperties { get; set; } = null!;
         public DbSet<ReportType> ReportTypes { get; set; } = null!;
+        public DbSet<ReportBatch> ReportBatches { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -42,6 +43,13 @@ namespace RRDA.Data
                     .WithOne(e => e.ReportFile)
                     .HasForeignKey(e => e.ReportFileId)
                     .OnDelete(DeleteBehavior.Cascade);
+
+                // relazione verso ReportBatch
+                b.HasOne(x => x.ReportBatch)
+                    .WithMany(b => b.ReportFiles)
+                    .HasForeignKey(x => x.ReportBatchId)
+                    .IsRequired(false)
+                    .OnDelete(DeleteBehavior.SetNull);
             });
 
             modelBuilder.Entity<ReportEntity>(b =>

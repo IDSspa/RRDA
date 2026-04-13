@@ -23,5 +23,10 @@
 
         // Entità contenute nel file
         public required ICollection<ReportEntity> Entities { get; set; } = [];
+
+        // Batch di appartenenza (opzionale)
+        public int? ReportBatchId { get; set; }
+        public ReportBatch? ReportBatch { get; set; }
+
     }
 }
