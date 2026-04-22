@@ -1,4 +1,5 @@
 using System.Windows;
+using System.Windows.Input;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
 
@@ -80,7 +81,9 @@ namespace RRDA.RepImp
         protected override void OnContentRendered(EventArgs e)
         {
             base.OnContentRendered(e);
-            _timer.Start();
+
+            if(!_isAboutMode)
+                _timer.Start();
         }
 
         private void OnTimerTick(object? sender, EventArgs e)
@@ -104,6 +107,15 @@ namespace RRDA.RepImp
                 SplashClosed?.Invoke(this, EventArgs.Empty);
 
             Close();
+        }
+
+        /// <summary>
+        /// Gestore per il click singolo del mouse (vuoto).
+        /// </summary>
+        private void SplashWindow_MouseLeftButtonUp(object? sender, MouseButtonEventArgs e)
+        {
+            if (_isAboutMode)
+                Close();
         }
     }
 }

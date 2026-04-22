@@ -2,13 +2,15 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="RRDA"
-        Height="420" Width="700"
+        Width="700"
+        Height="420" 
         WindowStartupLocation="CenterScreen"
         WindowStyle="None"
         AllowsTransparency="True"
         Background="Transparent"
         ResizeMode="NoResize"
-        Topmost="True">
+        Topmost="True" 
+        MouseLeftButtonUp="SplashWindow_MouseLeftButtonUp">
 
     <Window.Resources>
         <!-- Animazione fade-in all'avvio -->

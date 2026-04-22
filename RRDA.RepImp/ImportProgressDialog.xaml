@@ -1,0 +1,57 @@
+﻿<Window x:Class="RRDA.RepImp.ImportProgressDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Importazione in corso..."
+        Width="480" Height="220"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False">
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <!-- Label file corrente -->
+            <RowDefinition Height="Auto"/>
+            <!-- ProgressBar file totali -->
+            <RowDefinition Height="16"/>
+            <!-- Spaziatura -->
+            <RowDefinition Height="Auto"/>
+            <!-- Label righe -->
+            <RowDefinition Height="Auto"/>
+            <!-- ProgressBar righe file corrente -->
+            <RowDefinition Height="*"/>
+            <!-- Spaziatura elastica -->
+            <RowDefinition Height="Auto"/>
+            <!-- Pulsante Annulla -->
+        </Grid.RowDefinitions>
+
+        <!-- File corrente / totale file -->
+        <TextBlock x:Name="FileLabelText"
+                   Grid.Row="0"
+                   Text="File 0 di 0"
+                   FontWeight="SemiBold"
+                   Margin="0,0,0,4"/>
+        <ProgressBar x:Name="FilesProgressBar"
+                     Grid.Row="1"
+                     Height="18"
+                     Minimum="0" Maximum="100" Value="0"/>
+
+        <!-- Righe del file corrente -->
+        <TextBlock x:Name="RowLabelText"
+                   Grid.Row="3"
+                   Text="Elaborazione campi..."
+                   Margin="0,0,0,4"/>
+        <ProgressBar x:Name="RowsProgressBar"
+                     Grid.Row="4"
+                     Height="18"
+                     Minimum="0" Maximum="100" Value="0"
+                     IsIndeterminate="True"/>
+
+        <!-- Annulla -->
+        <Button x:Name="CancelButton"
+                Grid.Row="6"
+                Content="Annulla"
+                Width="90"
+                HorizontalAlignment="Right"
+                Click="CancelButton_Click"/>
+    </Grid>
+</Window>

@@ -50,7 +50,7 @@ namespace RRDA.Plugins.MAN_2Liv
                 var config = ValidationConfig.Load(validationConfigXml);
 
                 // 2. Importa i dati dal file Excel
-                var entities = await ImportData(fileStream, config);
+                var entities = await ImportData(fileStream, config, progress, ct);
 
                 result.Entities = entities;
                 result.Success = true;
@@ -123,12 +123,20 @@ namespace RRDA.Plugins.MAN_2Liv
                           .Where(n => !string.IsNullOrWhiteSpace(n)),
                     StringComparer.OrdinalIgnoreCase);
 
+                int index = 0;
+                
                 // Iteriamo sui FieldRules definiti nel config
                 foreach (var rule in config.FieldRules)
                 {
-                    int count = 0;
-
                     ct.ThrowIfCancellationRequested();
+
+                    progress?.Report(
+                        new ImportProgress(
+                                index, 
+                                config.FieldRules.Count,
+                                $"Elaborazione riga {index + 1} di {config.FieldRules.Count}…"
+                        )
+                    );
 
                     var definedName = rule.DefinedName;
 
@@ -211,7 +219,7 @@ namespace RRDA.Plugins.MAN_2Liv
                         }
                     }
 
-                    progress?.Report(new ImportProgress(count++, config.FieldRules.Count, $"Elaborazione riga {count + 1} di {config.FieldRules.Count}…"));
+                    index++;
                 }
             }
             finally

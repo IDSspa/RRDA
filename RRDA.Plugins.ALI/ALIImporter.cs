@@ -51,7 +51,7 @@ namespace RRDA.Plugins.ALI
                 var config = ValidationConfig.Load(validationConfigXml);
 
                 // 2. Importa i dati dal file Excel
-                var entities = await ImportData(fileStream, config);
+                var entities = await ImportData(fileStream, config, progress, ct);
 
                 result.Entities = entities;
                 result.Success = true;

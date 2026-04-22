@@ -380,51 +380,81 @@ namespace RRDA.RepImp
 
         private async void File_Import_Click(object? sender, RoutedEventArgs e)
         {
-            string user = Environment.UserName;
-
             var selectedItems = FilesListView.SelectedItems?.OfType<FileItem>().ToList();
-            
+
             if (selectedItems == null || selectedItems.Count == 0)
             {
                 MessageBox.Show(this, "Seleziona almeno un file da importare.", "Nessun file selezionato", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
+            using var cts = new CancellationTokenSource();
+            var progressDlg = new ImportProgressDialog(cts) { Owner = this };
+            progressDlg.Show();
+
             int successCount = 0;
             int failCount = 0;
+            string user = Environment.UserName;
 
-            // Importiamo i file selezionati in sequenza (evita concorrenza su risorse condivise)
-            foreach (var fi in selectedItems)
+            try
             {
-                try
+                int i = 0;
+
+                // Importiamo i file selezionati in sequenza (evita concorrenza su risorse condivise)
+                foreach (var fi in selectedItems)
                 {
-                    Log($"Avvio import per file selezionato: {fi.Name}");
-                    
-                    bool ok = await ImportReport(fi, user);
-                    
-                    if (ok)
+                    if (cts.IsCancellationRequested)
                     {
-                        successCount++;
+                        Log("Importazione annullata dall'utente.");
+                        break;
                     }
-                    else
+
+                    // Aggiorna la progress bar esterna (file i+1 di N)
+                    progressDlg.SetFileProgress(++i, selectedItems.Count, fi.Name);
+
+                    Log($"Avvio import per file selezionato: {fi.Name}");
+
+                    try
+                    {
+                        bool ok = await ImportReport(fi, user, progressDlg, cts.Token);
+
+                        if (ok)
+                        {
+                            successCount++;
+                        }
+                        else
+                        {
+                            failCount++;
+                        
+                            Log($"Import non completato per '{fi.Name}'.");
+                        }
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        Log("Importazione annullata dall'utente.");
+                        failCount++;
+                        break;
+                    }
+                    catch (Exception ex)
                     {
                         failCount++;
-                        
-                        Log($"Import non completato per '{fi.Name}'.");
+
+                        Log($"Eccezione durante import di '{fi.Name}': {ex.Message}");
                     }
                 }
-                catch (Exception ex)
-                {
-                    failCount++;
-
-                    Log($"Eccezione durante import di '{fi.Name}': {ex.Message}");
-                }
+            }
+            finally
+            {
+                progressDlg.Close();
             }
 
             Log($"Import multiplo completato. Successi: {successCount}, Falliti: {failCount}.");
         }
 
-        private async Task<bool> ImportReport(FileItem fi, string? user = null)
+        private async Task<bool> ImportReport(FileItem fi,
+                                              string? user = null,
+                                              ImportProgressDialog? progressDlg = null,
+                                              CancellationToken ct = default)
         {
             if (string.IsNullOrWhiteSpace(fi.Tipo))
             {
@@ -491,12 +521,18 @@ namespace RRDA.RepImp
 
                 // Chiamata a ImportAsync del plugin
                 object? resultObj = null;
-                var cts = new CancellationTokenSource();
 
                 try
                 {
+                    IProgress<ImportProgress>? innerProgress = progressDlg is not null
+                                                                ? new Progress<ImportProgress>(p =>
+                                                                    // Progress<T> fa già il marshal sul thread UI del costruttore
+                                                                    progressDlg.Dispatcher.Invoke(() =>
+                                                                        progressDlg.SetRowProgress(p.ProcessedItems, p.TotalItems, p.Message)))
+                                                                : null;
+
                     // ImportAsync restituisce ImportResult; usiamo reflection-safe nel logging dopo l'await
-                    var task = plugin.ImportAsync(fileStream, validationStream ?? Stream.Null);
+                    var task = plugin.ImportAsync(fileStream, validationStream ?? Stream.Null, innerProgress, ct);
                     resultObj = await task;
                 }
                 catch (Exception ex)
