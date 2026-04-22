@@ -41,7 +41,7 @@
     <Project Path="RRDA.Plugins.SBX/RRDA.Plugins.SBX.csproj" Id="3f2ac50d-77ed-4b54-aaa6-cb7b6b8df6ab" />
   </Folder>
   <Folder Name="/RRDA.Plugins/UDX/">
-    <Project Path="UDX/RRDA.Plugins.UDX.csproj" Id="548a767b-aec3-49e3-a61e-7bed5a5e048c" />
+    <Project Path="RRDA.Plugins.UDX/RRDA.Plugins.UDX.csproj" />
   </Folder>
   <Project Path="RRDA.Core/RRDA.Core.csproj" />
   <Project Path="RRDA.Data/RRDA.Data.csproj" />
