@@ -46,7 +46,7 @@ namespace RRDA.RepImp
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, $"Impossibile aprire il dialogo cartella:{Environment.NewLine}{ex.Message}", "Errore", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(this, $"Impossibile selezionare la cartella:{Environment.NewLine}{ex.Message}", "Errore", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -67,7 +67,7 @@ namespace RRDA.RepImp
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, $"Impossibile aprire il dialogo cartella:{Environment.NewLine}{ex.Message}", "Errore", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(this, $"Impossibile selezionare la cartella:{Environment.NewLine}{ex.Message}", "Errore", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 

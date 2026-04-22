@@ -10,8 +10,8 @@ namespace RRDA.Plugins.DCDC_24TO12
         public string Name => "DCDC_24TO12";
         public string Version => "1.0.0";
         public string SupportedFileExtension => ".xlsx";
-        public static string MatchingPattern => "NCH_DCDC_24TO12_v1.0";
-        public static string EntityKind => "TestMeasurement";
+        public string MatchingPattern => "NCH_DCDC_24TO12_v1.0";
+        public string EntityKind => "TestMeasurement";
         public Task<bool> CanImportAsync(string fileName, Stream? fileStream = null, Stream? validationConfigXml = null)
         {
             if (string.IsNullOrWhiteSpace(fileName))
@@ -32,7 +32,11 @@ namespace RRDA.Plugins.DCDC_24TO12
 
             return Task.FromResult(matches);
         }
-        public async Task<ImportResult> ImportAsync(Stream fileStream, Stream validationConfigXml)
+        public async Task<ImportResult> ImportAsync(
+                Stream fileStream,
+                Stream validationConfigXml,
+                IProgress<ImportProgress>? progress = null,
+                CancellationToken ct = default)
         {
             var result = new ImportResult
             {
@@ -46,7 +50,7 @@ namespace RRDA.Plugins.DCDC_24TO12
                 var config = ValidationConfig.Load(validationConfigXml);
 
                 // 2. Importa i dati dal file Excel
-                var entities = await ImportDataAsync(fileStream, config);
+                var entities = await ImportData(fileStream, config);
 
                 result.Entities = entities;
                 result.Success = true;
@@ -73,7 +77,11 @@ namespace RRDA.Plugins.DCDC_24TO12
         /// Ogni <see cref="ReportEntityDto"/> rappresenta una singola cella (o cella
         /// appartenente ad un range) estratta dal foglio Excel.
         /// </returns>
-        private static Task<IEnumerable<ReportEntityDto>> ImportDataAsync(Stream xlsxStream, ValidationConfig config)
+        private static Task<IEnumerable<ReportEntityDto>> ImportData(
+                Stream xlsxStream,
+                ValidationConfig config,
+                IProgress<ImportProgress>? progress = null,
+                CancellationToken ct = default)
         {
             // SpreadsheetDocument richiede uno stream seekable
             Stream input = xlsxStream;
@@ -118,6 +126,10 @@ namespace RRDA.Plugins.DCDC_24TO12
                 // Iteriamo sui FieldRules definiti nel config
                 foreach (var rule in config.FieldRules)
                 {
+                    int count = 0;
+
+                    ct.ThrowIfCancellationRequested();
+
                     var definedName = rule.DefinedName;
 
                     if (string.IsNullOrWhiteSpace(definedName))
@@ -198,6 +210,8 @@ namespace RRDA.Plugins.DCDC_24TO12
                             }
                         }
                     }
+
+                    progress?.Report(new ImportProgress(count++, config.FieldRules.Count, $"Elaborazione riga {count + 1} di {config.FieldRules.Count}…"));
                 }
             }
             finally

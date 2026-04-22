@@ -5,7 +5,6 @@ using RRDA.Core.Validator;
 using RRDA.Data;
 using System.Data;
 using System.IO;
-using System.Linq;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -21,6 +20,7 @@ namespace RRDA.RepImp
         private string _reportsRoot;
         private readonly PluginLoader _pluginLoader = new();
         private List<IReportImporter> _plugins = [];
+        private SplashScreenWindow? _aboutWindow;
 
         public MainWindow()
         {
@@ -491,6 +491,7 @@ namespace RRDA.RepImp
 
                 // Chiamata a ImportAsync del plugin
                 object? resultObj = null;
+                var cts = new CancellationTokenSource();
 
                 try
                 {
@@ -766,6 +767,25 @@ namespace RRDA.RepImp
                 Log($"Errore apertura dialog impostazioni: {ex.Message}");
                 MessageBox.Show(this, $"Impossibile aprire le impostazioni:{Environment.NewLine}{ex.Message}", "Errore", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+        }
+
+        private void About_Click(object? sender, RoutedEventArgs e)
+        {
+            // Evita aperture multiple simultane
+            if (_aboutWindow is { IsVisible: true })
+            {
+                _aboutWindow.Activate();
+                return;
+            }
+
+            _aboutWindow = new SplashScreenWindow();
+
+            // Pulizia riferimento quando la finestra si chiude
+            _aboutWindow.Closed += (_, _) => _aboutWindow = null;
+
+            // Apre in modalità "About": centrata sulla MainWindow,
+            // si chiude automaticamente dopo 2 s
+            _aboutWindow.ShowAsAbout(owner: this);
         }
     }
 }

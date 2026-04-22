@@ -6,7 +6,7 @@ namespace RRDA.Core
     {
         public IEnumerable<IReportImporter> LoadPlugins(string pluginFolder)
         {
-            var dlls = Directory.GetFiles(pluginFolder, "*.dll");
+            var dlls = Directory.GetFiles(pluginFolder, "RRDA.Plugins.*.dll");
 
             var importers = new List<IReportImporter>();
 
