@@ -11,7 +11,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\RRDA.Core\RRDA.Core.csproj" />
     <ProjectReference Include="..\RRDA.Plugins.Common\RRDA.Plugins.Common.csproj" />
   </ItemGroup>
 

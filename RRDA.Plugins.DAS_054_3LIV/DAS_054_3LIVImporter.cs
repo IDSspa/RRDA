@@ -1,13 +1,13 @@
 ﻿using RRDA.Plugins.Common;
 
-namespace RRDA.Plugins.DRX
+namespace RRDA.Plugins.DAS_054_3LIV
 {
-    public sealed class DRXImporter : BaseImporter
+    public class DAS_054_3LIVImporter : BaseImporter
     {
-        public override string Name => "DRX";
+        public override string Name => "DAS_054_3LIV";
         public override string Version => "1.0.0";
         public override string SupportedFileExtension => ".xlsx";
-        public override string MatchingPattern => "NCH_2022_002_DRX_MAN";
+        public override string MatchingPattern => "REPORT-DAS0054-ACCETTAZIONE";
         public override string EntityKind => "TestMeasurement";
     }
 }

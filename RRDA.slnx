@@ -11,6 +11,10 @@
   <Folder Name="/RRDA.Plugins/ALI_CIR/">
     <Project Path="RRDA.Plugins.ALI_CIR/RRDA.Plugins.ALI_CIR.csproj" Id="55df0722-306d-4162-90cd-a810fd915b4e" />
   </Folder>
+  <Folder Name="/RRDA.Plugins/DAS_054_3LIV/">
+    <Project Path="RRDA.Plugins.DAS_054_3LIV/RRDA.Plugins.DAS_054_3LIV.csproj" Id="3a5a59f1-4d06-42f2-a76b-2df5fb0d2bd3" />
+    <Project Path="RRDA.Plugins.DAS_054_3LIV_ACC/RRDA.Plugins.DAS_054_3LIV_ACC.csproj" Id="f620f70a-f21c-4d3b-bd16-4f44c6f982b2" />
+  </Folder>
   <Folder Name="/RRDA.Plugins/DCDC_24TO12/">
     <Project Path="RRDA.Plugins.DCDC_24TO12/RRDA.Plugins.DCDC_24TO12.csproj" Id="6eae1d67-d758-4042-940a-c77a5e7f8dd2" />
   </Folder>
@@ -20,6 +24,9 @@
   </Folder>
   <Folder Name="/RRDA.Plugins/DIG_PM/">
     <Project Path="RRDA.Plugins.DIG_PM/RRDA.Plugins.DIG_PM.csproj" Id="ff69393d-a740-4bdd-8983-8b8809c71858" />
+  </Folder>
+  <Folder Name="/RRDA.Plugins/DRS_UDX_MAN/">
+    <Project Path="RRDA.Plugins.DRS_UDX_MAN/RRDA.Plugins.DRS_UDX_MAN.csproj" Id="7e8d77b3-4647-40e9-ba17-49b5031047fc" />
   </Folder>
   <Folder Name="/RRDA.Plugins/DRX/">
     <Project Path="RRDA.Plugins.DRX/RRDA.Plugins.DRX.csproj" Id="04f314c6-8154-4775-a739-409e0d945287" />
