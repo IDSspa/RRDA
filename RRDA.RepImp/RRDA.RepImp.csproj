@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
@@ -6,6 +6,10 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+
+    <!-- Imposta l'icona dell'eseguibile -->
+    <ApplicationIcon>Assets\RepImp.ico</ApplicationIcon>
+    <Win32Icon>Assets\RepImp.ico</Win32Icon>
   </PropertyGroup>
 
   <ItemGroup>
@@ -34,6 +38,12 @@
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
+  </ItemGroup>
+
+  <!-- Assicurati che l'icona sia inclusa nei file del progetto -->
+  <ItemGroup>
+    <None Include="Assets\RepImp.ico" Pack="false" />
+    <None Include="Assets\RepImp.svg" Pack="false" />
   </ItemGroup>
 
 </Project>

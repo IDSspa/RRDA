@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" role="img" aria-label="RepImp icon">
+  <defs>
+    <linearGradient id="g" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#0ea5a4"/>
+      <stop offset="100%" stop-color="#2563eb"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" rx="160" fill="url(#g)"/>
+  <g transform="translate(160,160) scale(0.65)" fill="#ffffff" font-family="Segoe UI, Arial, sans-serif">
+    <path d="M128 96C64 96 16 144 16 208v384c0 64 48 112 112 112h320c64 0 112-48 112-112V208c0-64-48-112-112-112H128zm0 64h320c26.5 0 48 21.5 48 48v384c0 26.5-21.5 48-48 48H128c-26.5 0-48-21.5-48-48V208c0-26.5 21.5-48 48-48z" opacity="0.12"/>
+    <text x="64" y="320" font-size="320" font-weight="700">R</text>
+    <text x="260" y="560" font-size="180" font-weight="600">Imp</text>
+  </g>
+</svg>
