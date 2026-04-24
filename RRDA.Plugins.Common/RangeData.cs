@@ -7,7 +7,6 @@
         private int _column_count = 0;
         public int RowCount { get => _row_count; }
         public int ColumnCount { get => _column_count; }
-
         public string[] Rows => [.. _data.SelectMany(r => r)];
         public string[][] Data
         {

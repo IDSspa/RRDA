@@ -12,8 +12,8 @@ using RRDA.Data;
 namespace RRDA.Data.Migrations
 {
     [DbContext(typeof(RRDADbContext))]
-    [Migration("20260413144428_AddReportBatchAndRelation")]
-    partial class AddReportBatchAndRelation
+    [Migration("20260423150658_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -56,11 +56,6 @@ namespace RRDA.Data.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("EntityKind")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
                     b.Property<string>("Key")
                         .IsRequired()
                         .HasMaxLength(400)
@@ -68,6 +63,11 @@ namespace RRDA.Data.Migrations
 
                     b.Property<int>("ReportFileId")
                         .HasColumnType("int");
+
+                    b.Property<string>("ReportSheet")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
 
                     b.HasKey("Id");
 

@@ -12,6 +12,21 @@ namespace RRDA.Data.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
+                name: "ReportBatches",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    IsMaintenance = table.Column<bool>(type: "bit", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ReportBatches", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "ReportTypes",
                 columns: table => new
                 {
@@ -36,11 +51,18 @@ namespace RRDA.Data.Migrations
                     FullPath = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     UploadedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     ReportTypeId = table.Column<int>(type: "int", nullable: false),
-                    ImportedBy = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true)
+                    ImportedBy = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
+                    ReportBatchId = table.Column<int>(type: "int", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_ReportFiles", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_ReportFiles_ReportBatches_ReportBatchId",
+                        column: x => x.ReportBatchId,
+                        principalTable: "ReportBatches",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.SetNull);
                     table.ForeignKey(
                         name: "FK_ReportFiles_ReportTypes_ReportTypeId",
                         column: x => x.ReportTypeId,
@@ -56,7 +78,7 @@ namespace RRDA.Data.Migrations
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     ReportFileId = table.Column<int>(type: "int", nullable: false),
-                    EntityKind = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    ReportSheet = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
                     Key = table.Column<string>(type: "nvarchar(400)", maxLength: 400, nullable: false)
                 },
                 constraints: table =>
@@ -99,6 +121,11 @@ namespace RRDA.Data.Migrations
                 column: "ReportFileId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_ReportFiles_ReportBatchId",
+                table: "ReportFiles",
+                column: "ReportBatchId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_ReportFiles_ReportTypeId",
                 table: "ReportFiles",
                 column: "ReportTypeId");
@@ -126,6 +153,9 @@ namespace RRDA.Data.Migrations
 
             migrationBuilder.DropTable(
                 name: "ReportFiles");
+
+            migrationBuilder.DropTable(
+                name: "ReportBatches");
 
             migrationBuilder.DropTable(
                 name: "ReportTypes");

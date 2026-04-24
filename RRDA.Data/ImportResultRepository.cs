@@ -55,7 +55,7 @@ namespace RRDA.Data
                     {
                         var entity = new ReportEntity
                         {
-                            EntityKind = dto.EntityKind ?? string.Empty,
+                            ReportSheet = dto.EntityKind ?? string.Empty,
                             Key = dto.Key ?? string.Empty,
                             ReportFile = reportFile,
                             Properties = []

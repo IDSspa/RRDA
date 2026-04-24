@@ -9,6 +9,7 @@ using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
+using RRDA.Plugins.Common;
 
 namespace RRDA.RepImp
 {

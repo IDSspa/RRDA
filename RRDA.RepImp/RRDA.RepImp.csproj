@@ -18,6 +18,7 @@
   <ItemGroup>
     <ProjectReference Include="..\RRDA.Core\RRDA.Core.csproj" />
     <ProjectReference Include="..\RRDA.Data\RRDA.Data.csproj" />
+    <ProjectReference Include="..\RRDA.Plugins.Common\RRDA.Plugins.Common.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -33,10 +34,6 @@
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Images\" />
   </ItemGroup>
 
 </Project>

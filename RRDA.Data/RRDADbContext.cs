@@ -58,7 +58,7 @@ namespace RRDA.Data
 
                 b.HasKey(x => x.Id);
 
-                b.Property(x => x.EntityKind)
+                b.Property(x => x.ReportSheet)
                     .HasMaxLength(200)
                     .IsRequired();
 
