@@ -111,153 +111,6 @@ namespace RRDA.RepImp
             }
         }
 
-        private async void FoldersListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (FoldersListBox.SelectedItem is DirectoryInfo di)
-            {
-                await LoadFiles(di.FullName);
-                Log($"Selezionata cartella: {di.FullName}");
-            }
-            else
-            {
-                FilesListView.ItemsSource = null;
-            }
-        }
-
-        // DTO per la ListView dei file (include il tipo determinato dal plugin)
-        private sealed record FileItem(string Name, long Length, DateTime LastWriteTime, string Tipo, string FullPath);
-
-        private async Task LoadFiles(string folderPath)
-        {
-            try
-            {
-                if (!Directory.Exists(folderPath))
-                {
-                    FilesListView.ItemsSource = null;
-                    Log($"Cartella non trovata: {folderPath}");
-                    return;
-                }
-
-                // Legge la profondità massima di ricorsione dalle impostazioni (0 = solo cartella corrente)
-                int maxDepth = Properties.Settings.Default.RecurseDepth;
-                if (maxDepth < 0) maxDepth = 0;
-
-                // Colleziona tutti i file *.xlsx visitando le sottocartelle fino a maxDepth
-                var fileInfos = new List<FileInfo>();
-
-                var stack = new Stack<(string Path, int Depth)>();
-                stack.Push((folderPath, 0));
-
-                while (stack.Count > 0)
-                {
-                    var (currentPath, depth) = stack.Pop();
-
-                    try
-                    {
-                        var dirInfo = new DirectoryInfo(currentPath);
-
-                        // Aggiungi file della cartella corrente
-                        FileInfo[] fis;
-                        try
-                        {
-                            fis = dirInfo.GetFiles("*.xlsx");
-                        }
-                        catch (Exception ex)
-                        {
-                            Log($"Impossibile enumerare i file in '{currentPath}': {ex.Message}");
-                            fis = [];
-                        }
-
-                        fileInfos.AddRange(fis);
-
-                        // Se non abbiamo raggiunto la profondità massima, enqueue delle sottocartelle
-                        if (depth < maxDepth)
-                        {
-                            DirectoryInfo[] subdirs;
-                            try
-                            {
-                                subdirs = dirInfo.GetDirectories();
-                            }
-                            catch (Exception ex)
-                            {
-                                Log($"Impossibile enumerare le sottocartelle in '{currentPath}': {ex.Message}");
-                                subdirs = [];
-                            }
-
-                            foreach (var sd in subdirs)
-                            {
-                                stack.Push((sd.FullName, depth + 1));
-                            }
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        // Non interrompere l'elenco per una cartella non accessibile
-                        Log($"Errore accesso cartella '{currentPath}': {ex.Message}");
-                    }
-                }
-
-                // Ordina i file per nome
-                fileInfos = [.. fileInfos.OrderBy(f => f.Name)];
-
-                var fileItems = new List<FileItem>(fileInfos.Count);
-
-                foreach (var fi in fileInfos)
-                {
-                    string tipo = string.Empty;
-
-                    // Verifica applicabilità con i plugin caricati
-                    foreach (var plugin in _plugins)
-                    {
-                        try
-                        {
-                            var can = await plugin.CanImportAsync(fi.Name);
-                            if (can)
-                            {
-                                tipo = plugin.Name;
-                                break;
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            // Non fermare l'elaborazione dei file per un plugin malfunzionante
-                            Log($"Errore CanImportAsync plugin '{plugin.Name}' per file '{fi.Name}': {ex.Message}");
-                        }
-                    }
-
-                    fileItems.Add(new FileItem(fi.Name, fi.Length, fi.LastWriteTime, tipo, fi.FullName));
-                }
-
-                FilesListView.ItemsSource = fileItems;
-                Log($"Caricati {fileItems.Count} file *.xlsx da '{folderPath}' (profondità ricorsione={maxDepth}). Plugin applicabili trovati per {fileItems.Count(f => !string.IsNullOrEmpty(f.Tipo))} file.");
-            }
-            catch (Exception ex)
-            {
-                FilesListView.ItemsSource = null;
-                Log($"Errore caricamento file da '{folderPath}': {ex.Message}");
-            }
-        }
-
-        private void FilesListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (FilesListView.SelectedItem is FileItem fi)
-            {
-                Log($"File selezionato: {fi.Name} ({fi.Length} byte) - Tipo: {fi.Tipo}");
-            }
-            else if (FilesListView.SelectedItem is FileInfo ffi)
-            {
-                Log($"File selezionato: {ffi.Name} ({ffi.Length} byte)");
-            }
-        }
-
-        private void PluginsListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (PluginsListBox.SelectedItem is IReportImporter plugin)
-            {
-                Log($"Plugin selezionato: {plugin.Name} (v{plugin.Version}) - Estensione supportata: {plugin.SupportedFileExtension}");
-            }
-        }
-
         private void Log(string message)
         {
             var ts = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
@@ -271,191 +124,10 @@ namespace RRDA.RepImp
             }, DispatcherPriority.Background);
         }
 
-        private void ClearLog_Click(object? sender, RoutedEventArgs e)
-        {
-            // Cancella i messaggi di log
-            LogTextBox.Clear();
-        }
-
-        private void SaveLog_Click(object? sender, RoutedEventArgs e)
-        {
-            try
-            {
-                var dlg = new SaveFileDialog
-                {
-                    Title = "Salva log",
-                    Filter = "Log files (*.log)|*.log|Text files (*.txt)|*.txt|All files (*.*)|*.*",
-                    DefaultExt = ".log",
-                    FileName = $"RRDA_log_{DateTime.Now:yyyyMMdd_HHmmss}.log",
-                    OverwritePrompt = true
-                };
-
-                var result = dlg.ShowDialog();
-                if (result == true && !string.IsNullOrWhiteSpace(dlg.FileName))
-                {
-                    // Salviamo lo stato corrente del log (per non includere eventuali messaggi successivi)
-                    var content = LogTextBox.Text ?? string.Empty;
-                    File.WriteAllText(dlg.FileName, content, Encoding.UTF8);
-                    Log($"Log salvato in '{dlg.FileName}'");
-                }
-            }
-            catch (Exception ex)
-            {
-                Log($"Errore salvataggio log: {ex.Message}");
-                MessageBox.Show(this, $"Impossibile salvare il file di log:{Environment.NewLine}{ex.Message}", "Errore salvataggio", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        private void SelectRootFolder_Click(object? sender, RoutedEventArgs e)
-        {
-            try
-            {
-                var dlg = new OpenFolderDialog
-                {
-                    FolderName = _reportsRoot,
-                    Title = "Seleziona cartella radice dei report"
-                };
-
-
-                var res = dlg.ShowDialog();
-                
-                if (res == true && !string.IsNullOrWhiteSpace(dlg.FolderName))
-                {
-                    // Aggiorna la impostazione __Properties.Settings.Default.ReportsFolder__ e la salva
-                    Properties.Settings.Default.ReportsFolder = dlg.FolderName;
-                    Properties.Settings.Default.Save();
-
-                    // Aggiorna la variabile locale e ricarica l'elenco cartelle
-                    _reportsRoot = dlg.FolderName;
-                    LoadFolders();
-
-                    Log($"Cartella radice impostata su '{_reportsRoot}' e salvata nelle impostazioni.");
-                }
-            }
-            catch (Exception ex)
-            {
-                Log($"Errore selezione cartella radice: {ex.Message}");
-                MessageBox.Show(this, $"Impossibile selezionare la cartella radice:{Environment.NewLine}{ex.Message}", "Errore", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        private async void File_Delete_Click(object? sender, RoutedEventArgs e)
-        {
-            if (FilesListView.SelectedItem is FileItem fi)
-            {
-                var res = MessageBox.Show(this,
-                    $"Confermi cancellazione del file '{fi.Name}'?",
-                    "Conferma cancellazione",
-                    MessageBoxButton.YesNo,
-                    MessageBoxImage.Question);
-
-                if (res == MessageBoxResult.Yes)
-                {
-                    try
-                    {
-                        if (File.Exists(fi.FullPath))
-                        {
-                            File.Delete(fi.FullPath);
-                            Log($"File cancellato: {fi.FullPath}");
-                        }
-                        else
-                        {
-                            Log($"File non trovato: {fi.FullPath}");
-                        }
-
-                        var folder = Path.GetDirectoryName(fi.FullPath) ?? _reportsRoot;
-                        await LoadFiles(folder);
-                    }
-                    catch (Exception ex)
-                    {
-                        Log($"Errore cancellazione file '{fi.FullPath}': {ex.Message}");
-                        MessageBox.Show(this, $"Impossibile cancellare il file:{Environment.NewLine}{ex.Message}", "Errore cancellazione", MessageBoxButton.OK, MessageBoxImage.Error);
-                    }
-                }
-            }
-            else
-            {
-                MessageBox.Show(this, "Seleziona un file da cancellare.", "Nessun file selezionato", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-        }
-
-        private async void File_Import_Click(object? sender, RoutedEventArgs e)
-        {
-            var selectedItems = FilesListView.SelectedItems?.OfType<FileItem>().ToList();
-
-            if (selectedItems == null || selectedItems.Count == 0)
-            {
-                MessageBox.Show(this, "Seleziona almeno un file da importare.", "Nessun file selezionato", MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
-            }
-
-            using var cts = new CancellationTokenSource();
-            var progressDlg = new ImportProgressDialog(cts) { Owner = this };
-            progressDlg.Show();
-
-            int successCount = 0;
-            int failCount = 0;
-            string user = Environment.UserName;
-
-            try
-            {
-                int i = 0;
-
-                // Importiamo i file selezionati in sequenza (evita concorrenza su risorse condivise)
-                foreach (var fi in selectedItems)
-                {
-                    if (cts.IsCancellationRequested)
-                    {
-                        Log("Importazione annullata dall'utente.");
-                        break;
-                    }
-
-                    // Aggiorna la progress bar esterna (file i+1 di N)
-                    progressDlg.SetFileProgress(++i, selectedItems.Count, fi.Name);
-
-                    Log($"Avvio import per file selezionato: {fi.Name}");
-
-                    try
-                    {
-                        bool ok = await ImportReport(fi, user, progressDlg, cts.Token);
-
-                        if (ok)
-                        {
-                            successCount++;
-                        }
-                        else
-                        {
-                            failCount++;
-                        
-                            Log($"Import non completato per '{fi.Name}'.");
-                        }
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        Log("Importazione annullata dall'utente.");
-                        failCount++;
-                        break;
-                    }
-                    catch (Exception ex)
-                    {
-                        failCount++;
-
-                        Log($"Eccezione durante import di '{fi.Name}': {ex.Message}");
-                    }
-                }
-            }
-            finally
-            {
-                progressDlg.Close();
-            }
-
-            Log($"Import multiplo completato. Successi: {successCount}, Falliti: {failCount}.");
-        }
-
         private async Task<bool> ImportReport(FileItem fi,
-                                              string? user = null,
-                                              ImportProgressDialog? progressDlg = null,
-                                              CancellationToken ct = default)
+                                      string? user = null,
+                                      ImportProgressDialog? progressDlg = null,
+                                      CancellationToken ct = default)
         {
             if (string.IsNullOrWhiteSpace(fi.Tipo))
             {
@@ -653,6 +325,494 @@ namespace RRDA.RepImp
 
             return true;
         }
+
+        /*
+        private async Task LoadFiles(string folderPath)
+        {
+            try
+            {
+                if (!Directory.Exists(folderPath))
+                {
+                    FilesListView.ItemsSource = null;
+                    Log($"Cartella non trovata: {folderPath}");
+                    return;
+                }
+
+                // Legge la profondità massima di ricorsione dalle impostazioni (0 = solo cartella corrente)
+                int maxDepth = Properties.Settings.Default.RecurseDepth;
+                if (maxDepth < 0) maxDepth = 0;
+
+                // Colleziona tutti i file *.xlsx visitando le sottocartelle fino a maxDepth
+                var fileInfos = new List<FileInfo>();
+
+                var stack = new Stack<(string Path, int Depth)>();
+                stack.Push((folderPath, 0));
+
+                while (stack.Count > 0)
+                {
+                    var (currentPath, depth) = stack.Pop();
+
+                    try
+                    {
+                        var dirInfo = new DirectoryInfo(currentPath);
+
+                        // Aggiungi file della cartella corrente
+                        FileInfo[] fis;
+                        try
+                        {
+                            fis = dirInfo.GetFiles("*.xlsx");
+                        }
+                        catch (Exception ex)
+                        {
+                            Log($"Impossibile enumerare i file in '{currentPath}': {ex.Message}");
+                            fis = [];
+                        }
+
+                        fileInfos.AddRange(fis);
+
+                        // Se non abbiamo raggiunto la profondità massima, enqueue delle sottocartelle
+                        if (depth < maxDepth)
+                        {
+                            DirectoryInfo[] subdirs;
+                            try
+                            {
+                                subdirs = dirInfo.GetDirectories();
+                            }
+                            catch (Exception ex)
+                            {
+                                Log($"Impossibile enumerare le sottocartelle in '{currentPath}': {ex.Message}");
+                                subdirs = [];
+                            }
+
+                            foreach (var sd in subdirs)
+                            {
+                                stack.Push((sd.FullName, depth + 1));
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        // Non interrompere l'elenco per una cartella non accessibile
+                        Log($"Errore accesso cartella '{currentPath}': {ex.Message}");
+                    }
+                }
+
+                // Ordina i file per nome
+                fileInfos = [.. fileInfos.OrderBy(f => f.Name)];
+
+                var fileItems = new List<FileItem>(fileInfos.Count);
+
+                foreach (var fi in fileInfos)
+                {
+                    string tipo = string.Empty;
+
+                    // Verifica applicabilità con i plugin caricati
+                    foreach (var plugin in _plugins)
+                    {
+                        try
+                        {
+                            var can = await plugin.CanImportAsync(fi.Name);
+                            if (can)
+                            {
+                                tipo = plugin.Name;
+                                break;
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            // Non fermare l'elaborazione dei file per un plugin malfunzionante
+                            Log($"Errore CanImportAsync plugin '{plugin.Name}' per file '{fi.Name}': {ex.Message}");
+                        }
+                    }
+
+                    fileItems.Add(new FileItem(fi.Name, fi.Length, fi.LastWriteTime, tipo, fi.FullName));
+                }
+
+                FilesListView.ItemsSource = fileItems;
+                Log($"Caricati {fileItems.Count} file *.xlsx da '{folderPath}' (profondità ricorsione={maxDepth}). Plugin applicabili trovati per {fileItems.Count(f => !string.IsNullOrEmpty(f.Tipo))} file.");
+            }
+            catch (Exception ex)
+            {
+                FilesListView.ItemsSource = null;
+                Log($"Errore caricamento file da '{folderPath}': {ex.Message}");
+            }
+        }
+        */
+
+        private async Task LoadFiles(string folderPath)
+        {
+            try
+            {
+                if (!Directory.Exists(folderPath))
+                {
+                    FilesListView.ItemsSource = null;
+                    Log($"Cartella non trovata: {folderPath}");
+                    return;
+                }
+
+                int maxDepth = Properties.Settings.Default.RecurseDepth;
+                if (maxDepth < 0) maxDepth = 0;
+
+                using var cts = new CancellationTokenSource();
+                var scanDlg = new ScanProgressDialog(cts) { Owner = this };
+                scanDlg.Show();
+
+                List<FileItem> fileItems;
+
+                try
+                {
+                    fileItems = await Task.Run(async () =>
+                    {
+                        var ct = cts.Token;
+
+                        // ── FASE 1: scansione filesystem ──────────────────────────────
+                        Dispatcher.Invoke(() =>
+                            scanDlg.SetPhase("Scansione cartelle in corso...", indeterminate: true));
+
+                        var fileInfos = new List<FileInfo>();
+                        var stack = new Stack<(string Path, int Depth)>();
+                        stack.Push((folderPath, 0));
+
+                        while (stack.Count > 0)
+                        {
+                            ct.ThrowIfCancellationRequested();
+
+                            var (currentPath, depth) = stack.Pop();
+
+                            try
+                            {
+                                var dirInfo = new DirectoryInfo(currentPath);
+
+                                Dispatcher.Invoke(() =>
+                                    scanDlg.SetDetail(currentPath));
+
+                                FileInfo[] fis;
+                                try { fis = dirInfo.GetFiles("*.xlsx"); }
+                                catch (Exception ex)
+                                {
+                                    Dispatcher.Invoke(() => Log(
+                                        $"Impossibile enumerare i file in '{currentPath}': {ex.Message}"));
+                                    fis = [];
+                                }
+
+                                fileInfos.AddRange(fis);
+
+                                if (depth < maxDepth)
+                                {
+                                    DirectoryInfo[] subdirs;
+                                    try { subdirs = dirInfo.GetDirectories(); }
+                                    catch (Exception ex)
+                                    {
+                                        Dispatcher.Invoke(() => Log(
+                                            $"Impossibile enumerare le sottocartelle in '{currentPath}': {ex.Message}"));
+                                        subdirs = [];
+                                    }
+
+                                    foreach (var sd in subdirs)
+                                        stack.Push((sd.FullName, depth + 1));
+                                }
+                            }
+                            catch (OperationCanceledException) { throw; }
+                            catch (Exception ex)
+                            {
+                                Dispatcher.Invoke(() => Log(
+                                    $"Errore accesso cartella '{currentPath}': {ex.Message}"));
+                            }
+                        }
+
+                        fileInfos = [.. fileInfos.OrderBy(f => f.Name)];
+
+                        // ── FASE 2: catalogazione plugin ──────────────────────────────
+                        Dispatcher.Invoke(() =>
+                            scanDlg.SetPhase(
+                                "Catalogazione file in corso...",
+                                indeterminate: false,
+                                max: fileInfos.Count > 0 ? fileInfos.Count : 1));
+
+                        var result = new List<FileItem>(fileInfos.Count);
+
+                        for (int i = 0; i < fileInfos.Count; i++)
+                        {
+                            ct.ThrowIfCancellationRequested();
+
+                            var fi = fileInfos[i];
+                            string tipo = string.Empty;
+
+                            // CanImportAsync è veloce (solo string match), ma lo invochiamo
+                            // sul thread del pool per non tornare sulla UI a ogni file.
+                            // Se un plugin futuro usasse fileStream, dovrebbe essere awaited
+                            // sul thread UI — per ora è fire-and-forget-safe.
+                            foreach (var plugin in _plugins)
+                            {
+                                try
+                                {
+                                    // CanImportAsync non usa fileStream né configXml qui
+                                    var can = await plugin.CanImportAsync(fi.Name);
+                                    if (can) { tipo = plugin.Name; break; }
+                                }
+                                catch (Exception ex)
+                                {
+                                    Dispatcher.Invoke(() => Log(
+                                        $"Errore CanImportAsync plugin '{plugin.Name}' per file '{fi.Name}': {ex.Message}"));
+                                }
+                            }
+
+                            result.Add(new FileItem(fi.Name, fi.Length, fi.LastWriteTime, tipo, fi.FullName));
+
+                            // Aggiorna UI ogni 10 file (o all'ultimo) per non saturare il Dispatcher
+                            if (i % 10 == 0 || i == fileInfos.Count - 1)
+                            {
+                                int captured = i;
+                                string capturedName = fi.Name;
+                                Dispatcher.Invoke(() =>
+                                    scanDlg.SetProgress(
+                                        captured + 1,
+                                        $"({captured + 1}/{fileInfos.Count}) {capturedName}"));
+                            }
+                        }
+
+                        return result;
+
+                    }, cts.Token);
+                }
+                catch (OperationCanceledException)
+                {
+                    Log("Scansione annullata dall'utente.");
+                    FilesListView.ItemsSource = null;
+                    return;
+                }
+                finally
+                {
+                    scanDlg.Close();
+                }
+
+                FilesListView.ItemsSource = fileItems;
+                Log($"Caricati {fileItems.Count} file *.xlsx da '{folderPath}' " +
+                    $"(profondità ricorsione={maxDepth}). " +
+                    $"Plugin applicabili trovati per {fileItems.Count(f => !string.IsNullOrEmpty(f.Tipo))} file.");
+            }
+            catch (Exception ex)
+            {
+                FilesListView.ItemsSource = null;
+                Log($"Errore caricamento file da '{folderPath}': {ex.Message}");
+            }
+        }
+
+
+        private async void FoldersListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (FoldersListBox.SelectedItem is DirectoryInfo di)
+            {
+                await LoadFiles(di.FullName);
+                Log($"Selezionata cartella: {di.FullName}");
+            }
+            else
+            {
+                FilesListView.ItemsSource = null;
+            }
+        }
+
+        private void FilesListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (FilesListView.SelectedItem is FileItem fi)
+            {
+                Log($"File selezionato: {fi.Name} ({fi.Length} byte) - Tipo: {fi.Tipo}");
+            }
+            else if (FilesListView.SelectedItem is FileInfo ffi)
+            {
+                Log($"File selezionato: {ffi.Name} ({ffi.Length} byte)");
+            }
+        }
+
+        private void PluginsListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (PluginsListBox.SelectedItem is IReportImporter plugin)
+            {
+                Log($"Plugin selezionato: {plugin.Name} (v{plugin.Version}) - Estensione supportata: {plugin.SupportedFileExtension}");
+            }
+        }
+
+        private void ClearLog_Click(object? sender, RoutedEventArgs e)
+        {
+            // Cancella i messaggi di log
+            LogTextBox.Clear();
+        }
+
+        private void SaveLog_Click(object? sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var dlg = new SaveFileDialog
+                {
+                    Title = "Salva log",
+                    Filter = "Log files (*.log)|*.log|Text files (*.txt)|*.txt|All files (*.*)|*.*",
+                    DefaultExt = ".log",
+                    FileName = $"RRDA_log_{DateTime.Now:yyyyMMdd_HHmmss}.log",
+                    OverwritePrompt = true
+                };
+
+                var result = dlg.ShowDialog();
+                if (result == true && !string.IsNullOrWhiteSpace(dlg.FileName))
+                {
+                    // Salviamo lo stato corrente del log (per non includere eventuali messaggi successivi)
+                    var content = LogTextBox.Text ?? string.Empty;
+                    File.WriteAllText(dlg.FileName, content, Encoding.UTF8);
+                    Log($"Log salvato in '{dlg.FileName}'");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"Errore salvataggio log: {ex.Message}");
+                MessageBox.Show(this, $"Impossibile salvare il file di log:{Environment.NewLine}{ex.Message}", "Errore salvataggio", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void SelectRootFolder_Click(object? sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var dlg = new OpenFolderDialog
+                {
+                    FolderName = _reportsRoot,
+                    Title = "Seleziona cartella radice dei report"
+                };
+
+
+                var res = dlg.ShowDialog();
+                
+                if (res == true && !string.IsNullOrWhiteSpace(dlg.FolderName))
+                {
+                    // Aggiorna la impostazione __Properties.Settings.Default.ReportsFolder__ e la salva
+                    Properties.Settings.Default.ReportsFolder = dlg.FolderName;
+                    Properties.Settings.Default.Save();
+
+                    // Aggiorna la variabile locale e ricarica l'elenco cartelle
+                    _reportsRoot = dlg.FolderName;
+                    LoadFolders();
+
+                    Log($"Cartella radice impostata su '{_reportsRoot}' e salvata nelle impostazioni.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"Errore selezione cartella radice: {ex.Message}");
+                MessageBox.Show(this, $"Impossibile selezionare la cartella radice:{Environment.NewLine}{ex.Message}", "Errore", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private async void File_Delete_Click(object? sender, RoutedEventArgs e)
+        {
+            if (FilesListView.SelectedItem is FileItem fi)
+            {
+                var res = MessageBox.Show(this,
+                    $"Confermi cancellazione del file '{fi.Name}'?",
+                    "Conferma cancellazione",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Question);
+
+                if (res == MessageBoxResult.Yes)
+                {
+                    try
+                    {
+                        if (File.Exists(fi.FullPath))
+                        {
+                            File.Delete(fi.FullPath);
+                            Log($"File cancellato: {fi.FullPath}");
+                        }
+                        else
+                        {
+                            Log($"File non trovato: {fi.FullPath}");
+                        }
+
+                        var folder = Path.GetDirectoryName(fi.FullPath) ?? _reportsRoot;
+                        await LoadFiles(folder);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log($"Errore cancellazione file '{fi.FullPath}': {ex.Message}");
+                        MessageBox.Show(this, $"Impossibile cancellare il file:{Environment.NewLine}{ex.Message}", "Errore cancellazione", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                }
+            }
+            else
+            {
+                MessageBox.Show(this, "Seleziona un file da cancellare.", "Nessun file selezionato", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
+
+        private async void File_Import_Click(object? sender, RoutedEventArgs e)
+        {
+            var selectedItems = FilesListView.SelectedItems?.OfType<FileItem>().ToList();
+
+            if (selectedItems == null || selectedItems.Count == 0)
+            {
+                MessageBox.Show(this, "Seleziona almeno un file da importare.", "Nessun file selezionato", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            using var cts = new CancellationTokenSource();
+            var progressDlg = new ImportProgressDialog(cts) { Owner = this };
+            progressDlg.Show();
+
+            int successCount = 0;
+            int failCount = 0;
+            string user = Environment.UserName;
+
+            try
+            {
+                int i = 0;
+
+                // Importiamo i file selezionati in sequenza (evita concorrenza su risorse condivise)
+                foreach (var fi in selectedItems)
+                {
+                    if (cts.IsCancellationRequested)
+                    {
+                        Log("Importazione annullata dall'utente.");
+                        break;
+                    }
+
+                    // Aggiorna la progress bar esterna (file i+1 di N)
+                    progressDlg.SetFileProgress(++i, selectedItems.Count, fi.Name);
+
+                    Log($"Avvio import per file selezionato: {fi.Name}");
+
+                    try
+                    {
+                        bool ok = await ImportReport(fi, user, progressDlg, cts.Token);
+
+                        if (ok)
+                        {
+                            successCount++;
+                        }
+                        else
+                        {
+                            failCount++;
+                        
+                            Log($"Import non completato per '{fi.Name}'.");
+                        }
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        Log("Importazione annullata dall'utente.");
+                        failCount++;
+                        break;
+                    }
+                    catch (Exception ex)
+                    {
+                        failCount++;
+
+                        Log($"Eccezione durante import di '{fi.Name}': {ex.Message}");
+                    }
+                }
+            }
+            finally
+            {
+                progressDlg.Close();
+            }
+
+            Log($"Import multiplo completato. Successi: {successCount}, Falliti: {failCount}.");
+        }
+
 
         private void File_ExportValidator_Click(object? sender, RoutedEventArgs e)
         {

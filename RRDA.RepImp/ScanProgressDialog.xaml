@@ -1,0 +1,52 @@
+﻿<Window x:Class="RRDA.RepImp.ScanProgressDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Scansione in corso..."
+        Width="480" Height="200"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False">
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <!-- Label fase -->
+            <RowDefinition Height="Auto"/>
+            <!-- ProgressBar principale -->
+            <RowDefinition Height="12"/>
+            <!-- Spaziatura -->
+            <RowDefinition Height="Auto"/>
+            <!-- Label dettaglio -->
+            <RowDefinition Height="*"/>
+            <!-- Spaziatura elastica -->
+            <RowDefinition Height="Auto"/>
+            <!-- Pulsante Annulla -->
+        </Grid.RowDefinitions>
+
+        <TextBlock x:Name="PhaseLabelText"
+                   Grid.Row="0"
+                   Text="Inizializzazione..."
+                   FontWeight="SemiBold"
+                   Margin="0,0,0,6"/>
+
+        <ProgressBar x:Name="MainProgressBar"
+                     Grid.Row="1"
+                     Height="18"
+                     Minimum="0" Maximum="100" Value="0"
+                     IsIndeterminate="True"/>
+
+        <TextBlock x:Name="DetailLabelText"
+                   Grid.Row="3"
+                   Text=""
+                   Foreground="Gray"
+                   FontSize="11"
+                   TextTrimming="CharacterEllipsis"
+                   Margin="0,0,0,4"/>
+
+        <Button x:Name="CancelButton"
+                Grid.Row="5"
+                Content="Annulla"
+                Width="90"
+                HorizontalAlignment="Right"
+                Click="CancelButton_Click"/>
+    </Grid>
+</Window>
