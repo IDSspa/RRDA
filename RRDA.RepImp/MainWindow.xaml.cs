@@ -125,9 +125,10 @@ namespace RRDA.RepImp
         }
 
         private async Task<bool> ImportReport(FileItem fi,
-                                      string? user = null,
-                                      ImportProgressDialog? progressDlg = null,
-                                      CancellationToken ct = default)
+                                              string? user = null,
+                                              ImportProgressDialog? progressDlg = null,
+                                              CancellationToken ct = default,
+                                              int? batchId = null)
         {
             if (string.IsNullOrWhiteSpace(fi.Tipo))
             {
@@ -267,10 +268,10 @@ namespace RRDA.RepImp
                 // ==========================
                 try
                 {
-                    // Cast sicuro: IReportImporter deve restituire ImportResult per contratto
-                    if (resultObj is ImportResult importResult && importResult.Entities != null && importResult.Entities.Any())
+                    if (resultObj is ImportResult importResult
+                        && importResult.Entities != null
+                        && importResult.Entities.Any())
                     {
-                        // Creazione del DbContext: preferisci la connection string dalle impostazioni; altrimenti fallback alla RRDAContextFactory
                         RRDADbContext? db = null;
                         var connStr = Properties.Settings.Default.ConnectionString;
 
@@ -284,17 +285,66 @@ namespace RRDA.RepImp
                             }
                             else
                             {
-                                // fallback alla factory design-time che contiene una connection string di default
                                 db = new RRDAContextFactory().CreateDbContext([]);
                                 Log("ConnectionString non impostata; usata la connection string della RRDAContextFactory come fallback.");
                             }
 
                             await using (db)
                             {
-                                var (reportFileId, entitiesSaved, propertiesSaved) =
-                                    await ImportResultRepository.SaveAsync(fi.Name, fi.FullPath, importResult, db, Log, user);
+                                // -------------------------------------------------------
+                                // Controllo duplicato: verifica se il file è già in DB
+                                // prima di aprire il dialog, per non disturbarlo se il
+                                // file è nuovo.
+                                // -------------------------------------------------------
+                                var duplicateStrategy = DuplicateImportStrategy.NewVersion;
 
-                                Log($"Persistenza completata: ReportFileId={reportFileId}, Entities={entitiesSaved}, Properties={propertiesSaved}.");
+                                int existing = await ImportResultRepository.CountExistingAsync(
+                                    fi.FullPath, importResult.ReportTypeKey, db);
+
+                                if (existing > 0)
+                                {
+                                    // Apriamo il dialog sul thread UI (siamo già su di esso
+                                    // perché ImportReport è chiamato da un async void handler).
+                                    var dupDlg = new DuplicateImportDialog(fi.Name, existing)
+                                    {
+                                        Owner = this
+                                    };
+
+                                    var dlgResult = dupDlg.ShowDialog();
+
+                                    if (dlgResult != true || !dupDlg.Confirmed)
+                                    {
+                                        // L'utente ha chiuso o annullato il dialog:
+                                        // saltiamo la persistenza per questo file.
+                                        Log($"Persistenza annullata dall'utente per '{fi.Name}'.");
+                                        return true; // l'import è riuscito, solo la save è stata saltata
+                                    }
+
+                                    duplicateStrategy = dupDlg.SelectedStrategy;
+                                    Log($"Strategia duplicato scelta per '{fi.Name}': {duplicateStrategy}.");
+                                }
+
+                                // -------------------------------------------------------
+                                // Persistenza con la strategia selezionata
+                                // -------------------------------------------------------
+                                try
+                                {
+                                    var (reportFileId, entitiesSaved, propertiesSaved) =
+                                        await ImportResultRepository.SaveAsync(
+                                            fi.Name, fi.FullPath, importResult, db,
+                                            Log, user,
+                                            batchId,
+                                            duplicateStrategy);
+
+                                    Log($"Persistenza completata: ReportFileId={reportFileId}, " +
+                                        $"Entities={entitiesSaved}, Properties={propertiesSaved}" +
+                                        (batchId.HasValue ? $", BatchId={batchId.Value}." : "."));
+                                }
+                                catch (DuplicateImportException die)
+                                {
+                                    // Caso Block: non è un errore tecnico, è una scelta dell'utente.
+                                    Log($"Import bloccato per '{fi.Name}': {die.Message}");
+                                }
                             }
                         }
                         catch (Exception ex)
@@ -750,6 +800,60 @@ namespace RRDA.RepImp
                 return;
             }
 
+            // ----------------------------------------------------------
+            // Selezione batch: apriamo il dialog PRIMA di avviare l'import.
+            // Il DB viene aperto qui solo per caricare i batch; viene subito
+            // chiuso alla fine del blocco using per non tenere la connessione
+            // aperta durante l'intero ciclo di import.
+            // ----------------------------------------------------------
+            int? selectedBatchId = null;
+
+            try
+            {
+                var connStr = Properties.Settings.Default.ConnectionString;
+                RRDADbContext dbForBatches;
+
+                if (!string.IsNullOrWhiteSpace(connStr))
+                {
+                    var opt = new DbContextOptionsBuilder<RRDADbContext>();
+                    opt.UseSqlServer(connStr);
+                    dbForBatches = new RRDADbContext(opt.Options);
+                }
+                else
+                {
+                    dbForBatches = new RRDAContextFactory().CreateDbContext([]);
+                }
+
+                await using (dbForBatches)
+                {
+                    var batchDlg = new BatchSelectionDialog { Owner = this };
+                    await batchDlg.LoadBatchesAsync(dbForBatches);
+
+                    var dlgResult = batchDlg.ShowDialog();
+
+                    // L'utente ha premuto Annulla (o chiuso la finestra): interrompiamo
+                    if (dlgResult != true || !batchDlg.Confirmed)
+                    {
+                        Log("Importazione annullata dall'utente (selezione batch).");
+                        return;
+                    }
+
+                    selectedBatchId = batchDlg.SelectedBatchId;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"Errore caricamento batch: {ex.Message}");
+                MessageBox.Show(this,
+                    $"Impossibile caricare i batch dal database:{Environment.NewLine}{ex.Message}",
+                    "Errore", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            Log(selectedBatchId.HasValue
+                ? $"Batch selezionato: Id={selectedBatchId.Value}."
+                : "Nessun batch selezionato: i file saranno importati senza associazione a un batch.");
+
             using var cts = new CancellationTokenSource();
             var progressDlg = new ImportProgressDialog(cts) { Owner = this };
             progressDlg.Show();
@@ -778,7 +882,7 @@ namespace RRDA.RepImp
 
                     try
                     {
-                        bool ok = await ImportReport(fi, user, progressDlg, cts.Token);
+                        bool ok = await ImportReport(fi, user, progressDlg, cts.Token, selectedBatchId);
 
                         if (ok)
                         {

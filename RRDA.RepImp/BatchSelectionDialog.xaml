@@ -1,0 +1,50 @@
+<Window x:Class="RRDA.RepImp.BatchSelectionDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Seleziona batch"
+        Width="460" Height="260"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False">
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>  <!-- Messaggio -->
+            <RowDefinition Height="8"/>     <!-- Spaziatura -->
+            <RowDefinition Height="*"/>     <!-- ListBox -->
+            <RowDefinition Height="8"/>     <!-- Spaziatura -->
+            <RowDefinition Height="Auto"/>  <!-- Bottoni -->
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0"
+                   Text="Seleziona il batch da associare ai file importati (opzionale):"
+                   TextWrapping="Wrap"/>
+
+        <ListBox x:Name="BatchListBox"
+                 Grid.Row="2"
+                 DisplayMemberPath="DisplayName"
+                 SelectionMode="Single"
+                 ScrollViewer.VerticalScrollBarVisibility="Auto"/>
+
+        <StackPanel Grid.Row="4"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right">
+            <Button x:Name="OkButton"
+                    Content="Conferma"
+                    Width="90"
+                    Margin="0,0,8,0"
+                    IsDefault="True"
+                    Click="OkButton_Click"/>
+            <Button x:Name="NoBatchButton"
+                    Content="Nessun batch"
+                    Width="100"
+                    Margin="0,0,8,0"
+                    ToolTip="Importa senza associare ad alcun batch"
+                    Click="NoBatchButton_Click"/>
+            <Button x:Name="CancelButton"
+                    Content="Annulla"
+                    Width="90"
+                    IsCancel="True"
+                    Click="CancelButton_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>

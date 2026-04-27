@@ -1,0 +1,83 @@
+<Window x:Class="RRDA.RepImp.DuplicateImportDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="File già importato"
+        Width="500" Height="300"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False">
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>  <!-- Icona + messaggio -->
+            <RowDefinition Height="12"/>
+            <RowDefinition Height="Auto"/>  <!-- RadioButton Block -->
+            <RowDefinition Height="8"/>
+            <RowDefinition Height="Auto"/>  <!-- RadioButton Replace -->
+            <RowDefinition Height="8"/>
+            <RowDefinition Height="Auto"/>  <!-- RadioButton NewVersion -->
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>  <!-- Bottoni -->
+        </Grid.RowDefinitions>
+
+        <!-- Messaggio -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" VerticalAlignment="Top">
+            <TextBlock Text="⚠" FontSize="22" Foreground="#E6A817" Margin="0,0,10,0"
+                       VerticalAlignment="Top"/>
+            <TextBlock x:Name="MessageText"
+                       TextWrapping="Wrap"
+                       VerticalAlignment="Center"
+                       MaxWidth="400"/>
+        </StackPanel>
+
+        <!-- Opzione 1: Blocco -->
+        <RadioButton x:Name="BlockRadio"
+                     Grid.Row="2"
+                     IsChecked="True"
+                     GroupName="Strategy">
+            <StackPanel>
+                <TextBlock Text="Blocca l'import" FontWeight="SemiBold"/>
+                <TextBlock Text="Non modifica i dati esistenti. L'import viene annullato."
+                           Foreground="Gray" FontSize="11" TextWrapping="Wrap"/>
+            </StackPanel>
+        </RadioButton>
+
+        <!-- Opzione 2: Sostituzione -->
+        <RadioButton x:Name="ReplaceRadio"
+                     Grid.Row="4"
+                     GroupName="Strategy">
+            <StackPanel>
+                <TextBlock Text="Sostituisci" FontWeight="SemiBold"/>
+                <TextBlock Text="Elimina il record esistente e tutti i suoi dati, poi inserisce il nuovo import. Il vecchio Id non viene preservato."
+                           Foreground="Gray" FontSize="11" TextWrapping="Wrap"/>
+            </StackPanel>
+        </RadioButton>
+
+        <!-- Opzione 3: Nuova versione -->
+        <RadioButton x:Name="NewVersionRadio"
+                     Grid.Row="6"
+                     GroupName="Strategy">
+            <StackPanel>
+                <TextBlock Text="Mantieni come nuova versione" FontWeight="SemiBold"/>
+                <TextBlock Text="Affianca il nuovo import a quello esistente, conservando la storia completa."
+                           Foreground="Gray" FontSize="11" TextWrapping="Wrap"/>
+            </StackPanel>
+        </RadioButton>
+
+        <!-- Bottoni -->
+        <StackPanel Grid.Row="8"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right">
+            <Button x:Name="OkButton"
+                    Content="Conferma"
+                    Width="90"
+                    Margin="0,0,8,0"
+                    IsDefault="True"
+                    Click="OkButton_Click"/>
+            <Button x:Name="CancelButton"
+                    Content="Annulla"
+                    Width="90"
+                    IsCancel="True"
+                    Click="CancelButton_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>

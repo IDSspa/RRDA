@@ -1,4 +1,4 @@
-using DocumentFormat.OpenXml.Packaging;
+﻿using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Spreadsheet;
 using System.Globalization;
 using System.Xml.Linq;
@@ -10,7 +10,33 @@ namespace RRDA.Core.Validator
     /// a partire dai DefinedNames presenti in un .xlsx.
     /// </summary>
     public static class ValidationFileCreator
-    {
+    { 
+        /// <summary>
+        /// Prefissi riservati da Excel: qualsiasi DefinedName che inizia con uno di
+        /// questi valori viene scartato perché non ha significato nel dominio RRDA.
+        /// Il prefisso canonico è "_xlnm." (Print_Area, Print_Titles,
+        /// Filter_Database, _FilterDatabase, Criteria, Extract, Database, ecc.).
+        /// </summary>
+        private static readonly string[] ExcludedPrefixes =
+        [
+            "_xlnm.",   // nomi riservati Excel moderni  (es. _xlnm.Print_Area)
+            "_xl.",     // variante abbreviata usata da alcuni provider
+        ];
+        /// <summary>
+        /// Nomi esatti da escludere che non seguono un prefisso noto ma restano
+        /// non rilevanti per l'applicazione. Case-insensitive.
+        /// Estendere questa lista se si individuano altri nomi tecnici da scartare.
+        /// </summary>
+        private static readonly HashSet<string> ExcludedNames =
+            new(StringComparer.OrdinalIgnoreCase)
+            {
+                // nomi legacy usati da Excel 97-2003 senza prefisso _xlnm
+                "Print_Area",
+                "Print_Titles",
+                "Filter_Database",
+                "_FilterDatabase",
+            };
+        // ─────────────────────────────────────────────────────────────────────────
         /// <summary>
         /// Crea il file di validazione su disco.
         /// </summary>
@@ -27,10 +53,9 @@ namespace RRDA.Core.Validator
             using var outFs = File.Create(outputXmlPath);
             CreateFromStream(inFs, outFs, failOnError, culture);
         }
-
         /// <summary>
         /// Crea il file di validazione scrivendo l'XML su uno stream di output.
-        /// Lo stream di input pu� essere non seekable (viene gestito internamente).
+        /// Lo stream di input può essere non seekable (viene gestito internamente).
         /// </summary>
         /// <param name="xlsxStream">Stream di input .xlsx (non chiuso dalla routine).</param>
         /// <param name="outputXmlStream">Stream di output per l'XML (non chiuso dalla routine).</param>
@@ -56,14 +81,25 @@ namespace RRDA.Core.Validator
             {
                 using var doc = SpreadsheetDocument.Open(input, false);
                 var wb = doc.WorkbookPart?.Workbook;
-                var definedNames = wb?.DefinedNames?.Elements<DefinedName>().ToList()
-                                   ?? Enumerable.Empty<DefinedName>().ToList();
-                var sheets = wb?.Sheets?.Elements<Sheet>()?.ToList() ?? Enumerable.Empty<Sheet>().ToList();
+                var wbPart = doc.WorkbookPart ?? throw new InvalidOperationException("WorkbookPart non trovato nel file xlsx.");
+
+                // Tutti i DefinedNames del workbook, filtrati da quelli irrilevanti
+                var allDefinedNames = wb.DefinedNames?.Elements<DefinedName>().ToList()
+                                      ?? [];
+
+                var definedNames = allDefinedNames
+                    .Where(dn => IsRelevantDefinedName(dn.Name?.Value))
+                    .ToList();
+
+                var sheets = wb?.Sheets?.Elements<Sheet>()?.ToList() ?? [];
 
                 // root conforme a ValidationConfig.xsd
                 var root = new XElement("ValidationConfig");
                 root.SetAttributeValue("failOnError", failOnError.ToString().ToLowerInvariant());
                 root.SetAttributeValue("culture", (culture ?? CultureInfo.CurrentCulture.Name));
+
+                // Indice sheetName → WorksheetPart (riuso stesso pattern di OpenXmlExcelReader)
+                var sheetIndex = BuildSheetIndex(wb!, wbPart);
 
                 // Sheets (minOccurs=0) -> aggiungiamo se ci sono sheets
                 if (sheets.Count > 0)
@@ -104,18 +140,21 @@ namespace RRDA.Core.Validator
                 foreach (var dn in definedNames)
                 {
                     var dnName = dn.Name ?? string.Empty;
+                    var inferredType = InferTypeForDefinedName(dn, sheetIndex,
+                                       wbPart.SharedStringTablePart?.SharedStringTable,
+                                       wbPart);
                     var fieldEl = new XElement("Field",
                         new XAttribute("definedName", dnName),
                         new XAttribute("required", "false"),
-                        new XAttribute("type", "string")
+                        new XAttribute("type", inferredType)
                     );
                     fieldsEl.Add(fieldEl);
                 }
                 // anche se non ci sono defined names, Fields deve esistere (XSD non lo rende opzionale)
                 root.Add(fieldsEl);
 
-                // RowRules (minOccurs=0) -> non popoliamo regole, ma l'elemento � opzionale.
-                // Se si desidera, si pu� aggiungere un placeholder vuoto; lasciamo assente per pulizia.
+                // RowRules (minOccurs=0) -> non popoliamo regole, ma l'elemento è opzionale.
+                // Se si desidera, si può aggiungere un placeholder vuoto; lasciamo assente per pulizia.
                 // root.Add(new XElement("RowRules"));
 
                 // CustomValidators (minOccurs=0) -> non aggiungiamo nulla qui.
@@ -129,5 +168,121 @@ namespace RRDA.Core.Validator
                 buffer?.Dispose();
             }
         }
+        /// <summary>
+        /// Restituisce <c>false</c> per i DefinedNames riservati da Excel o comunque
+        /// non rilevanti per il dominio RRDA; <c>true</c> per tutti gli altri.
+        /// </summary>
+        private static bool IsRelevantDefinedName(string? name)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+                return false;
+
+            // Esclusione per prefisso (es. _xlnm.Print_Area, _xl.SomeInternalName)
+            foreach (var prefix in ExcludedPrefixes)
+            {
+                if (name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                    return false;
+            }
+
+            // Esclusione per nome esatto (nomi legacy senza prefisso noto)
+            if (ExcludedNames.Contains(name))
+                return false;
+
+            return true;
+        }
+        private static string InferTypeForDefinedName(DefinedName dn, Dictionary<string, WorksheetPart> sheetIndex, SharedStringTable? sharedStrings, WorkbookPart wbPart)
+        {
+            var cell = ResolveCellForDefinedName(dn, sheetIndex);
+            if (cell == null) return "string";
+
+            // 1. Bool
+            if (cell.DataType?.Value == CellValues.Boolean)
+                return "bool";
+
+            var raw = cell.CellValue?.InnerText ?? string.Empty;
+
+            // 2. DateTime (stile cella)
+            var styleIdx = (int)(cell.StyleIndex?.Value ?? 0);
+            if (IsDateStyleIndex(wbPart, styleIdx)
+                && double.TryParse(raw, NumberStyles.Any,
+                                   CultureInfo.InvariantCulture, out _))
+                return "datetime";
+
+            // SharedString → testo puro, non può essere numerico
+            if (cell.DataType?.Value == CellValues.SharedString)
+                return "string";
+
+            // 3. Int
+            if (long.TryParse(raw, out _))
+                return "int";
+
+            // 4. Double
+            if (double.TryParse(raw, NumberStyles.Any,
+                                CultureInfo.InvariantCulture, out _))
+                return "double";
+
+            // 5. Fallback
+            return "string";
+        }
+        private static Cell? ResolveCellForDefinedName(DefinedName dn, Dictionary<string, WorksheetPart> sheetIndex)
+        {
+            var formula = dn.Text;
+            if (string.IsNullOrWhiteSpace(formula)) return null;
+
+            // Prende solo la prima cella del range (prima del ':')
+            var firstPart = formula.Split(':')[0].Trim();
+            var bangIdx = firstPart.LastIndexOf('!');
+            if (bangIdx < 0) return null;
+
+            var sheetName = firstPart[..bangIdx].Trim('\'');
+            var cellAddr = firstPart[(bangIdx + 1)..].Replace("$", "")
+                                                      .ToUpperInvariant();
+
+            if (!sheetIndex.TryGetValue(sheetName, out var wsPart))
+                return null;
+
+            return wsPart.Worksheet
+                         .Descendants<Cell>()
+                         .FirstOrDefault(c =>
+                             NormalizeCellRef(c.CellReference?.Value ?? "") == cellAddr);
+        }
+        private static Dictionary<string, WorksheetPart> BuildSheetIndex(Workbook workbook, WorkbookPart wbPart)
+        {
+            var index = new Dictionary<string, WorksheetPart>(StringComparer.OrdinalIgnoreCase);
+            foreach (Sheet sheet in workbook.Sheets?.Elements<Sheet>() ?? [])
+            {
+                if (sheet.Name is null || sheet.Id?.Value is null) continue;
+                if (wbPart.GetPartById(sheet.Id.Value) is WorksheetPart wsPart)
+                    index[sheet.Name.Value!] = wsPart;
+            }
+            return index;
+        }
+        private static bool IsDateStyleIndex(WorkbookPart wbPart, int styleIndex)
+        {
+            try
+            {
+                var xf = wbPart.WorkbookStylesPart?.Stylesheet
+                               ?.CellFormats?.Elements<CellFormat>()
+                               .ElementAtOrDefault(styleIndex);
+                if (xf == null) return false;
+
+                var numFmtId = (int)(xf.NumberFormatId?.Value ?? 0);
+                if ((numFmtId >= 14 && numFmtId <= 22) || (numFmtId >= 45 && numFmtId <= 47))
+                    return true;
+
+                if (numFmtId >= 164)
+                {
+                    var fmt = wbPart.WorkbookStylesPart?.Stylesheet?.NumberingFormats?
+                                   .Elements<NumberingFormat>()
+                                   .FirstOrDefault(n => n.NumberFormatId?.Value == (uint)numFmtId)
+                                   ?.FormatCode?.Value ?? "";
+                    return fmt.Contains('y') || fmt.Contains('d') || fmt.Contains('h');
+                }
+                return false;
+            }
+            catch { return false; }
+        }
+        private static string NormalizeCellRef(string r)
+            => r.Replace("$", "").ToUpperInvariant();
     }
 }

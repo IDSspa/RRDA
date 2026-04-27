@@ -13,17 +13,19 @@ namespace RRDA.Data
         /// Salva ImportResult nel database usando il DbContext EF Core fornito.
         /// Restituisce una tupla con (ReportFileId, EntitiesSaved, PropertiesSaved).
         /// </summary>
-        public static async Task<(int ReportFileId, int EntitiesSaved, int PropertiesSaved)> SaveAsync(
-            string fileName,
-            string fullPath,
-            ImportResult importResult,
-            RRDADbContext db,
-            Action<string>? logger = null,
-            string? user = null)
+        public static async Task<(int ReportFileId, int EntitiesSaved, int PropertiesSaved)> SaveAsync(string fileName,
+                                                                                                       string fullPath,
+                                                                                                       ImportResult importResult,
+                                                                                                       RRDADbContext db,
+                                                                                                       Action<string>? logger = null,
+                                                                                                       string? user = null,
+                                                                                                       int? batchId = null, DuplicateImportStrategy duplicateStrategy = DuplicateImportStrategy.NewVersion)
         {
             ArgumentNullException.ThrowIfNull(db);
             ArgumentNullException.ThrowIfNull(importResult);
-            if (string.IsNullOrWhiteSpace(fileName)) throw new ArgumentException("FileName non valido.", nameof(fileName));
+            
+            if (string.IsNullOrWhiteSpace(fileName)) 
+                throw new ArgumentException("FileName non valido.", nameof(fileName));
 
             // transazione EF
             await using var tran = await db.Database.BeginTransactionAsync();
@@ -34,7 +36,40 @@ namespace RRDA.Data
                 var reportType = await db.ReportTypes
                                          .AsTracking()
                                          .FirstOrDefaultAsync(rt => rt.Key == importResult.ReportTypeKey) ?? throw new InvalidOperationException($"ReportType con chiave '{importResult.ReportTypeKey}' non trovato in ReportTypes.");
-                
+
+                // -- Gestione duplicato --
+                var existingFiles = await db.ReportFiles
+                                            .Where(f =>
+                                                f.FullPath == fullPath &&
+                                                f.ReportTypeId == reportType.Id)
+                                            .ToListAsync();
+
+                if (existingFiles.Count > 0) {
+                    switch (duplicateStrategy)
+                    {
+                        case DuplicateImportStrategy.Block:
+                            // Interrompe senza toccare il DB; il chiamante intercetta
+                            // l'eccezione come segnale di import bloccato.
+                            throw new DuplicateImportException(fileName, existingFiles.Count);
+
+                        case DuplicateImportStrategy.Replace:
+                            // DELETE in cascata di tutti i ReportFile esistenti per questo
+                            // FullPath + ReportType. Il cascade su ReportEntities e
+                            // ReportProperties è configurato in OnModelCreating.
+                            db.ReportFiles.RemoveRange(existingFiles);
+                            await db.SaveChangesAsync();
+                            logger?.Invoke(
+                                $"[Data] Replace: eliminati {existingFiles.Count} ReportFile esistenti per '{fileName}'.");
+                            break;
+
+                        case DuplicateImportStrategy.NewVersion:
+                            // Nessuna azione: procede con l'insert affiancato.
+                            logger?.Invoke(
+                                $"[Data] NewVersion: mantenuti {existingFiles.Count} ReportFile esistenti per '{fileName}', aggiunto nuovo.");
+                            break;
+                    }
+                }
+
                 var reportFile = new ReportFile
                 {
                     FileName = fileName,
@@ -43,6 +78,7 @@ namespace RRDA.Data
                     ReportTypeId = reportType.Id,
                     ReportType = reportType,
                     ImportedBy = user,
+                    ReportBatchId = batchId,
                     Entities = []
                 };
 
@@ -98,6 +134,30 @@ namespace RRDA.Data
                 try { await tran.RollbackAsync(); } catch { }
                 throw;
             }
+        }
+
+        // ----------------------------------------------------------------
+        // Chiave naturale duplicato: stesso FullPath nello stesso ReportType.
+        // FullPath identifica univocamente il file su disco;
+        // ReportTypeId garantisce che due plugin diversi sullo stesso file
+        // fisico non si ostacolino a vicenda.
+        // ----------------------------------------------------------------
+
+        /// <summary>
+        /// Restituisce il numero di ReportFile già presenti in DB con lo stesso
+        /// FullPath e ReportTypeKey. Usato dal chiamante per decidere se aprire
+        /// il dialog di gestione duplicato prima di chiamare SaveAsync.
+        /// </summary>
+        public static async Task<int> CountExistingAsync(
+            string fullPath,
+            string reportTypeKey,
+            RRDADbContext db)
+        {
+            return await db.ReportFiles
+                           .AsNoTracking()
+                           .CountAsync(f =>
+                               f.FullPath == fullPath &&
+                               f.ReportType.Key == reportTypeKey);
         }
     }
 }
