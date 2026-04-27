@@ -5,11 +5,9 @@ namespace RRDA.Plugins.Common
 {
     public class PluginLoader
     {
-        public IEnumerable<IReportImporter> LoadPlugins(string pluginFolder)
+        public static IEnumerable<IReportImporter> LoadPlugins(string pluginFolder)
         {
             var dlls = Directory.GetFiles(pluginFolder, "RRDA.Plugins.*.dll");
-
-            //var imp = new List<BaseImporter>();
 
             var importers = new List<IReportImporter>();
 

@@ -5,72 +5,6 @@ namespace RRDA.Plugins.Common
 {
     public static class OpenXmlExcelReader
     {
-        public static IEnumerable<IDictionary<string, string>> ReadRows(Stream stream)
-        {
-            using var doc = SpreadsheetDocument.Open(stream, false);
-            var wbPart = doc.WorkbookPart!;
-            var sheet = wbPart.Workbook.Sheets!.Elements<Sheet>().First();
-            var wsPart = (WorksheetPart)wbPart.GetPartById(sheet.Id!);
-
-            var shared = wbPart.SharedStringTablePart?.SharedStringTable;
-            var rows = wsPart.Worksheet.Descendants<Row>().ToList();
-            if (rows.Count < 2) yield break;
-
-            var headers = ReadHeaders(rows[0], shared);
-
-            foreach (var row in rows.Skip(1))
-            {
-                var dict = new Dictionary<string, string>();
-
-                foreach (var cell in row.Elements<Cell>())
-                {
-                    var col = GetColumn(cell.CellReference!);
-                    if (!headers.TryGetValue(col, out var header)) continue;
-                    dict[header] = GetValue(cell, shared);
-                }
-
-                yield return dict;
-            }
-        }
-        // Overload che legge solo i fogli indicati nella configurazione
-        public static IEnumerable<IDictionary<string, string>> ReadRows(Stream stream, IEnumerable<Sheet> sheets)
-        {
-            using var doc = SpreadsheetDocument.Open(stream, false);
-            var wbPart = doc.WorkbookPart!;
-            var workbookSheets = wbPart.Workbook.Sheets!.Elements<Sheet>()
-                                   .Where(s => s.Name != null)
-                                   .ToDictionary(s => s.Name!.Value, s => s);
-
-            var shared = wbPart.SharedStringTablePart?.SharedStringTable;
-
-            foreach (var cfgSheet in sheets)
-            {
-                var cfgName = cfgSheet?.Name?.Value;
-                if (string.IsNullOrEmpty(cfgName)) continue;
-
-                if (!workbookSheets.TryGetValue(cfgName, out var workbookSheet)) continue;
-
-                var wsPart = (WorksheetPart)wbPart.GetPartById(workbookSheet.Id!);
-                var rows = wsPart.Worksheet.Descendants<Row>().ToList();
-                if (rows.Count < 2) continue;
-            
-                var headers = ReadHeaders(rows[0], shared);
-
-                foreach (var row in rows.Skip(1))
-                {
-                    var dict = new Dictionary<string, string>();
-
-                    foreach (var cell in row.Elements<Cell>())
-                    {
-                        var col = GetColumn(cell.CellReference!);
-                        if (!headers.TryGetValue(col, out var header)) continue;
-                        dict[header] = GetValue(cell, shared);
-                    }
-
-                    yield return dict;
-                }
-            }
-        }
         /// <summary>
         /// Legge il valore testuale di una singola cella identificata dal suo indirizzo (es: "B5").
         /// Gestisce SharedString, valori numerici, date e testo inline.
@@ -270,36 +204,6 @@ namespace RRDA.Plugins.Common
                 ? shared?.ElementAt(int.Parse(v)).InnerText ?? string.Empty
                 : v;
         }
-        public static string? ReadSingleValue(SpreadsheetDocument doc, string namedRange)
-        {
-            // Trova il defined name
-            var definedName = (doc.WorkbookPart.Workbook
-                .DefinedNames?
-                .Elements<DefinedName>()
-                .FirstOrDefault(d => d.Name == namedRange)) ?? throw new Exception($"NamedRange '{namedRange}' non trovato.");
-
-            // Esempio ref: "Report_01!$B$7"
-            var def = definedName.Text;
-            var parts = def.Split('!');
-
-            var sheetName = parts[0].Trim('\'');      // Rimuove eventuali apici
-            var cellRef = parts[1];
-
-            // Trova il foglio
-            var sheet = doc.WorkbookPart.Workbook.Descendants<Sheet>()
-                .FirstOrDefault(s => s.Name == sheetName) ?? throw new Exception($"Sheet '{sheetName}' non trovato.");
-            var wsPart = (WorksheetPart)doc.WorkbookPart.GetPartById(sheet.Id);
-            var ws = wsPart.Worksheet;
-
-            // Cerca la cella specifica
-            var cell = ws.Descendants<Cell>()
-                         .FirstOrDefault(c => c.CellReference == cellRef);
-
-            if (cell == null)
-                return null;
-
-            return ReadCellValue(doc, cell);
-        }
         public static string? ReadCellValue(SpreadsheetDocument doc, Cell cell)
         {
             if (cell == null)
@@ -318,9 +222,5 @@ namespace RRDA.Plugins.Common
         }
         public static string GetColumn(string reference)
             => new([.. reference.Where(char.IsLetter)]);
-        public static RangeData ReadRangeValues(SpreadsheetDocument doc, string text)
-        {
-            throw new NotImplementedException();
-        }
     }
 }

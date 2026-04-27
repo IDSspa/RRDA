@@ -20,7 +20,9 @@ namespace RRDA.Core.Validator
         private static readonly string[] ExcludedPrefixes =
         [
             "_xlnm.",   // nomi riservati Excel moderni  (es. _xlnm.Print_Area)
+            "__xlnm",   // variante con doppio underscore usata da alcuni provider (es. __xlnm.Print_Area)
             "_xl.",     // variante abbreviata usata da alcuni provider
+            "__xl.",    // variante abbreviata con doppio underscore
         ];
         /// <summary>
         /// Nomi esatti da escludere che non seguono un prefisso noto ma restano
@@ -36,7 +38,6 @@ namespace RRDA.Core.Validator
                 "Filter_Database",
                 "_FilterDatabase",
             };
-        // ─────────────────────────────────────────────────────────────────────────
         /// <summary>
         /// Crea il file di validazione su disco.
         /// </summary>

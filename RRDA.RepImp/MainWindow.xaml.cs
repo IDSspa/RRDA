@@ -3,13 +3,14 @@ using Microsoft.Win32;
 using RRDA.Core;
 using RRDA.Core.Validator;
 using RRDA.Data;
+using RRDA.Plugins.Common;
 using System.Data;
 using System.IO;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
-using RRDA.Plugins.Common;
+using System.Diagnostics;
 
 namespace RRDA.RepImp
 {
@@ -19,7 +20,6 @@ namespace RRDA.RepImp
     public partial class MainWindow : Window
     {
         private string _reportsRoot;
-        private readonly PluginLoader _pluginLoader = new();
         private List<IReportImporter> _plugins = [];
         private SplashScreenWindow? _aboutWindow;
 
@@ -35,19 +35,6 @@ namespace RRDA.RepImp
                 _reportsRoot = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Reports");
 
             Loaded += MainWindow_Loaded;
-        }
-
-        private void MainWindow_Loaded(object? sender, RoutedEventArgs e)
-        {
-            try
-            {
-                LoadFolders();
-                LoadPluginsFromSettings();
-            }
-            catch (Exception ex)
-            {
-                Log($"Errore inizializzazione: {ex.Message}");
-            }
         }
 
         private void LoadFolders()
@@ -78,7 +65,7 @@ namespace RRDA.RepImp
                 FoldersListBox.SelectedIndex = 0;
         }
 
-        private void LoadPluginsFromSettings()
+        private void LoadPlugins()
         {
             try
             {
@@ -98,7 +85,7 @@ namespace RRDA.RepImp
                     return;
                 }
 
-                var loaded = _pluginLoader.LoadPlugins(pluginsFolder)?.ToList() ?? [];
+                var loaded = PluginLoader.LoadPlugins(pluginsFolder)?.ToList() ?? [];
                 _plugins = loaded;
                 PluginsListBox.ItemsSource = _plugins;
                 Log($"Caricati {loaded.Count} plugin da '{pluginsFolder}'.");
@@ -376,119 +363,6 @@ namespace RRDA.RepImp
             return true;
         }
 
-        /*
-        private async Task LoadFiles(string folderPath)
-        {
-            try
-            {
-                if (!Directory.Exists(folderPath))
-                {
-                    FilesListView.ItemsSource = null;
-                    Log($"Cartella non trovata: {folderPath}");
-                    return;
-                }
-
-                // Legge la profondità massima di ricorsione dalle impostazioni (0 = solo cartella corrente)
-                int maxDepth = Properties.Settings.Default.RecurseDepth;
-                if (maxDepth < 0) maxDepth = 0;
-
-                // Colleziona tutti i file *.xlsx visitando le sottocartelle fino a maxDepth
-                var fileInfos = new List<FileInfo>();
-
-                var stack = new Stack<(string Path, int Depth)>();
-                stack.Push((folderPath, 0));
-
-                while (stack.Count > 0)
-                {
-                    var (currentPath, depth) = stack.Pop();
-
-                    try
-                    {
-                        var dirInfo = new DirectoryInfo(currentPath);
-
-                        // Aggiungi file della cartella corrente
-                        FileInfo[] fis;
-                        try
-                        {
-                            fis = dirInfo.GetFiles("*.xlsx");
-                        }
-                        catch (Exception ex)
-                        {
-                            Log($"Impossibile enumerare i file in '{currentPath}': {ex.Message}");
-                            fis = [];
-                        }
-
-                        fileInfos.AddRange(fis);
-
-                        // Se non abbiamo raggiunto la profondità massima, enqueue delle sottocartelle
-                        if (depth < maxDepth)
-                        {
-                            DirectoryInfo[] subdirs;
-                            try
-                            {
-                                subdirs = dirInfo.GetDirectories();
-                            }
-                            catch (Exception ex)
-                            {
-                                Log($"Impossibile enumerare le sottocartelle in '{currentPath}': {ex.Message}");
-                                subdirs = [];
-                            }
-
-                            foreach (var sd in subdirs)
-                            {
-                                stack.Push((sd.FullName, depth + 1));
-                            }
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        // Non interrompere l'elenco per una cartella non accessibile
-                        Log($"Errore accesso cartella '{currentPath}': {ex.Message}");
-                    }
-                }
-
-                // Ordina i file per nome
-                fileInfos = [.. fileInfos.OrderBy(f => f.Name)];
-
-                var fileItems = new List<FileItem>(fileInfos.Count);
-
-                foreach (var fi in fileInfos)
-                {
-                    string tipo = string.Empty;
-
-                    // Verifica applicabilità con i plugin caricati
-                    foreach (var plugin in _plugins)
-                    {
-                        try
-                        {
-                            var can = await plugin.CanImportAsync(fi.Name);
-                            if (can)
-                            {
-                                tipo = plugin.Name;
-                                break;
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            // Non fermare l'elaborazione dei file per un plugin malfunzionante
-                            Log($"Errore CanImportAsync plugin '{plugin.Name}' per file '{fi.Name}': {ex.Message}");
-                        }
-                    }
-
-                    fileItems.Add(new FileItem(fi.Name, fi.Length, fi.LastWriteTime, tipo, fi.FullName));
-                }
-
-                FilesListView.ItemsSource = fileItems;
-                Log($"Caricati {fileItems.Count} file *.xlsx da '{folderPath}' (profondità ricorsione={maxDepth}). Plugin applicabili trovati per {fileItems.Count(f => !string.IsNullOrEmpty(f.Tipo))} file.");
-            }
-            catch (Exception ex)
-            {
-                FilesListView.ItemsSource = null;
-                Log($"Errore caricamento file da '{folderPath}': {ex.Message}");
-            }
-        }
-        */
-
         private async Task LoadFiles(string folderPath)
         {
             try
@@ -648,6 +522,18 @@ namespace RRDA.RepImp
             }
         }
 
+        private void MainWindow_Loaded(object? sender, RoutedEventArgs e)
+        {
+            try
+            {
+                LoadFolders();
+                LoadPlugins();
+            }
+            catch (Exception ex)
+            {
+                Log($"Errore inizializzazione: {ex.Message}");
+            }
+        }
 
         private async void FoldersListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -659,6 +545,109 @@ namespace RRDA.RepImp
             else
             {
                 FilesListView.ItemsSource = null;
+            }
+        }
+
+        private void FoldersListBox_DragEnter(object sender, DragEventArgs e)
+        {
+            try
+            {
+                if (e.Data.GetDataPresent(DataFormats.FileDrop))
+                {
+                    var files = (string[]?)e.Data.GetData(DataFormats.FileDrop) ?? [];
+                    if (files.Length > 0 && Directory.Exists(files[0]))
+                        e.Effects = DragDropEffects.Copy;
+                    else
+                        e.Effects = DragDropEffects.None;
+                }
+                else
+                {
+                    e.Effects = DragDropEffects.None;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"Errore in PluginsListBox_DragEnter: {ex.Message}");
+                e.Effects = DragDropEffects.None;
+            }
+            finally
+            {
+                e.Handled = true;
+            }
+        }
+
+        private void FoldersListBox_DragOver(object? sender, DragEventArgs e)
+        {
+            try
+            {
+                if (e.Data.GetDataPresent(DataFormats.FileDrop))
+                {
+                    var files = (string[]?)e.Data.GetData(DataFormats.FileDrop) ?? [];
+                    if (files.Length > 0 && Directory.Exists(files[0]))
+                        e.Effects = DragDropEffects.Copy;
+                    else
+                        e.Effects = DragDropEffects.None;
+                }
+                else
+                {
+                    e.Effects = DragDropEffects.None;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"Errore in PluginsListBox_DragEnter: {ex.Message}");
+                e.Effects = DragDropEffects.None;
+            }
+            finally
+            {
+                e.Handled = true;
+            }
+        }
+
+        private void FoldersListBox_Drop(object? sender, DragEventArgs e)
+        {
+            try
+            {
+                if (!e.Data.GetDataPresent(DataFormats.FileDrop))
+                {
+                    e.Effects = DragDropEffects.None;
+                    return;
+                }
+
+                var files = (string[]?)e.Data.GetData(DataFormats.FileDrop) ?? [];
+                if (files.Length == 0)
+                {
+                    e.Effects = DragDropEffects.None;
+                    return;
+                }
+
+                var first = files[0];
+                if (!Directory.Exists(first))
+                {
+                    MessageBox.Show(this, "Per favore trascina una cartella valida contenente i plugin.", "Drop non valido", MessageBoxButton.OK, MessageBoxImage.Information);
+                    e.Effects = DragDropEffects.None;
+                    return;
+                }
+
+                // Salva la cartella come PluginsFolder nelle impostazioni e ricarica i plugin
+                _reportsRoot = Properties.Settings.Default.ReportsFolder = first;
+                //Properties.Settings.Default.Save();
+
+                Log($"Cartella reports impostata su '{first}' tramite drag & drop.");
+
+                LoadFolders();
+
+                e.Effects = DragDropEffects.Copy;
+            }
+            catch (Exception ex)
+            {
+                Log($"Errore in PluginsListBox_Drop: {ex.Message}");
+                MessageBox.Show(this, $"Errore durante l'operazione di drop:{Environment.NewLine}{ex.Message}", "Errore", MessageBoxButton.OK, MessageBoxImage.Error);
+                e.Effects = DragDropEffects.None;
+            }
+            finally
+            {
+                e.Handled = true;
             }
         }
 
@@ -674,79 +663,38 @@ namespace RRDA.RepImp
             }
         }
 
-        private void PluginsListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        // Aggiorna lo stato dei comandi del menu contestuale prima che si apra
+        private void FilesListView_ContextMenuOpening(object sender, ContextMenuEventArgs e)
         {
-            if (PluginsListBox.SelectedItem is IReportImporter plugin)
-            {
-                Log($"Plugin selezionato: {plugin.Name} (v{plugin.Version}) - Estensione supportata: {plugin.SupportedFileExtension}");
-            }
-        }
+            if (FilesListView.ContextMenu == null)
+                return;
 
-        private void ClearLog_Click(object? sender, RoutedEventArgs e)
-        {
-            // Cancella i messaggi di log
-            LogTextBox.Clear();
-        }
-
-        private void SaveLog_Click(object? sender, RoutedEventArgs e)
-        {
             try
             {
-                var dlg = new SaveFileDialog
-                {
-                    Title = "Salva log",
-                    Filter = "Log files (*.log)|*.log|Text files (*.txt)|*.txt|All files (*.*)|*.*",
-                    DefaultExt = ".log",
-                    FileName = $"RRDA_log_{DateTime.Now:yyyyMMdd_HHmmss}.log",
-                    OverwritePrompt = true
-                };
+                var fi = FilesListView.SelectedItem as FileItem;
+                bool isFValidFile = fi is not null && !string.IsNullOrWhiteSpace(fi?.Tipo);
 
-                var result = dlg.ShowDialog();
-                if (result == true && !string.IsNullOrWhiteSpace(dlg.FileName))
+                FileOpenMenuItem.IsEnabled = FileImportMenuItem.IsEnabled = FileDeleteMenuItem.IsEnabled = isFValidFile;
+
+                if (isFValidFile)
                 {
-                    // Salviamo lo stato corrente del log (per non includere eventuali messaggi successivi)
-                    var content = LogTextBox.Text ?? string.Empty;
-                    File.WriteAllText(dlg.FileName, content, Encoding.UTF8);
-                    Log($"Log salvato in '{dlg.FileName}'");
+                    bool canExport = false;
+
+                    var plugin = _plugins.FirstOrDefault(p => string.Equals(p.Name, fi?.Tipo, StringComparison.OrdinalIgnoreCase));
+
+                    if (plugin != null)
+                    {
+                        string? pluginFolder = Path.GetDirectoryName(plugin.GetType().Assembly.Location);
+
+                        canExport = !string.IsNullOrEmpty(pluginFolder) && Directory.Exists(pluginFolder);
+                    }
+
+                    FileExportValidatorMenuItem.IsEnabled = canExport;
                 }
             }
             catch (Exception ex)
             {
-                Log($"Errore salvataggio log: {ex.Message}");
-                MessageBox.Show(this, $"Impossibile salvare il file di log:{Environment.NewLine}{ex.Message}", "Errore salvataggio", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        private void SelectRootFolder_Click(object? sender, RoutedEventArgs e)
-        {
-            try
-            {
-                var dlg = new OpenFolderDialog
-                {
-                    FolderName = _reportsRoot,
-                    Title = "Seleziona cartella radice dei report"
-                };
-
-
-                var res = dlg.ShowDialog();
-                
-                if (res == true && !string.IsNullOrWhiteSpace(dlg.FolderName))
-                {
-                    // Aggiorna la impostazione __Properties.Settings.Default.ReportsFolder__ e la salva
-                    Properties.Settings.Default.ReportsFolder = dlg.FolderName;
-                    Properties.Settings.Default.Save();
-
-                    // Aggiorna la variabile locale e ricarica l'elenco cartelle
-                    _reportsRoot = dlg.FolderName;
-                    LoadFolders();
-
-                    Log($"Cartella radice impostata su '{_reportsRoot}' e salvata nelle impostazioni.");
-                }
-            }
-            catch (Exception ex)
-            {
-                Log($"Errore selezione cartella radice: {ex.Message}");
-                MessageBox.Show(this, $"Impossibile selezionare la cartella radice:{Environment.NewLine}{ex.Message}", "Errore", MessageBoxButton.OK, MessageBoxImage.Error);
+                Log($"Errore : {ex.Message}");
             }
         }
 
@@ -891,7 +839,7 @@ namespace RRDA.RepImp
                         else
                         {
                             failCount++;
-                        
+
                             Log($"Import non completato per '{fi.Name}'.");
                         }
                     }
@@ -916,7 +864,6 @@ namespace RRDA.RepImp
 
             Log($"Import multiplo completato. Successi: {successCount}, Falliti: {failCount}.");
         }
-
 
         private void File_ExportValidator_Click(object? sender, RoutedEventArgs e)
         {
@@ -971,6 +918,20 @@ namespace RRDA.RepImp
 
             var outputFile = Path.Combine(pluginFolder, $"{plugin.Name}.xml");
 
+            if (File.Exists(outputFile))
+            {
+                var res = MessageBox.Show(this,
+                    $"Il file di validazione '{outputFile}' esiste già. Sovrascrivere?",
+                    "Conferma sovrascrittura",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Question);
+                if (res != MessageBoxResult.Yes)
+                {
+                    Log("Esportazione validatore annullata dall'utente (sovrascrittura).");
+                    return;
+                }
+            }
+
             try
             {
                 ValidationFileCreator.CreateFromFile(fi.FullPath, outputFile);
@@ -984,56 +945,168 @@ namespace RRDA.RepImp
             }
         }
 
-        // Aggiorna lo stato dei comandi del menu contestuale prima che si apra
-        private void FilesListView_ContextMenuOpening(object sender, ContextMenuEventArgs e)
+        private void File_Open_Click(object sender, RoutedEventArgs e)
         {
             try
             {
-                if (FilesListView.ContextMenu == null)
-                    return;
-
-                var importMenu = FilesListView.ContextMenu.Items
-                    .OfType<MenuItem>()
-                    .FirstOrDefault(mi => mi.Name == "FileImportMenuItem");
-
-                var exportMenu = FilesListView.ContextMenu.Items
-                    .OfType<MenuItem>()
-                    .FirstOrDefault(mi => mi.Name == "FileExportValidatorMenuItem");
-
-                if (importMenu != null)
+                // Seleziona il file dalla lista (può essere FileItem o FileInfo)
+                if (FilesListView.SelectedItem is FileItem fi)
                 {
-                    if (FilesListView.SelectedItem is FileItem fi && !string.IsNullOrWhiteSpace(fi.Tipo))
-                        importMenu.IsEnabled = true;
-                    else
-                        importMenu.IsEnabled = false;
-                }
-
-                if (exportMenu != null)
-                {
-                    bool canExport = false;
-                    if (FilesListView.SelectedItem is FileItem fi2 && !string.IsNullOrWhiteSpace(fi2.Tipo))
+                    if (!File.Exists(fi.FullPath))
                     {
-                        var plugin = _plugins.FirstOrDefault(p => string.Equals(p.Name, fi2.Tipo, StringComparison.OrdinalIgnoreCase));
-                        if (plugin != null)
-                        {
-                            // verify plugin folder exists or fallback
-                            string? pluginFolder = null;
-                            try { pluginFolder = Path.GetDirectoryName(plugin.GetType().Assembly.Location); } catch { pluginFolder = null; }
-                            if (string.IsNullOrWhiteSpace(pluginFolder))
-                                pluginFolder = Properties.Settings.Default.PluginsFolder;
-                            if (string.IsNullOrWhiteSpace(pluginFolder))
-                                pluginFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "plugins");
-
-                            canExport = Directory.Exists(pluginFolder);
-                        }
+                        MessageBox.Show(this, $"File non trovato: {fi.FullPath}", "File non trovato", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        Log($"Impossibile aprire file: non trovato '{fi.FullPath}'.");
+                        return;
                     }
 
-                    exportMenu.IsEnabled = canExport;
+                    var psi = new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = fi.FullPath,
+                        UseShellExecute = true
+                    };
+
+                    Process.Start(psi);
+                    Log($"Aperto file con applicazione predefinita: {fi.FullPath}");
+                    return;
+                }
+
+                if (FilesListView.SelectedItem is FileInfo ffi)
+                {
+                    if (!File.Exists(ffi.FullName))
+                    {
+                        MessageBox.Show(this, $"File non trovato: {ffi.FullName}", "File non trovato", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        Log($"Impossibile aprire file: non trovato '{ffi.FullName}'.");
+                        return;
+                    }
+
+                    var psi = new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = ffi.FullName,
+                        UseShellExecute = true
+                    };
+
+                    Process.Start(psi);
+                    Log($"Aperto file con applicazione predefinita: {ffi.FullName}");
+                    return;
+                }
+
+                MessageBox.Show(this, "Seleziona un file da aprire.", "Nessun file selezionato", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                Log($"Errore apertura file: {ex.Message}");
+                MessageBox.Show(this, $"Impossibile aprire il file:{Environment.NewLine}{ex.Message}", "Errore apertura", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void PluginsListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (PluginsListBox.SelectedItem is IReportImporter plugin)
+            {
+                Log($"Plugin selezionato: {plugin.Name} (v{plugin.Version}) - Estensione supportata: {plugin.SupportedFileExtension}");
+            }
+        }
+
+        private void PluginsListBox_DragEnter(object sender, DragEventArgs e)
+        {
+            try
+            {
+                if (e.Data.GetDataPresent(DataFormats.FileDrop))
+                {
+                    var files = (string[]?)e.Data.GetData(DataFormats.FileDrop) ?? [];
+                    if (files.Length > 0 && Directory.Exists(files[0]))
+                        e.Effects = DragDropEffects.Copy;
+                    else
+                        e.Effects = DragDropEffects.None;
+                }
+                else
+                {
+                    e.Effects = DragDropEffects.None;
                 }
             }
             catch (Exception ex)
             {
-                Log($"Errore valutazione menu contestuale file: {ex.Message}");
+                Log($"Errore in PluginsListBox_DragEnter: {ex.Message}");
+                e.Effects = DragDropEffects.None;
+            }
+            finally
+            {
+                e.Handled = true;
+            }
+        }
+
+        private void PluginsListBox_DragOver(object? sender, DragEventArgs e)
+        {
+            try
+            {
+                if (e.Data.GetDataPresent(DataFormats.FileDrop))
+                {
+                    var files = (string[]?)e.Data.GetData(DataFormats.FileDrop) ?? [];
+                    if (files.Length > 0 && Directory.Exists(files[0]))
+                        e.Effects = DragDropEffects.Copy;
+                    else
+                        e.Effects = DragDropEffects.None;
+                }
+                else
+                {
+                    e.Effects = DragDropEffects.None;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"Errore in PluginsListBox_DragOver: {ex.Message}");
+                e.Effects = DragDropEffects.None;
+            }
+            finally
+            {
+                e.Handled = true;
+            }
+        }
+
+        private void PluginsListBox_Drop(object? sender, DragEventArgs e)
+        {
+            try
+            {
+                if (!e.Data.GetDataPresent(DataFormats.FileDrop))
+                {
+                    e.Effects = DragDropEffects.None;
+                    return;
+                }
+
+                var files = (string[]?)e.Data.GetData(DataFormats.FileDrop) ?? [];
+                if (files.Length == 0)
+                {
+                    e.Effects = DragDropEffects.None;
+                    return;
+                }
+
+                var first = files[0];
+                if (!Directory.Exists(first))
+                {
+                    MessageBox.Show(this, "Per favore trascina una cartella valida contenente i plugin.", "Drop non valido", MessageBoxButton.OK, MessageBoxImage.Information);
+                    e.Effects = DragDropEffects.None;
+                    return;
+                }
+
+                // Salva la cartella come PluginsFolder nelle impostazioni e ricarica i plugin
+                Properties.Settings.Default.PluginsFolder = first;
+                //Properties.Settings.Default.Save();
+
+                Log($"Cartella plugin impostata su '{first}' tramite drag & drop.");
+                LoadPlugins();
+                LoadFolders();
+
+                e.Effects = DragDropEffects.Copy;
+            }
+            catch (Exception ex)
+            {
+                Log($"Errore in PluginsListBox_Drop: {ex.Message}");
+                MessageBox.Show(this, $"Errore durante l'operazione di drop:{Environment.NewLine}{ex.Message}", "Errore", MessageBoxButton.OK, MessageBoxImage.Error);
+                e.Effects = DragDropEffects.None;
+            }
+            finally
+            {
+                e.Handled = true;
             }
         }
 
@@ -1054,7 +1127,7 @@ namespace RRDA.RepImp
                     {
                         // Ricarica cartelle e plugin secondo le nuove impostazioni
                         LoadFolders();
-                        LoadPluginsFromSettings();
+                        LoadPlugins();
                         Log("Impostazioni aggiornate dall'utente e ricaricate.");
                     }
                     catch (Exception ex)
@@ -1087,6 +1160,74 @@ namespace RRDA.RepImp
             // Apre in modalità "About": centrata sulla MainWindow,
             // si chiude automaticamente dopo 2 s
             _aboutWindow.ShowAsAbout(owner: this);
+        }
+
+        private void ClearLog_Click(object? sender, RoutedEventArgs e)
+        {
+            // Cancella i messaggi di log
+            LogTextBox.Clear();
+        }
+
+        private void SaveLog_Click(object? sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var dlg = new SaveFileDialog
+                {
+                    Title = "Salva log",
+                    Filter = "Log files (*.log)|*.log|Text files (*.txt)|*.txt|All files (*.*)|*.*",
+                    DefaultExt = ".log",
+                    FileName = $"RRDA_log_{DateTime.Now:yyyyMMdd_HHmmss}.log",
+                    OverwritePrompt = true
+                };
+
+                var result = dlg.ShowDialog();
+                if (result == true && !string.IsNullOrWhiteSpace(dlg.FileName))
+                {
+                    // Salviamo lo stato corrente del log (per non includere eventuali messaggi successivi)
+                    var content = LogTextBox.Text ?? string.Empty;
+                    File.WriteAllText(dlg.FileName, content, Encoding.UTF8);
+                    Log($"Log salvato in '{dlg.FileName}'");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"Errore salvataggio log: {ex.Message}");
+                MessageBox.Show(this, $"Impossibile salvare il file di log:{Environment.NewLine}{ex.Message}", "Errore salvataggio", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void SelectRootFolder_Click(object? sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var dlg = new OpenFolderDialog
+                {
+                    FolderName = _reportsRoot,
+                    Title = "Seleziona cartella radice dei report"
+                };
+
+
+                var res = dlg.ShowDialog();
+
+                if (res == true && !string.IsNullOrWhiteSpace(dlg.FolderName))
+                {
+                    // Aggiorna la impostazione __Properties.Settings.Default.ReportsFolder__ e la salva
+                    Properties.Settings.Default.ReportsFolder = dlg.FolderName;
+                    Properties.Settings.Default.Save();
+
+                    // Aggiorna la variabile locale e ricarica l'elenco cartelle
+                    _reportsRoot = dlg.FolderName;
+                    LoadFolders();
+
+                    Log($"Cartella radice impostata su '{_reportsRoot}' e salvata nelle impostazioni.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"Errore selezione cartella radice: {ex.Message}");
+                MessageBox.Show(this, $"Impossibile selezionare la cartella radice:{Environment.NewLine}{ex.Message}", "Errore", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
     }
 }
