@@ -1,8 +1,15 @@
 ﻿@{
     ViewData["Title"] = "Home Page";
+    var isAuth = User?.Identity?.IsAuthenticated ?? false;
+    var userName = User?.Identity?.Name ?? string.Empty;
 }
 
 <div class="text-center">
     <h1 class="display-4">Welcome</h1>
     <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+
+    <div class="mt-4">
+        <h5>Stato autenticazione: <span class="fw-bold">@((isAuth) ? "Autenticato" : "Non autenticato")</span></h5>
+        <p>Identificatore utente: <strong>@(isAuth ? userName : "-")</strong></p>
+    </div>
 </div>

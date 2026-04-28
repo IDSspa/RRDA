@@ -51,7 +51,6 @@
                                     DisplayMemberPath="Name"
                                     HorizontalContentAlignment="Stretch"
                                     AllowDrop="True"
-                                    DragEnter="FoldersListBox_DragEnter"
                                     DragOver="FoldersListBox_DragOver"
                                     Drop="FoldersListBox_Drop">
                             <ListBox.ContextMenu>
@@ -80,7 +79,6 @@
                                     DisplayMemberPath="Name"
                                     HorizontalContentAlignment="Stretch"
                                     AllowDrop="True" 
-                                    DragEnter="PluginsListBox_DragEnter"
                                     DragOver="PluginsListBox_DragOver"
                                     Drop="PluginsListBox_Drop"/>
                     </DockPanel>

@@ -114,8 +114,8 @@ namespace RRDA.RepImp
         private async Task<bool> ImportReport(FileItem fi,
                                               string? user = null,
                                               ImportProgressDialog? progressDlg = null,
-                                              CancellationToken ct = default,
-                                              int? batchId = null)
+                                              int? batchId = null,
+                                              CancellationToken ct = default)
         {
             if (string.IsNullOrWhiteSpace(fi.Tipo))
             {
@@ -548,34 +548,6 @@ namespace RRDA.RepImp
             }
         }
 
-        private void FoldersListBox_DragEnter(object sender, DragEventArgs e)
-        {
-            try
-            {
-                if (e.Data.GetDataPresent(DataFormats.FileDrop))
-                {
-                    var files = (string[]?)e.Data.GetData(DataFormats.FileDrop) ?? [];
-                    if (files.Length > 0 && Directory.Exists(files[0]))
-                        e.Effects = DragDropEffects.Copy;
-                    else
-                        e.Effects = DragDropEffects.None;
-                }
-                else
-                {
-                    e.Effects = DragDropEffects.None;
-                }
-            }
-            catch (Exception ex)
-            {
-                Log($"Errore in PluginsListBox_DragEnter: {ex.Message}");
-                e.Effects = DragDropEffects.None;
-            }
-            finally
-            {
-                e.Handled = true;
-            }
-        }
-
         private void FoldersListBox_DragOver(object? sender, DragEventArgs e)
         {
             try
@@ -830,7 +802,7 @@ namespace RRDA.RepImp
 
                     try
                     {
-                        bool ok = await ImportReport(fi, user, progressDlg, cts.Token, selectedBatchId);
+                        bool ok = await ImportReport(fi, user, progressDlg, selectedBatchId, cts.Token);
 
                         if (ok)
                         {
@@ -1004,34 +976,6 @@ namespace RRDA.RepImp
             if (PluginsListBox.SelectedItem is IReportImporter plugin)
             {
                 Log($"Plugin selezionato: {plugin.Name} (v{plugin.Version}) - Estensione supportata: {plugin.SupportedFileExtension}");
-            }
-        }
-
-        private void PluginsListBox_DragEnter(object sender, DragEventArgs e)
-        {
-            try
-            {
-                if (e.Data.GetDataPresent(DataFormats.FileDrop))
-                {
-                    var files = (string[]?)e.Data.GetData(DataFormats.FileDrop) ?? [];
-                    if (files.Length > 0 && Directory.Exists(files[0]))
-                        e.Effects = DragDropEffects.Copy;
-                    else
-                        e.Effects = DragDropEffects.None;
-                }
-                else
-                {
-                    e.Effects = DragDropEffects.None;
-                }
-            }
-            catch (Exception ex)
-            {
-                Log($"Errore in PluginsListBox_DragEnter: {ex.Message}");
-                e.Effects = DragDropEffects.None;
-            }
-            finally
-            {
-                e.Handled = true;
             }
         }
 
