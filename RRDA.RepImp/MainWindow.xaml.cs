@@ -26,6 +26,8 @@ namespace RRDA.RepImp
         private SplashScreenWindow? _aboutWindow;
         private GridViewColumnHeader? _lastHeaderClicked;
         private ListSortDirection _lastDirection;
+        private bool _applyForAll = false;
+        private DuplicateImportStrategy _duplicateStrategy = DuplicateImportStrategy.NewVersion;
 
         public MainWindow()
         {
@@ -413,9 +415,9 @@ namespace RRDA.RepImp
 
                 Log($"Importazione completata per '{fi.Name}'.");
 
-                // ==========================
+                // ====================================================
                 // Persistenza nel database (EF usando RRDADbContext)
-                // ==========================
+                // ====================================================
                 try
                 {
                     if (resultObj is ImportResult importResult
@@ -446,12 +448,11 @@ namespace RRDA.RepImp
                                 // prima di aprire il dialog, per non disturbarlo se il
                                 // file è nuovo.
                                 // -------------------------------------------------------
-                                var duplicateStrategy = DuplicateImportStrategy.NewVersion;
 
                                 int existing = await ImportResultRepository.CountExistingAsync(
                                     fi.FullPath, importResult.ReportTypeKey, db);
 
-                                if (existing > 0)
+                                if (existing > 0 && !_applyForAll)
                                 {
                                     // Apriamo il dialog sul thread UI (siamo già su di esso
                                     // perché ImportReport è chiamato da un async void handler).
@@ -470,8 +471,14 @@ namespace RRDA.RepImp
                                         return true; // l'import è riuscito, solo la save è stata saltata
                                     }
 
-                                    duplicateStrategy = dupDlg.SelectedStrategy;
-                                    Log($"Strategia duplicato scelta per '{fi.Name}': {duplicateStrategy}.");
+                                    _applyForAll = dupDlg.ApplyForAll;
+
+                                    _duplicateStrategy = dupDlg.SelectedStrategy;
+
+                                    Log($"Strategia duplicato scelta per '{fi.Name}': {_duplicateStrategy}.");
+
+                                    if (_applyForAll)
+                                        Log($"La strategia scelta sarà applicata a tutti i file duplicati in questo ciclo di import.");
                                 }
 
                                 // -------------------------------------------------------
@@ -479,16 +486,16 @@ namespace RRDA.RepImp
                                 // -------------------------------------------------------
                                 try
                                 {
-                                    var (reportFileId, entitiesSaved, propertiesSaved) =
-                                        await ImportResultRepository.SaveAsync(
-                                            fi.Name, fi.FullPath, importResult, db,
-                                            Log, user,
-                                            batchId,
-                                            duplicateStrategy);
+                                var (reportFileId, entitiesSaved, propertiesSaved) =
+                                    await ImportResultRepository.SaveAsync(
+                                        fi.Name, fi.FullPath, importResult, db,
+                                        Log, user,
+                                        batchId,
+                                        _duplicateStrategy);
 
-                                    Log($"Persistenza completata: ReportFileId={reportFileId}, " +
-                                        $"Entities={entitiesSaved}, Properties={propertiesSaved}" +
-                                        (batchId.HasValue ? $", BatchId={batchId.Value}." : "."));
+                                Log($"Persistenza completata: ReportFileId={reportFileId}, " +
+                                    $"Entities={entitiesSaved}, Properties={propertiesSaved}" +
+                                    (batchId.HasValue ? $", BatchId={batchId.Value}." : "."));
                                 }
                                 catch (DuplicateImportException die)
                                 {
@@ -889,6 +896,8 @@ namespace RRDA.RepImp
             finally
             {
                 progressDlg.Close();
+                _applyForAll = false; // reset della scelta "applica per tutti" per i duplicati, per i successivi cicli di import
+                _duplicateStrategy = DuplicateImportStrategy.NewVersion; // reset della strategia di importazione per i duplicati
             }
 
             Log($"Import multiplo completato. Successi: {successCount}, Falliti: {failCount}.");

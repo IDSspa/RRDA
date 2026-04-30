@@ -9,6 +9,7 @@ namespace RRDA.RepImp
         /// Strategia scelta dall'utente. Valorizzata solo se <see cref="Confirmed"/> è true.
         /// </summary>
         public DuplicateImportStrategy SelectedStrategy { get; private set; }
+        public bool ApplyForAll { get; private set; } = false;
 
         /// <summary>
         /// true  → l'utente ha confermato una scelta.
@@ -37,6 +38,7 @@ namespace RRDA.RepImp
                                                               : DuplicateImportStrategy.NewVersion;
             Confirmed = true;
             DialogResult = true;
+            ApplyForAll = (ApplyToAllCheckBox.IsChecked == true);
         }
 
         private void CancelButton_Click(object sender, RoutedEventArgs e)

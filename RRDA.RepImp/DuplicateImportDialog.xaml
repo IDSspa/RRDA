@@ -15,8 +15,10 @@
             <RowDefinition Height="Auto"/>  <!-- RadioButton Replace -->
             <RowDefinition Height="8"/>
             <RowDefinition Height="Auto"/>  <!-- RadioButton NewVersion -->
+            <RowDefinition Height="16"/>
+            <RowDefinition Height="Auto"/>  <!-- CheckButton ApplyToAll -->
             <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>  <!-- Bottoni -->
+            <RowDefinition Height="Auto"/>  <!-- Pulsanti -->
         </Grid.RowDefinitions>
 
         <!-- Messaggio -->
@@ -63,8 +65,13 @@
             </StackPanel>
         </RadioButton>
 
+        <CheckBox x:Name="ApplyToAllCheckBox"
+                  Grid.Row="8"
+                  Content="Applica questa scelta a tutti i file duplicati"
+                  Margin="0,8,0,0"/>
+
         <!-- Bottoni -->
-        <StackPanel Grid.Row="8"
+        <StackPanel Grid.Row="10"
                     Orientation="Horizontal"
                     HorizontalAlignment="Right">
             <Button x:Name="OkButton"
