@@ -9,7 +9,7 @@ namespace RRDA.Data
         public DbSet<ReportProperty> ReportProperties { get; set; } = null!;
         public DbSet<ReportType> ReportTypes { get; set; } = null!;
         public DbSet<ReportBatch> ReportBatches { get; set; }
-
+        public DbSet<AppUser> AppUsers { get; set; } = null!;
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<ReportFile>(b =>
@@ -130,6 +130,56 @@ namespace RRDA.Data
 
                 b.Property(x => x.Description)
                     .HasMaxLength(1000);
+            });
+
+            modelBuilder.Entity<AppUser>(b =>
+            {
+                b.ToTable("AppUsers");
+                b.HasKey(x => x.Id);
+
+                // WindowsUsername univoco (case-insensitive a livello applicativo;
+                // SQL Server collation gestisce il confronto lato DB)
+                b.Property(x => x.WindowsUsername)
+                    .HasMaxLength(256)
+                    .IsRequired();
+
+                b.HasIndex(x => x.WindowsUsername)
+                    .IsUnique();
+
+                b.Property(x => x.DisplayName)
+                    .HasMaxLength(256);
+
+                // Ruolo come intero: 0=Operator, 1=Supervisor, 2=Admin
+                b.Property(x => x.Role)
+                    .HasConversion<int>()
+                    .IsRequired();
+
+                b.Property(x => x.IsEnabled)
+                    .IsRequired()
+                    .HasDefaultValue(true);
+
+                b.Property(x => x.CreatedAt)
+                    .HasColumnType("datetime2")
+                    .IsRequired();
+
+                b.Property(x => x.LastLoginAt)
+                    .HasColumnType("datetime2");
+
+                // ----------------------------------------------------------------
+                // Seed: primo utente Admin — SOSTITUIRE con il proprio account
+                // prima di eseguire la migration.
+                // Il valore di CreatedAt deve essere costante per evitare migration
+                // rilevate come modifiche ad ogni build.
+                // ----------------------------------------------------------------
+                b.HasData(new AppUser
+                {
+                    Id = 1,
+                    WindowsUsername = @"IDS\m.santucci",   // <-- modificare
+                    DisplayName = "Administrator (seed)",
+                    Role = AppUserRole.Admin,
+                    IsEnabled = true,
+                    CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+                });
             });
 
             base.OnModelCreating(modelBuilder);
