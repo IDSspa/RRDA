@@ -632,28 +632,45 @@ namespace RRDA.RepImp
                 e.Handled = true;
             }
         }
+
         private void FilesListView_Click(object sender, RoutedEventArgs e)
         {
             if (e.OriginalSource is not GridViewColumnHeader headerClicked || headerClicked.Column == null)
                 return;
 
-            string sortBy = headerClicked.Column.Header.ToString()!;
+            if (headerClicked.Column != TypeColumn)
+            {
+                return;
+            }
 
             ListSortDirection direction;
 
+            // Gestione della direzione dell'ordinamento[cite: 2]
             if (_lastHeaderClicked != headerClicked)
+            {
                 direction = ListSortDirection.Ascending;
+            }
             else
+            {
                 direction = _lastDirection == ListSortDirection.Ascending
                     ? ListSortDirection.Descending
                     : ListSortDirection.Ascending;
+            }
 
+            // Applica l'ordinamento alla vista dei dati[cite: 2]
             ICollectionView dataView = CollectionViewSource.GetDefaultView(FilesListView.ItemsSource);
+            if (dataView != null)
+            {
+                dataView.SortDescriptions.Clear();
+                // Usiamo "Tipo" come proprietà di ordinamento (definita nel Binding della colonna)[cite: 3]
+                dataView.SortDescriptions.Add(new SortDescription("Tipo", direction));
+                dataView.Refresh();
+            }
 
-            dataView.SortDescriptions.Clear();
-            dataView.SortDescriptions.Add(new SortDescription(sortBy, direction));
-            dataView.Refresh();
+            // Imposta il Tag per attivare i DataTrigger del SortableHeaderTemplate
+            headerClicked.Tag = direction.ToString();
 
+            // Salva lo stato per il prossimo clic[cite: 2]
             _lastHeaderClicked = headerClicked;
             _lastDirection = direction;
         }
@@ -716,6 +733,7 @@ namespace RRDA.RepImp
         {
             FilesListView.SelectAll();
         }
+
         private void FileSelectNone_Click(object sender, RoutedEventArgs e)
         {
             FilesListView.UnselectAll();

@@ -4,6 +4,52 @@
         Title="RRDA RepImp" 
         Height="600" 
         Width="900">
+
+    <Window.Resources>
+
+        <!-- Template header con freccia ordinamento -->
+        <DataTemplate x:Key="SortableHeaderTemplate">
+            <DockPanel LastChildFill="True">
+                <TextBlock Text="{Binding}" VerticalAlignment="Center"/>
+                <TextBlock x:Name="SortArrow"
+                           Margin="5,0,0,0"
+                           VerticalAlignment="Center"
+                           FontSize="12"
+                           Visibility="Collapsed"/>
+            </DockPanel>
+
+            <DataTemplate.Triggers>
+
+                <!-- Ascending -->
+                <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=GridViewColumnHeader},
+                                               Path=Tag}"
+                             Value="Ascending">
+                    <Setter TargetName="SortArrow"
+                            Property="Text"
+                            Value="▲"/>
+                    <Setter TargetName="SortArrow"
+                            Property="Visibility"
+                            Value="Visible"/>
+                </DataTrigger>
+
+                <!-- Descending -->
+                <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=GridViewColumnHeader},
+                                               Path=Tag}"
+                             Value="Descending">
+                    <Setter TargetName="SortArrow"
+                            Property="Text"
+                            Value="▼"/>
+                    <Setter TargetName="SortArrow"
+                            Property="Visibility"
+                            Value="Visible"/>
+                </DataTrigger>
+
+            </DataTemplate.Triggers>
+        </DataTemplate>
+
+    </Window.Resources>
+
+
     <Grid>
         <Grid.RowDefinitions>
             <!-- Menu in alto -->
@@ -110,6 +156,7 @@
                     <!-- Parte superiore: file -->
                     <DockPanel Grid.Row="0">
                         <TextBlock Text="File nella cartella selezionata" FontWeight="Bold" DockPanel.Dock="Top" Margin="0,0,0,6"/>
+
                         <ListView x:Name="FilesListView"
                                   SelectionChanged="FilesListView_SelectionChanged"
                                   ContextMenuOpening="FilesListView_ContextMenuOpening"
@@ -126,11 +173,11 @@
                             </ListView.ContextMenu>
                             <ListView.View>
                                 <GridView>
-                                    <GridViewColumn Header="Nome" Width="300" DisplayMemberBinding="{Binding Name}"/>
-                                    <GridViewColumn Header="Tipo" Width="200" DisplayMemberBinding="{Binding Tipo}"/>
-                                    <GridViewColumn Header="Percorso" Width="400" DisplayMemberBinding="{Binding FullPath}"/>
-                                    <GridViewColumn Header="Dimensione" Width="100" DisplayMemberBinding="{Binding Length}"/>
-                                    <GridViewColumn Header="Ultima modifica" Width="180" DisplayMemberBinding="{Binding LastWriteTime}"/>
+                                    <GridViewColumn x:Name="NameColumn" Header="Nome" Width="300" DisplayMemberBinding="{Binding Name}"/>
+                                    <GridViewColumn x:Name="TypeColumn" Header="Tipo" Width="200" DisplayMemberBinding="{Binding Tipo}" HeaderTemplate="{StaticResource SortableHeaderTemplate}"/>
+                                    <GridViewColumn x:Name="PathColumn" Header="Percorso" Width="400" DisplayMemberBinding="{Binding FullPath}"/>
+                                    <GridViewColumn x:Name="SizeColumn" Header="Dimensione" Width="100" DisplayMemberBinding="{Binding Length}"/>
+                                    <GridViewColumn x:Name="LastModifiedColumn" Header="Ultima modifica" Width="180" DisplayMemberBinding="{Binding LastWriteTime}"/>
                                 </GridView>
                             </ListView.View>
                         </ListView>
