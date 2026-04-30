@@ -15,8 +15,11 @@
       "launchBrowser": true,
       "applicationUrl": "http://localhost:5032",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
-      }
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "ASPNETCORE_FORWARDEDHEADERS_ENABLED": "true"
+      },
+      "windowsAuthentication": true,
+      "anonymousAuthentication": false
     },
     "https": {
       "commandName": "Project",
@@ -25,7 +28,9 @@
       "applicationUrl": "https://localhost:7195;http://localhost:5032",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
-      }
+      },
+      "windowsAuthentication": true,
+      "anonymousAuthentication": false
     },
     "IIS Express": {
       "commandName": "IISExpress",

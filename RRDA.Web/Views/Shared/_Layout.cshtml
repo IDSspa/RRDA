@@ -1,50 +1,327 @@
-﻿<!DOCTYPE html>
-<html lang="en">
+@using RRDA.Data
+@using RRDA.Web.Security
+
+@{
+    // Ruolo corrente — usato per mostrare/nascondere voci sidebar
+    var roleClaim  = User.FindFirst(AppUserClaimsTransformation.AppRoleClaimType)?.Value;
+    var hasRole    = Enum.TryParse<AppUserRole>(roleClaim, out var currentRole);
+    var isSupervisor = hasRole && currentRole >= AppUserRole.Supervisor;
+    var isAdmin      = hasRole && currentRole >= AppUserRole.Admin;
+
+    // DisplayName o fallback al WindowsUsername
+    var displayName = User.FindFirst("rrda:displayname")?.Value
+                      ?? User.Identity?.Name
+                      ?? "—";
+
+    // Controller e area correnti — usati per evidenziare la voce attiva
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+    var currentArea       = ViewContext.RouteData.Values["area"]?.ToString() ?? "";
+
+    string ActiveIf(string area, string controller)
+        => string.Equals(currentArea, area, StringComparison.OrdinalIgnoreCase) &&
+           string.Equals(currentController, controller, StringComparison.OrdinalIgnoreCase)
+           ? "active" : "";
+
+    string ActiveArea(string area)
+        => string.Equals(currentArea, area, StringComparison.OrdinalIgnoreCase)
+           ? "active" : "";
+}
+<!DOCTYPE html>
+<html lang="it">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - RRDA.Web</title>
+    <title>@ViewData["Title"] — RRDA</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/RRDA.Web.styles.css" asp-append-version="true" />
+    <style>
+        /* ── Variabili colore ── */
+        :root {
+            --sidebar-bg:        #0d1117;
+            --sidebar-border:    #21262d;
+            --sidebar-text:      #8b949e;
+            --sidebar-text-hover:#c9d1d9;
+            --sidebar-active-bg: #161b22;
+            --sidebar-active-txt:#58a6ff;
+            --sidebar-accent:    #1f6feb;
+            --topbar-height:     56px;
+            --sidebar-width:     240px;
+        }
+
+        html, body { height: 100%; margin: 0; }
+
+        body {
+            background: #0d1117;
+            color: #c9d1d9;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            font-size: 0.9rem;
+        }
+
+        /* ── Topbar ── */
+        .rrda-topbar {
+            position: fixed; top: 0; left: 0; right: 0;
+            height: var(--topbar-height);
+            background: var(--sidebar-bg);
+            border-bottom: 1px solid var(--sidebar-border);
+            display: flex; align-items: center;
+            padding: 0 1.25rem;
+            z-index: 1030;
+            gap: 1rem;
+        }
+        .rrda-topbar .brand {
+            font-size: 1.15rem;
+            font-weight: 600;
+            color: #58a6ff;
+            letter-spacing: .04em;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+        .rrda-topbar .brand span { color: #8b949e; font-weight: 400; }
+        .rrda-topbar .user-info {
+            margin-left: auto;
+            display: flex; align-items: center; gap: .6rem;
+            font-size: .82rem; color: #8b949e;
+        }
+        .rrda-topbar .user-info .badge-role {
+            font-size: .7rem; padding: 2px 8px;
+            border-radius: 20px; font-weight: 500;
+        }
+        .badge-admin      { background: #388bfd22; color: #58a6ff; border: 1px solid #388bfd44; }
+        .badge-supervisor { background: #3fb95022; color: #3fb950; border: 1px solid #3fb95044; }
+        .badge-operator   { background: #d2992222; color: #d29922; border: 1px solid #d2992244; }
+
+        /* ── Sidebar ── */
+        .rrda-sidebar {
+            position: fixed; top: var(--topbar-height); left: 0; bottom: 0;
+            width: var(--sidebar-width);
+            background: var(--sidebar-bg);
+            border-right: 1px solid var(--sidebar-border);
+            overflow-y: auto;
+            z-index: 1020;
+            padding: .75rem 0;
+        }
+
+        .sidebar-section-label {
+            font-size: .68rem; font-weight: 600;
+            text-transform: uppercase; letter-spacing: .08em;
+            color: #484f58;
+            padding: .9rem 1.1rem .3rem;
+        }
+
+        .sidebar-link {
+            display: flex; align-items: center; gap: .6rem;
+            padding: .42rem 1.1rem;
+            color: var(--sidebar-text);
+            text-decoration: none;
+            border-radius: 6px;
+            margin: 1px .4rem;
+            transition: background .15s, color .15s;
+            font-size: .875rem;
+        }
+        .sidebar-link:hover {
+            background: #161b22;
+            color: var(--sidebar-text-hover);
+        }
+        .sidebar-link.active {
+            background: var(--sidebar-active-bg);
+            color: var(--sidebar-active-txt);
+            font-weight: 500;
+        }
+        .sidebar-link .icon {
+            width: 18px; text-align: center;
+            font-size: .95rem; opacity: .75;
+        }
+        .sidebar-link.active .icon { opacity: 1; }
+
+        .sidebar-divider {
+            border-top: 1px solid var(--sidebar-border);
+            margin: .5rem .75rem;
+        }
+
+        /* ── Contenuto principale ── */
+        .rrda-main {
+            margin-left: var(--sidebar-width);
+            margin-top: var(--topbar-height);
+            padding: 1.75rem 2rem;
+            min-height: calc(100vh - var(--topbar-height));
+        }
+
+        /* ── Card generica ── */
+        .rrda-card {
+            background: #161b22;
+            border: 1px solid #21262d;
+            border-radius: 8px;
+            padding: 1.5rem;
+        }
+
+        /* ── Tabelle ── */
+        .table { color: #c9d1d9; }
+        .table thead th {
+            background: #0d1117;
+            color: #8b949e;
+            font-size: .78rem;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            border-bottom: 1px solid #21262d;
+        }
+        .table tbody tr { border-bottom: 1px solid #21262d; }
+        .table tbody tr:hover { background: #161b22; }
+        .table td, .table th { padding: .6rem .75rem; vertical-align: middle; }
+
+        /* ── Bottoni ── */
+        .btn-rrda-primary {
+            background: #1f6feb; border: none; color: #fff;
+            border-radius: 6px; padding: .35rem .85rem;
+            font-size: .85rem;
+        }
+        .btn-rrda-primary:hover { background: #388bfd; color: #fff; }
+
+        .btn-rrda-danger {
+            background: #da363622; border: 1px solid #da363644; color: #f85149;
+            border-radius: 6px; padding: .35rem .85rem; font-size: .85rem;
+        }
+        .btn-rrda-danger:hover { background: #da363644; color: #f85149; }
+
+        /* ── Alerts / flash ── */
+        .alert-rrda {
+            border-radius: 6px; font-size: .875rem; padding: .6rem 1rem;
+            border: 1px solid transparent;
+        }
+        .alert-rrda-success { background:#1f6feb11; border-color:#1f6feb44; color:#58a6ff; }
+        .alert-rrda-danger  { background:#da363611; border-color:#da363644; color:#f85149; }
+        .alert-rrda-warning { background:#d2992211; border-color:#d2992244; color:#d29922; }
+
+        /* ── Form inputs ── */
+        .form-control, .form-select {
+            background: #0d1117; border: 1px solid #30363d;
+            color: #c9d1d9; border-radius: 6px;
+        }
+        .form-control:focus, .form-select:focus {
+            background: #0d1117; border-color: #1f6feb;
+            color: #c9d1d9; box-shadow: 0 0 0 3px #1f6feb22;
+        }
+        .form-label { color: #8b949e; font-size: .85rem; margin-bottom: .3rem; }
+
+        /* ── Badge generici ── */
+        .badge-pill {
+            border-radius: 20px; font-size: .72rem;
+            font-weight: 500; padding: 2px 10px;
+        }
+
+        /* ── Responsive: sidebar collassabile su schermi piccoli ── */
+        @@media (max-width: 768px) {
+            .rrda-sidebar { transform: translateX(-100%); transition: transform .25s; }
+            .rrda-sidebar.open { transform: translateX(0); }
+            .rrda-main { margin-left: 0; }
+        }
+    </style>
 </head>
 <body>
-    <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">RRDA.Web</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-                        </li>
-                    </ul>
-                    <p class="nav navbar-text">Hello, @User.Identity?.Name!</p>
-                </div>
-            </div>
-        </nav>
-    </header>
-    <div class="container">
-        <main role="main" class="pb-3">
-            @RenderBody()
-        </main>
-    </div>
 
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2025 - RRDA.Web - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-        </div>
-    </footer>
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
-    @await RenderSectionAsync("Scripts", required: false)
+<!-- ═══════════════════════════════════════════ TOPBAR ═══ -->
+<header class="rrda-topbar">
+    <a class="brand" asp-controller="Dashboard" asp-action="Index" asp-area="">
+        RRDA <span>RepImp</span>
+    </a>
+
+    <!-- Toggle sidebar su mobile -->
+    <button class="btn btn-sm d-md-none ms-2"
+            style="color:#8b949e;border:1px solid #30363d;background:none;"
+            onclick="document.querySelector('.rrda-sidebar').classList.toggle('open')">
+        ☰
+    </button>
+
+    <div class="user-info">
+        @{
+            var badgeClass = currentRole switch {
+                AppUserRole.Admin      => "badge-admin",
+                AppUserRole.Supervisor => "badge-supervisor",
+                _                      => "badge-operator"
+            };
+            var roleLabel = hasRole ? currentRole.ToString() : "—";
+        }
+        <span>@displayName</span>
+        <span class="badge-role @badgeClass">@roleLabel</span>
+    </div>
+</header>
+
+<!-- ═══════════════════════════════════════════ SIDEBAR ══ -->
+<nav class="rrda-sidebar">
+
+    <!-- Dashboard -->
+    <a class="sidebar-link @ActiveIf("", "Dashboard")"
+       asp-controller="Dashboard" asp-action="Index" asp-area="">
+        <span class="icon">⊞</span> Dashboard
+    </a>
+
+    <div class="sidebar-divider"></div>
+
+    <!-- ── Amministrazione (solo Admin) ── -->
+    @if (isAdmin)
+    {
+        <div class="sidebar-section-label">Amministrazione</div>
+
+        <a class="sidebar-link @ActiveIf("Admin", "Users")"
+           asp-area="Admin" asp-controller="Users" asp-action="Index">
+            <span class="icon">👤</span> Utenti
+        </a>
+        <a class="sidebar-link @ActiveIf("Admin", "Settings")"
+           asp-area="Admin" asp-controller="Settings" asp-action="Index">
+            <span class="icon">⚙</span> Impostazioni
+        </a>
+
+        <div class="sidebar-divider"></div>
+    }
+
+    <!-- ── Plugins (Admin + Supervisor) ── -->
+    @if (isSupervisor)
+    {
+        <div class="sidebar-section-label">Plugins</div>
+
+        <a class="sidebar-link @ActiveIf("Plugins", "ReportTypes")"
+           asp-area="Plugins" asp-controller="ReportTypes" asp-action="Index">
+            <span class="icon">🔌</span> Tipi di report
+        </a>
+
+        <div class="sidebar-divider"></div>
+    }
+
+    <!-- ── Dati (tutti) ── -->
+    <div class="sidebar-section-label">Dati</div>
+
+    <a class="sidebar-link @ActiveIf("Data", "Files")"
+       asp-area="Data" asp-controller="Files" asp-action="Index">
+        <span class="icon">📄</span> File importati
+    </a>
+    <a class="sidebar-link @ActiveIf("Data", "Export")"
+       asp-area="Data" asp-controller="Export" asp-action="Index">
+        <span class="icon">⬇</span> Esportazione
+    </a>
+
+</nav>
+
+<!-- ═══════════════════════════════════════════ MAIN ═════ -->
+<main class="rrda-main">
+
+    @* Flash messages (TempData) *@
+    @if (TempData["Success"] is string successMsg)
+    {
+        <div class="alert-rrda alert-rrda-success mb-3">✔ @successMsg</div>
+    }
+    @if (TempData["Error"] is string errorMsg)
+    {
+        <div class="alert-rrda alert-rrda-danger mb-3">✖ @errorMsg</div>
+    }
+    @if (TempData["Warning"] is string warningMsg)
+    {
+        <div class="alert-rrda alert-rrda-warning mb-3">⚠ @warningMsg</div>
+    }
+
+    @RenderBody()
+</main>
+
+<script src="~/lib/jquery/dist/jquery.min.js"></script>
+<script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+@await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

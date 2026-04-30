@@ -1,0 +1,83 @@
+@using RRDA.Data
+@model object
+
+@{
+    ViewData["Title"] = "Dashboard";
+    var recentFiles = ViewBag.RecentFiles as List<ReportFile> ?? [];
+}
+
+<div class="d-flex align-items-center mb-4" style="gap:.75rem;">
+    <h4 style="margin:0;color:#c9d1d9;font-weight:600;">Dashboard</h4>
+    <span style="color:#484f58;font-size:.82rem;">
+        @DateTime.Now.ToString("dddd d MMMM yyyy", new System.Globalization.CultureInfo("it-IT"))
+    </span>
+</div>
+
+<!-- ── Tile contatori ── -->
+<div class="row g-3 mb-4">
+    @{
+        void Tile(string label, int value, string icon, string color)
+        {
+            <div class="col-6 col-xl-3">
+                <div class="rrda-card d-flex align-items-center gap-3" style="border-left:3px solid @color;">
+                    <span style="font-size:1.6rem;">@icon</span>
+                    <div>
+                        <div style="font-size:1.55rem;font-weight:700;color:#c9d1d9;line-height:1.1;">@value</div>
+                        <div style="font-size:.78rem;color:#8b949e;text-transform:uppercase;letter-spacing:.05em;">@label</div>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+    @{ Tile("File importati",   (int)ViewBag.TotalFiles,       "📄", "#1f6feb"); }
+    @{ Tile("Entità",           (int)ViewBag.TotalEntities,    "🗃", "#3fb950"); }
+    @{ Tile("Tipi di report",   (int)ViewBag.TotalReportTypes, "🔌", "#d29922"); }
+    @{ Tile("Utenti attivi",    (int)ViewBag.TotalUsers,       "👤", "#58a6ff"); }
+</div>
+
+<!-- ── File recenti ── -->
+<div class="rrda-card">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 style="margin:0;color:#c9d1d9;font-weight:600;">Ultimi file importati</h6>
+        <a asp-area="Data" asp-controller="Files" asp-action="Index"
+           style="font-size:.82rem;color:#58a6ff;text-decoration:none;">
+            Vedi tutti →
+        </a>
+    </div>
+
+    @if (!recentFiles.Any())
+    {
+        <p style="color:#484f58;font-size:.875rem;margin:0;">Nessun file ancora importato.</p>
+    }
+    else
+    {
+        <table class="table table-borderless mb-0">
+            <thead>
+                <tr>
+                    <th>Nome file</th>
+                    <th>Tipo</th>
+                    <th>Importato da</th>
+                    <th>Data</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var f in recentFiles)
+                {
+                    <tr>
+                        <td style="font-family:monospace;font-size:.82rem;">@f.FileName</td>
+                        <td>
+                            <span class="badge-pill"
+                                  style="background:#1f6feb22;color:#58a6ff;border:1px solid #1f6feb44;">
+                                @f.ReportType?.Key
+                            </span>
+                        </td>
+                        <td style="color:#8b949e;">@(f.ImportedBy ?? "—")</td>
+                        <td style="color:#8b949e;font-size:.82rem;">
+                            @f.UploadedAt.ToString("yyyy-MM-dd HH:mm")
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
