@@ -40,7 +40,7 @@ namespace RRDA.Data
                 // -- Gestione duplicato --
                 var existingFiles = await db.ReportFiles
                                             .Where(f =>
-                                                f.FullPath == fullPath &&
+                                                f.FileName == fileName &&
                                                 f.ReportTypeId == reportType.Id)
                                             .ToListAsync();
 
@@ -149,14 +149,14 @@ namespace RRDA.Data
         /// il dialog di gestione duplicato prima di chiamare SaveAsync.
         /// </summary>
         public static async Task<int> CountExistingAsync(
-            string fullPath,
+            string fileName,
             string reportTypeKey,
             RRDADbContext db)
         {
             return await db.ReportFiles
                            .AsNoTracking()
                            .CountAsync(f =>
-                               f.FullPath == fullPath &&
+                               f.FileName == fileName &&
                                f.ReportType.Key == reportTypeKey);
         }
     }

@@ -316,12 +316,9 @@ namespace RRDA.RepImp
 
                 if (!string.IsNullOrWhiteSpace(pluginsFolder) && Directory.Exists(pluginsFolder))
                 {
-                    // nomi possibili: {pluginName}.xml oppure {pluginName}.config.xml
-                    var p1 = Path.Combine(pluginsFolder, plugin.Name + ".xml");
-                    var p2 = Path.Combine(pluginsFolder, plugin.Name + ".config.xml");
+                    var validatorFilePath = Path.Combine(pluginsFolder, plugin.Name + ".xml");
 
-                    if (File.Exists(p1)) possibleConfigPath = p1;
-                    else if (File.Exists(p2)) possibleConfigPath = p2;
+                    if (File.Exists(validatorFilePath)) possibleConfigPath = validatorFilePath;
                 }
 
                 if (!string.IsNullOrWhiteSpace(possibleConfigPath))
@@ -450,7 +447,7 @@ namespace RRDA.RepImp
                                 // -------------------------------------------------------
 
                                 int existing = await ImportResultRepository.CountExistingAsync(
-                                    fi.FullPath, importResult.ReportTypeKey, db);
+                                    fi.Name, importResult.ReportTypeKey, db);
 
                                 if (existing > 0 && !_applyForAll)
                                 {
@@ -472,7 +469,6 @@ namespace RRDA.RepImp
                                     }
 
                                     _applyForAll = dupDlg.ApplyForAll;
-
                                     _duplicateStrategy = dupDlg.SelectedStrategy;
 
                                     Log($"Strategia duplicato scelta per '{fi.Name}': {_duplicateStrategy}.");
@@ -486,16 +482,19 @@ namespace RRDA.RepImp
                                 // -------------------------------------------------------
                                 try
                                 {
-                                var (reportFileId, entitiesSaved, propertiesSaved) =
-                                    await ImportResultRepository.SaveAsync(
-                                        fi.Name, fi.FullPath, importResult, db,
-                                        Log, user,
-                                        batchId,
-                                        _duplicateStrategy);
+                                    var (reportFileId, entitiesSaved, propertiesSaved) =
+                                        await ImportResultRepository.SaveAsync(fi.Name,
+                                                                               fi.FullPath,
+                                                                               importResult,
+                                                                               db,
+                                                                               Log,
+                                                                               user,
+                                                                               batchId,
+                                                                               _duplicateStrategy);
 
-                                Log($"Persistenza completata: ReportFileId={reportFileId}, " +
-                                    $"Entities={entitiesSaved}, Properties={propertiesSaved}" +
-                                    (batchId.HasValue ? $", BatchId={batchId.Value}." : "."));
+                                    Log($"Persistenza completata: ReportFileId={reportFileId}, " +
+                                        $"Entities={entitiesSaved}, Properties={propertiesSaved}" +
+                                        (batchId.HasValue ? $", BatchId={batchId.Value}." : "."));
                                 }
                                 catch (DuplicateImportException die)
                                 {
@@ -679,6 +678,7 @@ namespace RRDA.RepImp
 
             try
             {
+                FileSelectNone.IsEnabled = (FilesListView.SelectedItems.Count > 0);
                 // FileSelectAll è abilitato se c'è almeno un file nella lista (non dipende dalla selezione attuale)
                 FileSelectAll.IsEnabled = (FilesListView.Items.Count != 0);
                 // Se è stato selezionato solo un file, anche se non valido, abilitiamo i comandi di apertura e apertura percorso
@@ -714,16 +714,11 @@ namespace RRDA.RepImp
 
         private void FileSelectAll_Click(object sender, RoutedEventArgs e)
         {
-            if (FilesListView.Items.Count == 0)
-                return;
-
-            // Seleziona o deseleziona tutti gli elementi nella ListView
-            bool selectAll = FilesListView.SelectedItems.Count != FilesListView.Items.Count;
-            foreach (var item in FilesListView.Items)
-            {
-                if (item is ListViewItem lvi)
-                    lvi.IsSelected = selectAll;
-            }
+            FilesListView.SelectAll();
+        }
+        private void FileSelectNone_Click(object sender, RoutedEventArgs e)
+        {
+            FilesListView.UnselectAll();
         }
 
         private async void File_OpenPath_Click(object? sender, RoutedEventArgs e)
@@ -892,12 +887,15 @@ namespace RRDA.RepImp
                         Log($"Eccezione durante import di '{fi.Name}': {ex.Message}");
                     }
                 }
+
+                _applyForAll = false; // reset della scelta "applica per tutti" per i duplicati, per i successivi cicli di import
+                _duplicateStrategy = DuplicateImportStrategy.NewVersion; // reset della strategia di importazione per i duplicati
+                
+                FilesListView.SelectedItems?.Clear(); // deseleziona tutti i file al termine del ciclo di import
             }
             finally
             {
                 progressDlg.Close();
-                _applyForAll = false; // reset della scelta "applica per tutti" per i duplicati, per i successivi cicli di import
-                _duplicateStrategy = DuplicateImportStrategy.NewVersion; // reset della strategia di importazione per i duplicati
             }
 
             Log($"Import multiplo completato. Successi: {successCount}, Falliti: {failCount}.");

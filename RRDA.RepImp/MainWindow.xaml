@@ -116,6 +116,7 @@
                                   GridViewColumnHeader.Click="FilesListView_Click">
                             <ListView.ContextMenu>
                                 <ContextMenu>
+                                    <MenuItem x:Name="FileSelectNone" Header="Deseleziona tutti..." Click="FileSelectNone_Click" IsEnabled="False" />
                                     <MenuItem x:Name="FileSelectAll" Header="Seleziona tutti..." Click="FileSelectAll_Click" IsEnabled="False" />
                                     <MenuItem x:Name="FileOpenMenuItem" Header="Apri..." Click="File_Open_Click" IsEnabled="False"/>
                                     <MenuItem x:Name="FileOpenFolderMenuItem" Header="Apri percorso..." Click="File_OpenPath_Click" IsEnabled="False"/>
