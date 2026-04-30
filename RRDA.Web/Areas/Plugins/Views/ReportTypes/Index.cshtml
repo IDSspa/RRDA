@@ -1,0 +1,87 @@
+@model List<RRDA.Web.Areas.Plugins.Controllers.ReportTypeSummary>
+@using RRDA.Web.Security
+
+@{
+    ViewData["Title"] = "Tipi di report";
+    var isAdmin = User.HasClaim(AppUserClaimsTransformation.AppRoleClaimType, "Admin");
+}
+
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <h4 style="margin:0;color:#c9d1d9;font-weight:600;">Tipi di report</h4>
+    @if (isAdmin)
+    {
+        <a asp-action="Create" class="btn-rrda-primary"
+           style="text-decoration:none;padding:.4rem .9rem;border-radius:6px;">
+            + Nuovo tipo
+        </a>
+    }
+</div>
+
+<div class="rrda-card">
+    @if (!Model.Any())
+    {
+        <p style="color:#484f58;font-size:.875rem;margin:0;">
+            Nessun tipo di report registrato.
+        </p>
+    }
+    else
+    {
+        <table class="table table-borderless mb-0">
+            <thead>
+                <tr>
+                    <th>Chiave (Key)</th>
+                    <th>Nome</th>
+                    <th>Descrizione</th>
+                    <th>File importati</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var t in Model)
+                {
+                    <tr>
+                        <td>
+                            <a asp-action="Details" asp-route-id="@t.Id"
+                               style="color:#58a6ff;text-decoration:none;font-family:monospace;font-size:.85rem;">
+                                @t.Key
+                            </a>
+                        </td>
+                        <td>@t.Name</td>
+                        <td style="color:#8b949e;font-size:.85rem;">
+                            @(string.IsNullOrWhiteSpace(t.Description) ? "—" : t.Description)
+                        </td>
+                        <td>
+                            <span class="badge-pill"
+                                  style="background:#1f6feb22;color:#58a6ff;border:1px solid #1f6feb44;">
+                                @t.FileCount
+                            </span>
+                        </td>
+                        <td class="text-end">
+                            <a asp-action="Details" asp-route-id="@t.Id"
+                               style="color:#8b949e;font-size:.82rem;text-decoration:none;margin-right:.75rem;">
+                                Dettagli
+                            </a>
+                            @if (isAdmin)
+                            {
+                                <a asp-action="Edit" asp-route-id="@t.Id"
+                                   style="color:#58a6ff;font-size:.82rem;text-decoration:none;margin-right:.75rem;">
+                                    Modifica
+                                </a>
+                                <form asp-action="Delete" asp-route-id="@t.Id"
+                                      method="post" style="display:inline;"
+                                      onsubmit="return confirm('Eliminare il tipo \'@t.Key\'?')">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit"
+                                            style="background:none;border:none;color:#f85149;font-size:.82rem;cursor:pointer;padding:0;"
+                                            @(t.FileCount > 0 ? "disabled title=\"Esistono file associati\"" : "")>
+                                        Elimina
+                                    </button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>

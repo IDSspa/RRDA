@@ -1,0 +1,50 @@
+@model RRDA.Data.ReportType
+
+@{
+    ViewData["Title"] = "Nuovo tipo di report";
+}
+
+<div class="d-flex align-items-center gap-3 mb-4">
+    <a asp-action="Index" style="color:#8b949e;text-decoration:none;font-size:.85rem;">
+        ← Tipi di report
+    </a>
+    <h4 style="margin:0;color:#c9d1d9;font-weight:600;">Nuovo tipo di report</h4>
+</div>
+
+<div class="rrda-card" style="max-width:520px;">
+    <form asp-action="Create" method="post">
+        @Html.AntiForgeryToken()
+
+        <div class="mb-3">
+            <label asp-for="Key" class="form-label">Chiave (Key)</label>
+            <input asp-for="Key" class="form-control"
+                   placeholder="Es: MAN_2Liv" autocomplete="off" />
+            <span asp-validation-for="Key" style="color:#f85149;font-size:.8rem;"></span>
+            <div style="color:#484f58;font-size:.78rem;margin-top:.3rem;">
+                Deve corrispondere al valore <code style="color:#58a6ff;">Name</code>
+                restituito dal plugin associato.
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Name" class="form-label">Nome leggibile</label>
+            <input asp-for="Name" class="form-control"
+                   placeholder="Es: Manutenzione 2 Livello" />
+            <span asp-validation-for="Name" style="color:#f85149;font-size:.8rem;"></span>
+        </div>
+
+        <div class="mb-4">
+            <label asp-for="Description" class="form-label">Descrizione (opzionale)</label>
+            <textarea asp-for="Description" class="form-control" rows="3"
+                      placeholder="Descrizione del tipo di report..."></textarea>
+        </div>
+
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn-rrda-primary">Crea</button>
+            <a asp-action="Index"
+               style="color:#8b949e;text-decoration:none;padding:.35rem .85rem;font-size:.85rem;">
+                Annulla
+            </a>
+        </div>
+    </form>
+</div>

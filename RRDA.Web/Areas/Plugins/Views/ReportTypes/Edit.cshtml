@@ -1,0 +1,44 @@
+@model RRDA.Data.ReportType
+
+@{
+    ViewData["Title"] = $"Modifica: {Model.Key}";
+}
+
+<div class="d-flex align-items-center gap-3 mb-4">
+    <a asp-action="Index" style="color:#8b949e;text-decoration:none;font-size:.85rem;">
+        ← Tipi di report
+    </a>
+    <h4 style="margin:0;color:#c9d1d9;font-weight:600;">Modifica tipo di report</h4>
+</div>
+
+<div class="rrda-card" style="max-width:520px;">
+    <form asp-action="Edit" asp-route-id="@Model.Id" method="post">
+        @Html.AntiForgeryToken()
+        <input asp-for="Id" type="hidden" />
+
+        <div class="mb-3">
+            <label asp-for="Key" class="form-label">Chiave (Key)</label>
+            <input asp-for="Key" class="form-control" autocomplete="off" />
+            <span asp-validation-for="Key" style="color:#f85149;font-size:.8rem;"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Name" class="form-label">Nome leggibile</label>
+            <input asp-for="Name" class="form-control" />
+            <span asp-validation-for="Name" style="color:#f85149;font-size:.8rem;"></span>
+        </div>
+
+        <div class="mb-4">
+            <label asp-for="Description" class="form-label">Descrizione (opzionale)</label>
+            <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+        </div>
+
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn-rrda-primary">Salva modifiche</button>
+            <a asp-action="Index"
+               style="color:#8b949e;text-decoration:none;padding:.35rem .85rem;font-size:.85rem;">
+                Annulla
+            </a>
+        </div>
+    </form>
+</div>
