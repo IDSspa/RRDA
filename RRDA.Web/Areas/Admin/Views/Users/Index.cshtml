@@ -1,0 +1,105 @@
+@model List<RRDA.Data.AppUser>
+@using RRDA.Data
+
+@{
+    ViewData["Title"] = "Gestione utenti";
+}
+
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <h4 style="margin:0;color:#c9d1d9;font-weight:600;">Gestione utenti</h4>
+    <a asp-action="Create" class="btn-rrda-primary" style="text-decoration:none;padding:.4rem .9rem;border-radius:6px;">
+        + Nuovo utente
+    </a>
+</div>
+
+<div class="rrda-card">
+    @if (!Model.Any())
+    {
+        <p style="color:#484f58;font-size:.875rem;margin:0;">Nessun utente registrato.</p>
+    }
+    else
+    {
+        <table class="table table-borderless mb-0">
+            <thead>
+                <tr>
+                    <th>Username Windows</th>
+                    <th>Nome</th>
+                    <th>Ruolo</th>
+                    <th>Stato</th>
+                    <th>Ultimo accesso</th>
+                    <th>Creato il</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var u in Model)
+                {
+                    var roleColor = u.Role switch {
+                        AppUserRole.Admin      => "#58a6ff",
+                        AppUserRole.Supervisor => "#3fb950",
+                        _                      => "#d29922"
+                    };
+                    var roleBg = u.Role switch {
+                        AppUserRole.Admin      => "#388bfd22",
+                        AppUserRole.Supervisor => "#3fb95022",
+                        _                      => "#d2992222"
+                    };
+                    var roleBorder = u.Role switch {
+                        AppUserRole.Admin      => "#388bfd44",
+                        AppUserRole.Supervisor => "#3fb95044",
+                        _                      => "#d2992244"
+                    };
+                    <tr>
+                        <td style="font-family:monospace;font-size:.82rem;">@u.WindowsUsername</td>
+                        <td style="color:#8b949e;">@(u.DisplayName ?? "—")</td>
+                        <td>
+                            <span class="badge-pill"
+                                  style="background:@roleBg;color:@roleColor;border:1px solid @roleBorder;">
+                                @u.Role
+                            </span>
+                        </td>
+                        <td>
+                            @if (u.IsEnabled)
+                            {
+                                <span class="badge-pill"
+                                      style="background:#3fb95022;color:#3fb950;border:1px solid #3fb95044;">
+                                    Attivo
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="badge-pill"
+                                      style="background:#f8514922;color:#f85149;border:1px solid #f8514944;">
+                                    Disabilitato
+                                </span>
+                            }
+                        </td>
+                        <td style="color:#8b949e;font-size:.82rem;">
+                            @(u.LastLoginAt.HasValue
+                                ? u.LastLoginAt.Value.ToString("yyyy-MM-dd HH:mm")
+                                : "Mai")
+                        </td>
+                        <td style="color:#8b949e;font-size:.82rem;">
+                            @u.CreatedAt.ToString("yyyy-MM-dd")
+                        </td>
+                        <td class="text-end">
+                            <a asp-action="Edit" asp-route-id="@u.Id"
+                               style="color:#58a6ff;font-size:.82rem;text-decoration:none;margin-right:.75rem;">
+                                Modifica
+                            </a>
+                            <form asp-action="Delete" asp-route-id="@u.Id"
+                                  method="post" style="display:inline;"
+                                  onsubmit="return confirm('Eliminare utente \'@u.WindowsUsername\'?')">
+                                @Html.AntiForgeryToken()
+                                <button type="submit"
+                                        style="background:none;border:none;color:#f85149;font-size:.82rem;cursor:pointer;padding:0;">
+                                    Elimina
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
