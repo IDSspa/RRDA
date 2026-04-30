@@ -1,0 +1,118 @@
+@model List<RRDA.Data.ReportEntity>
+@using RRDA.Data
+
+@{
+    var file       = ViewBag.File as ReportFile;
+    ViewData["Title"] = $"Entità — {file?.FileName}";
+    int total      = ViewBag.TotalCount;
+    int totPages   = ViewBag.TotalPages;
+    int curPage    = ViewBag.CurrentPage;
+    string? kind   = ViewBag.KindFilter;
+    var kinds      = ViewBag.Kinds as List<string> ?? [];
+
+    // Raccoglie tutte le property keys presenti nelle entità caricate
+    var propKeys   = Model
+        .SelectMany(e => e.Properties.Select(p => p.Name))
+        .Distinct()
+        .OrderBy(k => k)
+        .ToList();
+}
+
+<div class="d-flex align-items-center gap-3 mb-4">
+    <a asp-action="Details" asp-route-id="@file?.Id"
+       style="color:#8b949e;text-decoration:none;font-size:.85rem;">
+        ← @file?.FileName
+    </a>
+    <h4 style="margin:0;color:#c9d1d9;font-weight:600;">Entità</h4>
+    <span style="color:#8b949e;font-size:.82rem;">@total risultati</span>
+</div>
+
+<!-- ── Filtro per EntityKind ── -->
+@if (kinds.Count > 1)
+{
+    <div class="d-flex gap-2 mb-3 flex-wrap">
+        <a asp-action="Entities" asp-route-fileId="@file?.Id"
+           style="padding:.25rem .75rem;border-radius:20px;font-size:.82rem;
+                  text-decoration:none;
+                  background:@(string.IsNullOrEmpty(kind) ? "#1f6feb" : "transparent");
+                  color:@(string.IsNullOrEmpty(kind) ? "#fff" : "#8b949e");
+                  border:1px solid @(string.IsNullOrEmpty(kind) ? "#1f6feb" : "#30363d");">
+            Tutti
+        </a>
+        @foreach (var k in kinds)
+        {
+            <a asp-action="Entities" asp-route-fileId="@file?.Id" asp-route-kind="@k"
+               style="padding:.25rem .75rem;border-radius:20px;font-size:.82rem;
+                      text-decoration:none;
+                      background:@(kind == k ? "#1f6feb" : "transparent");
+                      color:@(kind == k ? "#fff" : "#8b949e");
+                      border:1px solid @(kind == k ? "#1f6feb" : "#30363d");">
+                @k
+            </a>
+        }
+    </div>
+}
+
+<!-- ── Tabella entità ── -->
+<div class="rrda-card" style="overflow-x:auto;">
+    @if (!Model.Any())
+    {
+        <p style="color:#484f58;font-size:.875rem;margin:0;">Nessuna entità trovata.</p>
+    }
+    else
+    {
+        <table class="table table-borderless mb-0" style="min-width:600px;">
+            <thead>
+                <tr>
+                    <th>EntityKind</th>
+                    <th>Key</th>
+                    @foreach (var k in propKeys)
+                    {
+                        <th style="font-size:.75rem;">@k</th>
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var e in Model)
+                {
+                    var propDict = e.Properties
+                        .ToDictionary(p => p.Name, p => p.Value ?? "");
+                    <tr>
+                        <td style="font-family:monospace;font-size:.8rem;color:#8b949e;">
+                            @e.ReportSheet
+                        </td>
+                        <td style="font-family:monospace;font-size:.82rem;">@e.Key</td>
+                        @foreach (var k in propKeys)
+                        {
+                            <td style="font-size:.82rem;color:#c9d1d9;">
+                                @(propDict.TryGetValue(k, out var v) ? v : "")
+                            </td>
+                        }
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <!-- ── Paginazione ── -->
+        @if (totPages > 1)
+        {
+            <div class="d-flex justify-content-center gap-1 mt-3">
+                @for (int p = 1; p <= totPages; p++)
+                {
+                    var isActive = p == curPage;
+                    <a asp-action="Entities"
+                       asp-route-fileId="@file?.Id"
+                       asp-route-kind="@kind"
+                       asp-route-page="@p"
+                       style="padding:.25rem .6rem;border-radius:4px;font-size:.82rem;
+                              text-decoration:none;
+                              background:@(isActive ? "#1f6feb" : "transparent");
+                              color:@(isActive ? "#fff" : "#8b949e");
+                              border:1px solid @(isActive ? "#1f6feb" : "#30363d");">
+                        @p
+                    </a>
+                }
+            </div>
+        }
+    }
+</div>

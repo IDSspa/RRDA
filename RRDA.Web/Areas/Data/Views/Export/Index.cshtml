@@ -1,0 +1,71 @@
+@{
+    ViewData["Title"] = "Esportazione dati";
+    var filters      = ViewBag.Filters;
+    int? previewCount = ViewBag.PreviewCount;
+}
+
+<div class="d-flex align-items-center mb-4">
+    <h4 style="margin:0;color:#c9d1d9;font-weight:600;">Esportazione dati</h4>
+</div>
+
+<div class="rrda-card" style="max-width:560px;">
+    <form method="get" asp-action="Index">
+        <div class="mb-3">
+            <label class="form-label">Tipo di report</label>
+            <select name="reportTypeId" class="form-select" asp-items="ViewBag.ReportTypes">
+                <option value="">— Tutti —</option>
+            </select>
+        </div>
+        <div class="row g-3 mb-3">
+            <div class="col-6">
+                <label class="form-label">Dal</label>
+                <input type="date" name="from" class="form-control"
+                       value="@filters?.from" />
+            </div>
+            <div class="col-6">
+                <label class="form-label">Al</label>
+                <input type="date" name="to" class="form-control"
+                       value="@filters?.to" />
+            </div>
+        </div>
+        <button type="submit" class="btn-rrda-primary mb-3">
+            Calcola anteprima
+        </button>
+    </form>
+
+    @if (previewCount.HasValue)
+    {
+        <div style="padding:.75rem 1rem;background:#0d1117;border-radius:6px;
+                    border:1px solid #21262d;margin-bottom:1rem;">
+            <span style="color:#8b949e;font-size:.85rem;">Entità da esportare: </span>
+            <span style="color:#c9d1d9;font-weight:600;">@previewCount</span>
+        </div>
+
+        <div class="d-flex gap-2">
+            <a asp-action="Csv"
+               asp-route-reportTypeId="@filters?.reportTypeId"
+               asp-route-from="@filters?.from"
+               asp-route-to="@filters?.to"
+               class="btn-rrda-primary"
+               style="text-decoration:none;padding:.4rem .9rem;border-radius:6px;">
+                ⬇ Scarica CSV
+            </a>
+            <a asp-action="Excel"
+               asp-route-reportTypeId="@filters?.reportTypeId"
+               asp-route-from="@filters?.from"
+               asp-route-to="@filters?.to"
+               style="text-decoration:none;padding:.4rem .9rem;border-radius:6px;
+                      background:#1a3a1a;color:#3fb950;
+                      border:1px solid #3fb95044;font-size:.85rem;">
+                ⬇ Scarica Excel
+            </a>
+        </div>
+    }
+</div>
+
+<div class="mt-4" style="color:#484f58;font-size:.8rem;max-width:560px;">
+    Il file CSV è codificato in UTF-8 con BOM — compatibile con Excel.<br/>
+    Il file Excel è un TSV rinominato .xls — si apre direttamente in Excel
+    senza conversioni. Per esportazioni .xlsx native contatta l'amministratore
+    per abilitare la libreria ClosedXML.
+</div>

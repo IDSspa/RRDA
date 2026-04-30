@@ -1,0 +1,142 @@
+@model List<RRDA.Data.ReportFile>
+@using RRDA.Web.Security
+
+@{
+    ViewData["Title"] = "File importati";
+    var isSupervisor = User.HasClaim(c => c.Type == AppUserClaimsTransformation.AppRoleClaimType
+        && (c.Value == "Supervisor" || c.Value == "Admin"));
+    var filters  = ViewBag.Filters;
+    int total    = ViewBag.TotalCount;
+    int totPages = ViewBag.TotalPages;
+    int curPage  = ViewBag.CurrentPage;
+}
+
+<div class="d-flex align-items-center justify-content-between mb-3">
+    <h4 style="margin:0;color:#c9d1d9;font-weight:600;">File importati</h4>
+    <span style="color:#8b949e;font-size:.82rem;">@total risultati</span>
+</div>
+
+<!-- ── Filtri ── -->
+<div class="rrda-card mb-3">
+    <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-3">
+            <label class="form-label">Tipo di report</label>
+            <select name="reportTypeId" class="form-select" asp-items="ViewBag.ReportTypes">
+                <option value="">— Tutti —</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Importato da</label>
+            <input type="text" name="importedBy" class="form-control"
+                   value="@filters?.importedBy" placeholder="username..." />
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Dal</label>
+            <input type="date" name="from" class="form-control"
+                   value="@filters?.from" />
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Al</label>
+            <input type="date" name="to" class="form-control"
+                   value="@filters?.to" />
+        </div>
+        <div class="col-md-3 d-flex gap-2">
+            <button type="submit" class="btn-rrda-primary">Filtra</button>
+            <a asp-action="Index" style="color:#8b949e;text-decoration:none;
+               padding:.35rem .85rem;font-size:.85rem;">Reset</a>
+        </div>
+    </form>
+</div>
+
+<!-- ── Tabella ── -->
+<div class="rrda-card">
+    @if (!Model.Any())
+    {
+        <p style="color:#484f58;font-size:.875rem;margin:0;">Nessun file trovato.</p>
+    }
+    else
+    {
+        <table class="table table-borderless mb-0">
+            <thead>
+                <tr>
+                    <th>Nome file</th>
+                    <th>Tipo</th>
+                    <th>Importato da</th>
+                    <th>Data importazione</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var f in Model)
+                {
+                    <tr>
+                        <td style="font-family:monospace;font-size:.82rem;">
+                            <a asp-action="Details" asp-route-id="@f.Id"
+                               style="color:#c9d1d9;text-decoration:none;">
+                                @f.FileName
+                            </a>
+                        </td>
+                        <td>
+                            <span class="badge-pill"
+                                  style="background:#1f6feb22;color:#58a6ff;border:1px solid #1f6feb44;">
+                                @f.ReportType?.Key
+                            </span>
+                        </td>
+                        <td style="color:#8b949e;font-size:.85rem;">
+                            @(f.ImportedBy ?? "—")
+                        </td>
+                        <td style="color:#8b949e;font-size:.82rem;">
+                            @f.UploadedAt.ToString("yyyy-MM-dd HH:mm")
+                        </td>
+                        <td class="text-end">
+                            <a asp-action="Details" asp-route-id="@f.Id"
+                               style="color:#8b949e;font-size:.82rem;text-decoration:none;margin-right:.75rem;">
+                                Dettagli
+                            </a>
+                            <a asp-action="Entities" asp-route-fileId="@f.Id"
+                               style="color:#58a6ff;font-size:.82rem;text-decoration:none;margin-right:.75rem;">
+                                Entità
+                            </a>
+                            @if (isSupervisor)
+                            {
+                                <form asp-action="Delete" asp-route-id="@f.Id"
+                                      method="post" style="display:inline;"
+                                      onsubmit="return confirm('Eliminare il file \'@f.FileName\' e tutti i dati associati?')">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit"
+                                            style="background:none;border:none;color:#f85149;font-size:.82rem;cursor:pointer;padding:0;">
+                                        Elimina
+                                    </button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <!-- ── Paginazione ── -->
+        @if (totPages > 1)
+        {
+            <div class="d-flex justify-content-center gap-1 mt-3">
+                @for (int p = 1; p <= totPages; p++)
+                {
+                    var isActive = p == curPage;
+                    <a asp-action="Index"
+                       asp-route-page="@p"
+                       asp-route-reportTypeId="@filters?.reportTypeId"
+                       asp-route-importedBy="@filters?.importedBy"
+                       asp-route-from="@filters?.from"
+                       asp-route-to="@filters?.to"
+                       style="padding:.25rem .6rem;border-radius:4px;font-size:.82rem;
+                              text-decoration:none;
+                              background:@(isActive ? "#1f6feb" : "transparent");
+                              color:@(isActive ? "#fff" : "#8b949e");
+                              border:1px solid @(isActive ? "#1f6feb" : "#30363d");">
+                        @p
+                    </a>
+                }
+            </div>
+        }
+    }
+</div>
