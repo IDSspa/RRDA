@@ -112,11 +112,13 @@
                         <TextBlock Text="File nella cartella selezionata" FontWeight="Bold" DockPanel.Dock="Top" Margin="0,0,0,6"/>
                         <ListView x:Name="FilesListView"
                                   SelectionChanged="FilesListView_SelectionChanged"
-                                  ContextMenuOpening="FilesListView_ContextMenuOpening">
+                                  ContextMenuOpening="FilesListView_ContextMenuOpening"
+                                  GridViewColumnHeader.Click="FilesListView_Click">
                             <ListView.ContextMenu>
                                 <ContextMenu>
+                                    <MenuItem x:Name="FileSelectAll" Header="Seleziona tutti..." Click="FileSelectAll_Click" IsEnabled="False" />
                                     <MenuItem x:Name="FileOpenMenuItem" Header="Apri..." Click="File_Open_Click" IsEnabled="False"/>
-                                    <MenuItem x:Name="FileDeleteMenuItem" Header="Cancella" Click="File_Delete_Click" IsEnabled="False"/>
+                                    <MenuItem x:Name="FileOpenFolderMenuItem" Header="Apri percorso..." Click="File_OpenPath_Click" IsEnabled="False"/>
                                     <MenuItem x:Name="FileImportMenuItem" Header="Importa" Click="File_Import_Click" IsEnabled="False"/>
                                     <MenuItem x:Name="FileExportValidatorMenuItem" Header="Esporta validatore" Click="File_ExportValidator_Click" IsEnabled="False"/>
                                 </ContextMenu>

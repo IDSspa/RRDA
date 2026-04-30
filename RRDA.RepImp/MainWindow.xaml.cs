@@ -4,13 +4,15 @@ using RRDA.Core;
 using RRDA.Core.Validator;
 using RRDA.Data;
 using RRDA.Plugins.Common;
+using System.ComponentModel;
 using System.Data;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Threading;
-using System.Diagnostics;
 
 namespace RRDA.RepImp
 {
@@ -22,6 +24,8 @@ namespace RRDA.RepImp
         private string _reportsRoot;
         private List<IReportImporter> _plugins = [];
         private SplashScreenWindow? _aboutWindow;
+        private GridViewColumnHeader? _lastHeaderClicked;
+        private ListSortDirection _lastDirection;
 
         public MainWindow()
         {
@@ -63,6 +67,165 @@ namespace RRDA.RepImp
             FoldersListBox.ItemsSource = folders;
             if (folders.Count > 0)
                 FoldersListBox.SelectedIndex = 0;
+        }
+
+        private async Task LoadFiles(string folderPath)
+        {
+            try
+            {
+                if (!Directory.Exists(folderPath))
+                {
+                    FilesListView.ItemsSource = null;
+                    Log($"Cartella non trovata: {folderPath}");
+                    return;
+                }
+
+                int maxDepth = Properties.Settings.Default.RecurseDepth;
+                if (maxDepth < 0) maxDepth = 0;
+
+                using var cts = new CancellationTokenSource();
+                var scanDlg = new ScanProgressDialog(cts) { Owner = this };
+                scanDlg.Show();
+
+                List<FileItem> fileItems;
+
+                try
+                {
+                    fileItems = await Task.Run(async () =>
+                    {
+                        var ct = cts.Token;
+
+                        // ── FASE 1: scansione filesystem ──────────────────────────────
+                        Dispatcher.Invoke(() =>
+                            scanDlg.SetPhase("Scansione cartelle in corso...", indeterminate: true));
+
+                        var fileInfos = new List<FileInfo>();
+                        var stack = new Stack<(string Path, int Depth)>();
+                        stack.Push((folderPath, 0));
+
+                        while (stack.Count > 0)
+                        {
+                            ct.ThrowIfCancellationRequested();
+
+                            var (currentPath, depth) = stack.Pop();
+
+                            try
+                            {
+                                var dirInfo = new DirectoryInfo(currentPath);
+
+                                Dispatcher.Invoke(() =>
+                                    scanDlg.SetDetail(currentPath));
+
+                                FileInfo[] fis;
+                                try { fis = dirInfo.GetFiles("*.xlsx"); }
+                                catch (Exception ex)
+                                {
+                                    Dispatcher.Invoke(() => Log(
+                                        $"Impossibile enumerare i file in '{currentPath}': {ex.Message}"));
+                                    fis = [];
+                                }
+
+                                fileInfos.AddRange(fis);
+
+                                if (depth < maxDepth)
+                                {
+                                    DirectoryInfo[] subdirs;
+                                    try { subdirs = dirInfo.GetDirectories(); }
+                                    catch (Exception ex)
+                                    {
+                                        Dispatcher.Invoke(() => Log(
+                                            $"Impossibile enumerare le sottocartelle in '{currentPath}': {ex.Message}"));
+                                        subdirs = [];
+                                    }
+
+                                    foreach (var sd in subdirs)
+                                        stack.Push((sd.FullName, depth + 1));
+                                }
+                            }
+                            catch (OperationCanceledException) { throw; }
+                            catch (Exception ex)
+                            {
+                                Dispatcher.Invoke(() => Log(
+                                    $"Errore accesso cartella '{currentPath}': {ex.Message}"));
+                            }
+                        }
+
+                        fileInfos = [.. fileInfos.OrderBy(f => f.Name)];
+
+                        // ── FASE 2: catalogazione plugin ──────────────────────────────
+                        Dispatcher.Invoke(() =>
+                            scanDlg.SetPhase(
+                                "Catalogazione file in corso...",
+                                indeterminate: false,
+                                max: fileInfos.Count > 0 ? fileInfos.Count : 1));
+
+                        var result = new List<FileItem>(fileInfos.Count);
+
+                        for (int i = 0; i < fileInfos.Count; i++)
+                        {
+                            ct.ThrowIfCancellationRequested();
+
+                            var fi = fileInfos[i];
+                            string tipo = string.Empty;
+
+                            // CanImportAsync è veloce (solo string match), ma lo invochiamo
+                            // sul thread del pool per non tornare sulla UI a ogni file.
+                            // Se un plugin futuro usasse fileStream, dovrebbe essere awaited
+                            // sul thread UI — per ora è fire-and-forget-safe.
+                            foreach (var plugin in _plugins)
+                            {
+                                try
+                                {
+                                    // CanImportAsync non usa fileStream né configXml qui
+                                    var can = await plugin.CanImportAsync(fi.Name);
+                                    if (can) { tipo = plugin.Name; break; }
+                                }
+                                catch (Exception ex)
+                                {
+                                    Dispatcher.Invoke(() => Log(
+                                        $"Errore CanImportAsync plugin '{plugin.Name}' per file '{fi.Name}': {ex.Message}"));
+                                }
+                            }
+
+                            result.Add(new FileItem(fi.Name, fi.Length, fi.LastWriteTime, tipo, fi.FullName));
+
+                            // Aggiorna UI ogni 10 file (o all'ultimo) per non saturare il Dispatcher
+                            if (i % 10 == 0 || i == fileInfos.Count - 1)
+                            {
+                                int captured = i;
+                                string capturedName = fi.Name;
+                                Dispatcher.Invoke(() =>
+                                    scanDlg.SetProgress(
+                                        captured + 1,
+                                        $"({captured + 1}/{fileInfos.Count}) {capturedName}"));
+                            }
+                        }
+
+                        return result;
+
+                    }, cts.Token);
+                }
+                catch (OperationCanceledException)
+                {
+                    Log("Scansione annullata dall'utente.");
+                    FilesListView.ItemsSource = null;
+                    return;
+                }
+                finally
+                {
+                    scanDlg.Close();
+                }
+
+                FilesListView.ItemsSource = fileItems;
+                Log($"Caricati {fileItems.Count} file *.xlsx da '{folderPath}' " +
+                    $"(profondità ricorsione={maxDepth}). " +
+                    $"Plugin applicabili trovati per {fileItems.Count(f => !string.IsNullOrEmpty(f.Tipo))} file.");
+            }
+            catch (Exception ex)
+            {
+                FilesListView.ItemsSource = null;
+                Log($"Errore caricamento file da '{folderPath}': {ex.Message}");
+            }
         }
 
         private void LoadPlugins()
@@ -363,165 +526,6 @@ namespace RRDA.RepImp
             return true;
         }
 
-        private async Task LoadFiles(string folderPath)
-        {
-            try
-            {
-                if (!Directory.Exists(folderPath))
-                {
-                    FilesListView.ItemsSource = null;
-                    Log($"Cartella non trovata: {folderPath}");
-                    return;
-                }
-
-                int maxDepth = Properties.Settings.Default.RecurseDepth;
-                if (maxDepth < 0) maxDepth = 0;
-
-                using var cts = new CancellationTokenSource();
-                var scanDlg = new ScanProgressDialog(cts) { Owner = this };
-                scanDlg.Show();
-
-                List<FileItem> fileItems;
-
-                try
-                {
-                    fileItems = await Task.Run(async () =>
-                    {
-                        var ct = cts.Token;
-
-                        // ── FASE 1: scansione filesystem ──────────────────────────────
-                        Dispatcher.Invoke(() =>
-                            scanDlg.SetPhase("Scansione cartelle in corso...", indeterminate: true));
-
-                        var fileInfos = new List<FileInfo>();
-                        var stack = new Stack<(string Path, int Depth)>();
-                        stack.Push((folderPath, 0));
-
-                        while (stack.Count > 0)
-                        {
-                            ct.ThrowIfCancellationRequested();
-
-                            var (currentPath, depth) = stack.Pop();
-
-                            try
-                            {
-                                var dirInfo = new DirectoryInfo(currentPath);
-
-                                Dispatcher.Invoke(() =>
-                                    scanDlg.SetDetail(currentPath));
-
-                                FileInfo[] fis;
-                                try { fis = dirInfo.GetFiles("*.xlsx"); }
-                                catch (Exception ex)
-                                {
-                                    Dispatcher.Invoke(() => Log(
-                                        $"Impossibile enumerare i file in '{currentPath}': {ex.Message}"));
-                                    fis = [];
-                                }
-
-                                fileInfos.AddRange(fis);
-
-                                if (depth < maxDepth)
-                                {
-                                    DirectoryInfo[] subdirs;
-                                    try { subdirs = dirInfo.GetDirectories(); }
-                                    catch (Exception ex)
-                                    {
-                                        Dispatcher.Invoke(() => Log(
-                                            $"Impossibile enumerare le sottocartelle in '{currentPath}': {ex.Message}"));
-                                        subdirs = [];
-                                    }
-
-                                    foreach (var sd in subdirs)
-                                        stack.Push((sd.FullName, depth + 1));
-                                }
-                            }
-                            catch (OperationCanceledException) { throw; }
-                            catch (Exception ex)
-                            {
-                                Dispatcher.Invoke(() => Log(
-                                    $"Errore accesso cartella '{currentPath}': {ex.Message}"));
-                            }
-                        }
-
-                        fileInfos = [.. fileInfos.OrderBy(f => f.Name)];
-
-                        // ── FASE 2: catalogazione plugin ──────────────────────────────
-                        Dispatcher.Invoke(() =>
-                            scanDlg.SetPhase(
-                                "Catalogazione file in corso...",
-                                indeterminate: false,
-                                max: fileInfos.Count > 0 ? fileInfos.Count : 1));
-
-                        var result = new List<FileItem>(fileInfos.Count);
-
-                        for (int i = 0; i < fileInfos.Count; i++)
-                        {
-                            ct.ThrowIfCancellationRequested();
-
-                            var fi = fileInfos[i];
-                            string tipo = string.Empty;
-
-                            // CanImportAsync è veloce (solo string match), ma lo invochiamo
-                            // sul thread del pool per non tornare sulla UI a ogni file.
-                            // Se un plugin futuro usasse fileStream, dovrebbe essere awaited
-                            // sul thread UI — per ora è fire-and-forget-safe.
-                            foreach (var plugin in _plugins)
-                            {
-                                try
-                                {
-                                    // CanImportAsync non usa fileStream né configXml qui
-                                    var can = await plugin.CanImportAsync(fi.Name);
-                                    if (can) { tipo = plugin.Name; break; }
-                                }
-                                catch (Exception ex)
-                                {
-                                    Dispatcher.Invoke(() => Log(
-                                        $"Errore CanImportAsync plugin '{plugin.Name}' per file '{fi.Name}': {ex.Message}"));
-                                }
-                            }
-
-                            result.Add(new FileItem(fi.Name, fi.Length, fi.LastWriteTime, tipo, fi.FullName));
-
-                            // Aggiorna UI ogni 10 file (o all'ultimo) per non saturare il Dispatcher
-                            if (i % 10 == 0 || i == fileInfos.Count - 1)
-                            {
-                                int captured = i;
-                                string capturedName = fi.Name;
-                                Dispatcher.Invoke(() =>
-                                    scanDlg.SetProgress(
-                                        captured + 1,
-                                        $"({captured + 1}/{fileInfos.Count}) {capturedName}"));
-                            }
-                        }
-
-                        return result;
-
-                    }, cts.Token);
-                }
-                catch (OperationCanceledException)
-                {
-                    Log("Scansione annullata dall'utente.");
-                    FilesListView.ItemsSource = null;
-                    return;
-                }
-                finally
-                {
-                    scanDlg.Close();
-                }
-
-                FilesListView.ItemsSource = fileItems;
-                Log($"Caricati {fileItems.Count} file *.xlsx da '{folderPath}' " +
-                    $"(profondità ricorsione={maxDepth}). " +
-                    $"Plugin applicabili trovati per {fileItems.Count(f => !string.IsNullOrEmpty(f.Tipo))} file.");
-            }
-            catch (Exception ex)
-            {
-                FilesListView.ItemsSource = null;
-                Log($"Errore caricamento file da '{folderPath}': {ex.Message}");
-            }
-        }
-
         private void MainWindow_Loaded(object? sender, RoutedEventArgs e)
         {
             try
@@ -622,6 +626,31 @@ namespace RRDA.RepImp
                 e.Handled = true;
             }
         }
+        private void FilesListView_Click(object sender, RoutedEventArgs e)
+        {
+            if (e.OriginalSource is not GridViewColumnHeader headerClicked || headerClicked.Column == null)
+                return;
+
+            string sortBy = headerClicked.Column.Header.ToString()!;
+
+            ListSortDirection direction;
+
+            if (_lastHeaderClicked != headerClicked)
+                direction = ListSortDirection.Ascending;
+            else
+                direction = _lastDirection == ListSortDirection.Ascending
+                    ? ListSortDirection.Descending
+                    : ListSortDirection.Ascending;
+
+            ICollectionView dataView = CollectionViewSource.GetDefaultView(FilesListView.ItemsSource);
+
+            dataView.SortDescriptions.Clear();
+            dataView.SortDescriptions.Add(new SortDescription(sortBy, direction));
+            dataView.Refresh();
+
+            _lastHeaderClicked = headerClicked;
+            _lastDirection = direction;
+        }
 
         private void FilesListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -643,26 +672,32 @@ namespace RRDA.RepImp
 
             try
             {
-                var fi = FilesListView.SelectedItem as FileItem;
-                bool isFValidFile = fi is not null && !string.IsNullOrWhiteSpace(fi?.Tipo);
+                // FileSelectAll è abilitato se c'è almeno un file nella lista (non dipende dalla selezione attuale)
+                FileSelectAll.IsEnabled = (FilesListView.Items.Count != 0);
+                // Se è stato selezionato solo un file, anche se non valido, abilitiamo i comandi di apertura e apertura percorso
+                FileOpenFolderMenuItem.IsEnabled = FileOpenMenuItem.IsEnabled = (FilesListView.SelectedItems.Count == 1);
 
-                FileOpenMenuItem.IsEnabled = FileImportMenuItem.IsEnabled = FileDeleteMenuItem.IsEnabled = isFValidFile;
+                bool isFValidFile = false;
 
-                if (isFValidFile)
-                {
-                    bool canExport = false;
+                FileItem? firstValidFile = null;
 
-                    var plugin = _plugins.FirstOrDefault(p => string.Equals(p.Name, fi?.Tipo, StringComparison.OrdinalIgnoreCase));
-
-                    if (plugin != null)
+                // Viene verificato se il file è valido (ha un plugin associato) per abilitare il comando di importazione ed esportazione validatore.
+                // Se sono selezionati più file, il comando di importazione è abilitato se almeno uno è valido,
+                // mentre il comando di esportazione validatore è abilitato solo se esattamente uno è valido.
+                foreach (var item in FilesListView.SelectedItems)
+                    if (item is FileItem fi && !string.IsNullOrWhiteSpace(fi.Tipo))
                     {
-                        string? pluginFolder = Path.GetDirectoryName(plugin.GetType().Assembly.Location);
-
-                        canExport = !string.IsNullOrEmpty(pluginFolder) && Directory.Exists(pluginFolder);
+                        isFValidFile = true;
+                        firstValidFile = fi;
+                        break;
                     }
 
-                    FileExportValidatorMenuItem.IsEnabled = canExport;
-                }
+                FileImportMenuItem.IsEnabled = (isFValidFile && firstValidFile != null);
+
+                if (isFValidFile && firstValidFile != null && FilesListView.SelectedItems.Count==1)
+                    FileExportValidatorMenuItem.IsEnabled = (_plugins.FirstOrDefault(p => string.Equals(p.Name, firstValidFile.Tipo, StringComparison.OrdinalIgnoreCase)) != null);
+                else
+                    FileExportValidatorMenuItem.IsEnabled = false;
             }
             catch (Exception ex)
             {
@@ -670,43 +705,65 @@ namespace RRDA.RepImp
             }
         }
 
-        private async void File_Delete_Click(object? sender, RoutedEventArgs e)
+        private void FileSelectAll_Click(object sender, RoutedEventArgs e)
         {
-            if (FilesListView.SelectedItem is FileItem fi)
+            if (FilesListView.Items.Count == 0)
+                return;
+
+            // Seleziona o deseleziona tutti gli elementi nella ListView
+            bool selectAll = FilesListView.SelectedItems.Count != FilesListView.Items.Count;
+            foreach (var item in FilesListView.Items)
             {
-                var res = MessageBox.Show(this,
-                    $"Confermi cancellazione del file '{fi.Name}'?",
-                    "Conferma cancellazione",
-                    MessageBoxButton.YesNo,
-                    MessageBoxImage.Question);
-
-                if (res == MessageBoxResult.Yes)
-                {
-                    try
-                    {
-                        if (File.Exists(fi.FullPath))
-                        {
-                            File.Delete(fi.FullPath);
-                            Log($"File cancellato: {fi.FullPath}");
-                        }
-                        else
-                        {
-                            Log($"File non trovato: {fi.FullPath}");
-                        }
-
-                        var folder = Path.GetDirectoryName(fi.FullPath) ?? _reportsRoot;
-                        await LoadFiles(folder);
-                    }
-                    catch (Exception ex)
-                    {
-                        Log($"Errore cancellazione file '{fi.FullPath}': {ex.Message}");
-                        MessageBox.Show(this, $"Impossibile cancellare il file:{Environment.NewLine}{ex.Message}", "Errore cancellazione", MessageBoxButton.OK, MessageBoxImage.Error);
-                    }
-                }
+                if (item is ListViewItem lvi)
+                    lvi.IsSelected = selectAll;
             }
-            else
+        }
+
+        private async void File_OpenPath_Click(object? sender, RoutedEventArgs e)
+        {
+            try
             {
-                MessageBox.Show(this, "Seleziona un file da cancellare.", "Nessun file selezionato", MessageBoxButton.OK, MessageBoxImage.Information);
+                // Determina il file selezionato (può essere FileItem o FileInfo)
+                string? fullPath = null;
+
+                if (FilesListView.SelectedItem is FileItem fi)
+                    fullPath = fi.FullPath;
+                else if (FilesListView.SelectedItem is FileInfo ffi)
+                    fullPath = ffi.FullName;
+
+                if (string.IsNullOrWhiteSpace(fullPath))
+                {
+                    MessageBox.Show(this, "Seleziona un file per aprirne la cartella.", "Nessun file selezionato", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+
+                var directory = Path.GetDirectoryName(fullPath);
+                if (string.IsNullOrWhiteSpace(directory) || !Directory.Exists(directory))
+                {
+                    MessageBox.Show(this, $"Cartella non trovata: {directory ?? "<path non valido>"}", "Cartella non trovata", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    Log($"Impossibile aprire la cartella: '{directory ?? "<path non valido>"}' non esiste.");
+                    return;
+                }
+
+                // Se il file esiste, apriamo Esplora selezionandolo; altrimenti apriamo la cartella
+                bool fileExists = File.Exists(fullPath);
+
+                var psi = new ProcessStartInfo
+                {
+                    FileName = "explorer.exe",
+                    UseShellExecute = true,
+                    Arguments = fileExists ? $"/select,\"{fullPath}\"" : $"\"{directory}\""
+                };
+
+                Process.Start(psi);
+                Log(fileExists
+                    ? $"Aperta cartella e selezionato file in Esplora: {fullPath}"
+                    : $"Aperta cartella in Esplora: {directory}");
+            }
+            catch (Exception ex)
+            {
+                Log($"Errore apertura cartella file: {ex.Message}");
+                MessageBox.Show(this, $"Impossibile aprire la cartella del file:{Environment.NewLine}{ex.Message}", "Errore apertura", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
