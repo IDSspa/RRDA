@@ -6,7 +6,12 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>5d3e82fb-3ece-4bc3-92de-970877abff0a</UserSecretsId>
   </PropertyGroup>
-
+	
+    <PropertyGroup>
+	    <IISExpressWindowsAuthentication>enabled</IISExpressWindowsAuthentication>
+	    <IISExpressAnonymousAuthentication>disabled</IISExpressAnonymousAuthentication>
+    </PropertyGroup>
+	
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Authentication.Negotiate" Version="8.0.22" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.11" />
