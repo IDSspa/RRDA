@@ -191,6 +191,10 @@ namespace RRDA.Data
 
                 b.Property(x => x.Description)
                     .HasMaxLength(1000);
+
+                b.Property(x => x.SubjectKind)
+                    .HasConversion<int>()
+                    .IsRequired();
             });
 
             modelBuilder.Entity<AppUser>(b =>

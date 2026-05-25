@@ -21,6 +21,7 @@ namespace RRDA.Web.Areas.Plugins.Controllers
                     Key         = t.Key,
                     Name        = t.Name,
                     Description = t.Description,
+                    SubjectKind = t.SubjectKind,
                     FileCount   = t.Files.Count()
                 })
                 .ToListAsync();
@@ -49,6 +50,7 @@ namespace RRDA.Web.Areas.Plugins.Controllers
         {
             Key   = string.Empty,
             Name  = string.Empty,
+            SubjectKind = ResolveSubjectKindFromPluginKey(string.Empty),
             Files = [],
             TabularSessions = []
         });
@@ -70,6 +72,7 @@ namespace RRDA.Web.Areas.Plugins.Controllers
                 return View(model);
             }
 
+            model.SubjectKind = ResolveSubjectKindFromPluginKey(model.Key);
             model.Files = [];
             model.TabularSessions = [];
             db.ReportTypes.Add(model);
@@ -113,6 +116,7 @@ namespace RRDA.Web.Areas.Plugins.Controllers
             type.Key         = model.Key;
             type.Name        = model.Name;
             type.Description = model.Description;
+            type.SubjectKind = ResolveSubjectKindFromPluginKey(model.Key);
 
             await db.SaveChangesAsync();
 
@@ -144,6 +148,19 @@ namespace RRDA.Web.Areas.Plugins.Controllers
             TempData["Success"] = $"Tipo di report '{type.Key}' eliminato.";
             return RedirectToAction(nameof(Index));
         }
+
+        private static ReportSubjectKind ResolveSubjectKindFromPluginKey(string reportTypeKey)
+        {
+            var key = (reportTypeKey ?? string.Empty).ToUpperInvariant();
+
+            if (key.Contains("3LIV") || key.Contains("RADAR"))
+                return ReportSubjectKind.Radar;
+
+            if (key.Contains("2LIV") || key.Contains("SUB"))
+                return ReportSubjectKind.SubAssembly;
+
+            return ReportSubjectKind.Component;
+        }
     }
 
     // ── ViewModel ─────────────────────────────────────────────────────────
@@ -153,6 +170,7 @@ namespace RRDA.Web.Areas.Plugins.Controllers
         public string Key         { get; set; } = string.Empty;
         public string Name        { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
+        public ReportSubjectKind SubjectKind { get; set; }
         public int    FileCount   { get; set; }
     }
 }

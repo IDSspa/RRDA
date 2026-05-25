@@ -28,6 +28,11 @@
             <span asp-validation-for="Name" style="color:#f85149;font-size:.8rem;"></span>
         </div>
 
+        <div class="mb-3">
+            <label class="form-label">Soggetto report</label>
+            <input class="form-control" value="Derivato automaticamente dal plugin/chiave report" readonly />
+        </div>
+
         <div class="mb-4">
             <label asp-for="Description" class="form-label">Descrizione (opzionale)</label>
             <textarea asp-for="Description" class="form-control" rows="3"></textarea>
