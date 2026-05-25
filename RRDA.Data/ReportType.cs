@@ -15,7 +15,13 @@
 
         public string Description { get; set; } = string.Empty;
 
+        // Soggetto di riferimento del report (componente, sottoassieme, radar)
+        public ReportSubjectKind SubjectKind { get; set; } = ReportSubjectKind.Component;
+
         // Navigazione verso i file associati
         public required ICollection<ReportFile> Files { get; set; } = [];
+
+        // Navigazione verso le sessioni cache tabellare
+        public required ICollection<TabularSession> TabularSessions { get; set; } = [];
     }
 }

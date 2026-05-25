@@ -31,6 +31,7 @@
                 <tr>
                     <th>Chiave (Key)</th>
                     <th>Nome</th>
+                    <th>Soggetto</th>
                     <th>Descrizione</th>
                     <th>File importati</th>
                     <th></th>
@@ -47,6 +48,7 @@
                             </a>
                         </td>
                         <td>@t.Name</td>
+                        <td><span class="badge-pill">@t.SubjectKind</span></td>
                         <td style="color:#8b949e;font-size:.85rem;">
                             @(string.IsNullOrWhiteSpace(t.Description) ? "—" : t.Description)
                         </td>

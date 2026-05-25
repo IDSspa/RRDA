@@ -33,11 +33,19 @@
         <div class="col-9" style="font-family:monospace;">@Model.Key</div>
         <div class="col-3" style="color:#8b949e;">Nome</div>
         <div class="col-9">@Model.Name</div>
+        <div class="col-3" style="color:#8b949e;">Soggetto</div>
+        <div class="col-9">@Model.SubjectKind</div>
         <div class="col-3" style="color:#8b949e;">Descrizione</div>
         <div class="col-9" style="color:#8b949e;">
             @(string.IsNullOrWhiteSpace(Model.Description) ? "—" : Model.Description)
         </div>
     </div>
+</div>
+
+<div class="rrda-card mb-3">
+    <h6 style="margin:0 0 .75rem 0;color:#c9d1d9;font-weight:600;">Analisi soggetto</h6>
+    <a asp-area="Data" asp-controller="Tabular" asp-action="Subject" asp-route-reportTypeId="@Model.Id" class="btn-rrda-primary" style="text-decoration:none;">Vista tabellare</a>
+    <a asp-area="Data" asp-controller="Statistics" asp-action="Subject" asp-route-reportTypeId="@Model.Id" style="margin-left:1rem;color:#58a6ff;text-decoration:none;">Analisi statistiche →</a>
 </div>
 
 <div class="rrda-card">
