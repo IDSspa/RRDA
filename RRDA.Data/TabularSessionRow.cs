@@ -1,4 +1,4 @@
-namespace RRDA.Data
+﻿namespace RRDA.Data
 {
     public class TabularSessionRow
     {

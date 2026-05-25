@@ -1,4 +1,4 @@
-namespace RRDA.Core.Tabular
+﻿namespace RRDA.Core.Tabular
 {
     /// <summary>
     /// Provider governato per trasformare entità di report in una vista tabellare orizzontale.

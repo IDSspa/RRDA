@@ -63,7 +63,7 @@ namespace RRDA.Web.Areas.Plugins.Controllers
             if (!ModelState.IsValid) return View(model);
 
             var exists = await db.ReportTypes
-                .AnyAsync(t => t.Key.ToLower() == model.Key.ToLower());
+                .AnyAsync(t => t.Key.Equals(model.Key, StringComparison.CurrentCultureIgnoreCase));
 
             if (exists)
             {
@@ -100,7 +100,7 @@ namespace RRDA.Web.Areas.Plugins.Controllers
             if (!ModelState.IsValid) return View(model);
 
             var exists = await db.ReportTypes
-                .AnyAsync(t => t.Key.ToLower() == model.Key.ToLower()
+                .AnyAsync(t => t.Key.Equals(model.Key, StringComparison.CurrentCultureIgnoreCase)
                             && t.Id != id);
 
             if (exists)
@@ -150,7 +150,7 @@ namespace RRDA.Web.Areas.Plugins.Controllers
 
             if (type is null) return NotFound();
 
-            if (type.Files.Any())
+            if (type.Files.Count != 0)
             {
                 TempData["Warning"] =
                     $"Impossibile eliminare '{type.Key}': esistono {type.Files.Count} file associati.";

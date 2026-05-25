@@ -1,10 +1,10 @@
-namespace RRDA.Data
+﻿namespace RRDA.Data
 {
-    /// <summary>
-    /// Cache sessionale della proiezione tabellare per analisi web.
-    /// </summary>
     public class TabularSession
-    {
+    {    
+        /// <summary>
+         /// Cache sessionale della proiezione tabellare per analisi web.
+         /// </summary>
         public Guid Id { get; set; }
         public int ReportTypeId { get; set; }
         public required ReportType ReportType { get; set; }
