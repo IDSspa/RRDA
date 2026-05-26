@@ -1,0 +1,50 @@
+﻿@model RRDA.Web.Areas.Data.Controllers.FilePivotViewModel
+@{
+    ViewData["Title"] = $"Pivot file #{Model.FileId}";
+}
+
+<div class="d-flex align-items-center gap-3 mb-4">
+    <a asp-area="Data" asp-controller="Files" asp-action="Details" asp-route-id="@Model.FileId"
+       style="color:#8b949e;text-decoration:none;font-size:.85rem;">
+        ← Dettaglio file
+    </a>
+    <h4 style="margin:0;color:#c9d1d9;font-weight:600;">Vista orizzontale (Pivot)</h4>
+</div>
+
+<div class="rrda-card mb-3">
+    <div><strong>FileId:</strong> @Model.FileId</div>
+    <div><strong>File:</strong> <span style="font-family:monospace;">@Model.FileName</span></div>
+    <div><strong>ReportType:</strong> @Model.ReportTypeKey</div>
+</div>
+
+<div class="rrda-card" style="overflow:auto;">
+    @if (!Model.Headers.Any())
+    {
+        <p style="color:#8b949e;margin:0;">Nessuna KEY disponibile per questo file.</p>
+    }
+    else
+    {
+        <table class="table table-borderless mb-0" style="min-width:1200px;">
+            <thead>
+                <tr>
+                    <th>FileId</th>
+                    @foreach (var header in Model.Headers)
+                    {
+                        <th style="font-family:monospace;font-size:.78rem;">@header</th>
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>@Model.FileId</td>
+                    @foreach (var header in Model.Headers)
+                    {
+                        <td style="font-family:monospace;font-size:.78rem;white-space:nowrap;">
+                            @(Model.Row.TryGetValue(header, out var value) ? value : "")
+                        </td>
+                    }
+                </tr>
+            </tbody>
+        </table>
+    }
+</div>

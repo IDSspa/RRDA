@@ -42,9 +42,21 @@ namespace RRDA.Core.Validator
             {
                 var definedName = (string?)m.Attribute("definedName") ?? string.Empty;
                 var field = (string?)m.Attribute("field") ?? string.Empty;
-                cfg.Mappings.Add(new FieldMapping { 
-                    DefinedName = definedName, 
-                    Field = field 
+                var filterable = (bool?)m.Attribute("filterable");
+                var visibleInPivot = (bool?)m.Attribute("visibleInPivot");
+                var statEnabled = (bool?)m.Attribute("statEnabled");
+                var statMenu = (string?)m.Attribute("statMenu");
+                var uiDataType = (string?)m.Attribute("uiDataType");
+
+                cfg.Mappings.Add(new FieldMapping
+                {
+                    DefinedName = definedName,
+                    Field = field,
+                    Filterable = filterable,
+                    VisibleInPivot = visibleInPivot,
+                    StatEnabled = statEnabled,
+                    StatMenu = statMenu,
+                    UiDataType = uiDataType
                 });
             }
 

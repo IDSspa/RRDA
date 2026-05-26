@@ -44,9 +44,10 @@
 
 <div class="rrda-card mb-3">
     <h6 style="margin:0 0 .75rem 0;color:#c9d1d9;font-weight:600;">Analisi soggetto</h6>
-    <a asp-area="Data" asp-controller="Tabular" asp-action="Subject" asp-route-reportTypeId="@Model.Id" class="btn-rrda-primary" style="text-decoration:none;">Vista tabellare</a>
+    <a asp-area="Data" asp-controller="Tabular" asp-action="TypePivot" asp-route-reportTypeId="@Model.Id" class="btn-rrda-primary" style="text-decoration:none;">Vista tabellare</a>
     <a asp-area="Data" asp-controller="Statistics" asp-action="Subject" asp-route-reportTypeId="@Model.Id" style="margin-left:1rem;color:#58a6ff;text-decoration:none;">Analisi statistiche →</a>
 </div>
+
 
 <div class="rrda-card">
     <div class="d-flex justify-content-between align-items-center mb-3">

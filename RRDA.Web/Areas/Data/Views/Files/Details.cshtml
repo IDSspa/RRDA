@@ -106,6 +106,12 @@
        class="btn-rrda-primary" style="text-decoration:none;padding:.4rem .9rem;border-radius:6px;">
         Vedi entità
     </a>
+
+    <a asp-area="Data" asp-controller="Tabular" asp-action="FilePivot" asp-route-fileId="@Model.Id"
+       style="color:#58a6ff;text-decoration:none;padding:.4rem .9rem;font-size:.85rem;border:1px solid #1f6feb44;border-radius:6px;">
+        Vista orizzontale (Pivot)
+    </a>
+
     <a asp-area="Data" asp-controller="Export" asp-action="Index"
        asp-route-reportTypeId="@Model.ReportTypeId"
        style="color:#8b949e;text-decoration:none;padding:.4rem .9rem;

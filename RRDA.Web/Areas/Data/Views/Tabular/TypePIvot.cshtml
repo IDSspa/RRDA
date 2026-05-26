@@ -1,0 +1,103 @@
+﻿@model RRDA.Web.Areas.Data.Controllers.TypePivotViewModel
+@{
+    ViewData["Title"] = $"Type Pivot - {Model.ReportTypeKey}";
+}
+
+<div class="d-flex align-items-center justify-content-between mb-3">
+    <h4 style="margin:0;color:#c9d1d9;font-weight:600;">Vista orizzontale per tipo report: @Model.ReportTypeKey</h4>
+    <div style="color:#8b949e;font-size:.85rem;">File totali: @Model.TotalFiles</div>
+</div>
+
+
+<div class="rrda-card mb-3">
+    <form method="get" class="row g-2 align-items-end">
+        <input type="hidden" name="reportTypeId" value="@Model.ReportTypeId" />
+
+        <div class="col-md-2">
+            <label class="form-label">BatchId</label>
+            <input class="form-control" name="batchId" value="@Model.BatchId" />
+        </div>
+
+        <div class="col-md-2">
+            <label class="form-label">Uploaded da</label>
+            <input type="date" class="form-control" name="uploadedFrom" value="@(Model.UploadedFrom?.ToString("yyyy-MM-dd"))" />
+        </div>
+
+        <div class="col-md-2">
+            <label class="form-label">Uploaded a</label>
+            <input type="date" class="form-control" name="uploadedTo" value="@(Model.UploadedTo?.ToString("yyyy-MM-dd"))" />
+        </div>
+
+        <div class="col-md-2">
+            <label class="form-label">Campo filtro</label>
+            <select class="form-select" name="filterField">
+                <option value="">--</option>
+                @foreach (var f in Model.DynamicFilterFields)
+                {
+                    <option value="@f" selected="@(Model.FilterField == f)">@f</option>
+                }
+            </select>
+        </div>
+
+        <div class="col-md-3">
+            <label class="form-label">Valore filtro</label>
+            <input class="form-control" name="filterValue" value="@Model.FilterValue" />
+        </div>
+
+        <div class="col-md-1">
+            <button class="btn-rrda-primary" type="submit">Applica</button>
+        </div>
+    </form>
+</div>
+
+<div class="rrda-card" style="overflow:auto;">
+    @if (!Model.Rows.Any())
+    {
+        <p style="color:#8b949e;margin:0;">Nessun file disponibile per questo report type.</p>
+    }
+    else
+    {
+        <table class="table table-borderless mb-0" style="min-width:1400px;">
+            <thead>
+                <tr>
+                    <th>FileId</th>
+                    <th>FileName</th>
+                    <th>UploadedAt</th>
+                    @foreach (var header in Model.Headers)
+                    {
+                        <th style="font-family:monospace;font-size:.78rem;">@header</th>
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var row in Model.Rows)
+                {
+                    <tr>
+                        <td>@row.FileId</td>
+                        <td style="font-family:monospace;font-size:.78rem;">@row.FileName</td>
+                        <td style="font-size:.78rem;">@row.UploadedAt.ToString("yyyy-MM-dd HH:mm")</td>
+                        @foreach (var header in Model.Headers)
+                        {
+                            <td style="font-family:monospace;font-size:.78rem;white-space:nowrap;">
+                                @(row.Values.TryGetValue(header, out var value) ? value : "")
+                            </td>
+                        }
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
+
+@if (Model.TotalPages > 1)
+{
+    <div class="d-flex gap-2 mt-3">
+        @for (int p = 1; p <= Model.TotalPages; p++)
+        {
+            <a asp-action="TypePivot" asp-route-reportTypeId="@Model.ReportTypeId" asp-route-page="@p" asp-route-pageSize="@Model.PageSize" asp-route-batchId="@Model.BatchId" asp-route-uploadedFrom="@(Model.UploadedFrom?.ToString("yyyy-MM-dd"))" asp-route-uploadedTo="@(Model.UploadedTo?.ToString("yyyy-MM-dd"))" asp-route-filterField="@Model.FilterField" asp-route-filterValue="@Model.FilterValue"
+               style="padding:.2rem .55rem;border:1px solid #30363d;border-radius:5px;text-decoration:none;color:@(p == Model.CurrentPage ? "#58a6ff" : "#8b949e");">
+                @p
+            </a>
+        }
+    </div>
+}
