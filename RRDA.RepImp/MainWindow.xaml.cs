@@ -348,6 +348,12 @@ namespace RRDA.RepImp
 
                 Log($"Importazione completata per '{fi.Name}'.");
 
+                if (resultObj is ImportResult checkedImportResult && !checkedImportResult.Success)
+                {
+                    var firstError = checkedImportResult.Errors.FirstOrDefault();
+                    Log($"Import fallito per '{fi.Name}'{(string.IsNullOrWhiteSpace(firstError) ? "." : $": {firstError}")}");
+                    return false;
+                }
                 // ====================================================
                 // Persistenza nel database (EF usando RRDADbContext)
                 // ====================================================

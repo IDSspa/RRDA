@@ -47,6 +47,7 @@ namespace RRDA.Core.Validator
                 var statEnabled = (bool?)m.Attribute("statEnabled");
                 var statMenu = (string?)m.Attribute("statMenu");
                 var uiDataType = (string?)m.Attribute("uiDataType");
+                var alias = (string?)m.Attribute("alias");
 
                 cfg.Mappings.Add(new FieldMapping
                 {
@@ -56,7 +57,8 @@ namespace RRDA.Core.Validator
                     VisibleInPivot = visibleInPivot,
                     StatEnabled = statEnabled,
                     StatMenu = statMenu,
-                    UiDataType = uiDataType
+                    UiDataType = uiDataType,
+                    Alias = alias
                 });
             }
 

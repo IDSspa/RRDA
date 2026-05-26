@@ -11,5 +11,6 @@
         public bool? StatEnabled { get; set; }
         public string? StatMenu { get; set; }
         public string? UiDataType { get; set; }
+        public string? Alias { get; set; }
     }
 }

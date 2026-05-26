@@ -138,6 +138,16 @@ namespace RRDA.Plugins.Common
                           .Where(n => !string.IsNullOrWhiteSpace(n)),
                     StringComparer.OrdinalIgnoreCase);
 
+                var aliasesByDefinedName = config.Mappings
+                    .Where(m => !string.IsNullOrWhiteSpace(m.DefinedName))
+                    .GroupBy(m => m.DefinedName, StringComparer.OrdinalIgnoreCase)
+                    .ToDictionary(
+                        g => g.Key,
+                        g => g.Select(m => m.Alias)
+                              .FirstOrDefault(a => !string.IsNullOrWhiteSpace(a))
+                              ?? string.Empty,
+                        StringComparer.OrdinalIgnoreCase);
+
                 int index = 0;
 
                 // Iteriamo sui FieldRules definiti nel config
@@ -154,6 +164,10 @@ namespace RRDA.Plugins.Common
                     );
 
                     var definedName = rule.DefinedName;
+                    var fieldName = aliasesByDefinedName.TryGetValue(definedName, out var alias)
+                        && !string.IsNullOrWhiteSpace(alias)
+                        ? alias
+                        : definedName;
 
                     if (string.IsNullOrWhiteSpace(definedName))
                         continue;
@@ -185,10 +199,10 @@ namespace RRDA.Plugins.Common
                         entities.Add(new ReportEntityDto
                         {
                             EntityKind = sheetName,
-                            Key = definedName,
+                            Key = fieldName,
                             Properties = new Dictionary<string, string>
                             {
-                                ["name"] = definedName,
+                                ["name"] = fieldName,
                                 ["value"] = cellValue,
                                 ["unit"] = rule.Unit ?? string.Empty,
                                 //["datatype"] = rule.DataType,
@@ -219,10 +233,10 @@ namespace RRDA.Plugins.Common
                                 {
                                     EntityKind = sheetName,
                                     // Key distingue univocamente range + posizione nel range
-                                    Key = $"{definedName}[{dr},{dc}]",
+                                    Key = $"{fieldName}[{dr},{dc}]",
                                     Properties = new Dictionary<string, string>
                                     {
-                                        ["name"] = definedName,
+                                        ["name"] = fieldName,
                                         ["value"] = cellValue,
                                         ["unit"] = rule.Unit ?? string.Empty,
                                         //["datatype"] = rule.DataType,
