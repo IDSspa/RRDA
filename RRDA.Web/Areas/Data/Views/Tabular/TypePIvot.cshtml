@@ -63,6 +63,7 @@
                     <th>FileId</th>
                     <th>FileName</th>
                     <th>UploadedAt</th>
+                    <th>BatchId</th>
                     @foreach (var header in Model.Headers)
                     {
                         <th style="font-family:monospace;font-size:.78rem;">@header</th>
@@ -76,6 +77,7 @@
                         <td>@row.FileId</td>
                         <td style="font-family:monospace;font-size:.78rem;">@row.FileName</td>
                         <td style="font-size:.78rem;">@row.UploadedAt.ToString("yyyy-MM-dd HH:mm")</td>
+                        <td style="font-size:.78rem;">@(row.BatchId?.ToString() ?? "—")</td>
                         @foreach (var header in Model.Headers)
                         {
                             <td style="font-family:monospace;font-size:.78rem;white-space:nowrap;">

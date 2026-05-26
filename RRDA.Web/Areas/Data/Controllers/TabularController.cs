@@ -105,7 +105,7 @@ namespace RRDA.Web.Areas.Data.Controllers
             var filesPage = await filesQuery
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
-                .Select(f => new { f.Id, f.FileName, f.UploadedAt })
+                .Select(f => new { f.Id, f.FileName, f.UploadedAt, f.ReportBatchId })
                 .ToListAsync();
 
             var pageFileIds = filesPage.Select(f => f.Id).ToList();
@@ -138,6 +138,7 @@ namespace RRDA.Web.Areas.Data.Controllers
                     FileId = file.Id,
                     FileName = file.FileName,
                     UploadedAt = file.UploadedAt,
+                    BatchId = file.ReportBatchId,
                     Values = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)
                 })
                 .ToDictionary(r => r.FileId);
@@ -233,12 +234,13 @@ namespace RRDA.Web.Areas.Data.Controllers
         public int CurrentPage { get; set; }
         public int PageSize { get; set; }
         public int TotalPages { get; set; }
-}
+    }
     public class TypePivotRow
     {
         public int FileId { get; set; }
         public string FileName { get; set; } = string.Empty;
         public DateTime UploadedAt { get; set; }
+        public int? BatchId { get; set; }
         public Dictionary<string, string?> Values { get; set; } = new(StringComparer.OrdinalIgnoreCase);
     }
     public class PivotPair
