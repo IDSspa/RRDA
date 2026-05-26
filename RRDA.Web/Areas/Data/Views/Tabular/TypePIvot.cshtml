@@ -89,7 +89,15 @@
                         @foreach (var header in Model.Headers)
                         {
                             <td style="font-family:monospace;font-size:.78rem;white-space:nowrap;">
-                                @(row.Values.TryGetValue(header, out var value) ? value : "")
+                                @(
+                                                    row.Values.TryGetValue(header, out var value)
+                                                    ? (double.TryParse(value, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var dInv)
+                                                    ? Math.Round(dInv, Model.DecimalPlaces).ToString($"F{Model.DecimalPlaces}", System.Globalization.CultureInfo.InvariantCulture)
+                                                    : double.TryParse(value, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.CurrentCulture, out var dCur)
+                                                    ? Math.Round(dCur, Model.DecimalPlaces).ToString($"F{Model.DecimalPlaces}", System.Globalization.CultureInfo.CurrentCulture)
+                                                    : value)
+                                                    : ""
+                                                    )
                             </td>
                         }
                     </tr>

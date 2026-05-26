@@ -1,0 +1,23 @@
+﻿@model RRDA.Web.Areas.Admin.Controllers.SettingsViewModel
+@{
+    ViewData["Title"] = "Impostazioni";
+}
+
+<div class="rrda-card" style="max-width:740px;">
+    <h4 style="margin-top:0;color:#c9d1d9;font-weight:600;">Impostazioni</h4>
+    <p style="color:#8b949e;">Configura il numero di decimali mostrati nella vista tabellare TypePivot.</p>
+
+    <form method="post" class="row g-3 align-items-end">
+        @Html.AntiForgeryToken()
+
+        <div class="col-sm-4">
+            <label asp-for="TypePivotDecimalPlaces" class="form-label">Decimali TypePivot</label>
+            <input asp-for="TypePivotDecimalPlaces" type="number" min="0" max="15" class="form-control" />
+            <small style="color:#8b949e;">Valori ammessi: 0 - 15</small>
+        </div>
+
+        <div class="col-sm-4">
+            <button type="submit" class="btn-rrda-primary">Salva impostazioni</button>
+        </div>
+    </form>
+</div>

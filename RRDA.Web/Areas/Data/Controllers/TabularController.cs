@@ -3,14 +3,19 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RRDA.Data;
 using RRDA.Web.Security;
+using System.Globalization;
 
 namespace RRDA.Web.Areas.Data.Controllers
 {
     [Area("Data")]
     [Authorize(Policy = Policies.AtLeastSupervisor)]
-    public class TabularController(RRDADbContext db) : Controller
+    public class TabularController(RRDADbContext db, IConfiguration configuration) : Controller
     {
         // Vista debug verticale (legacy)
+        private const string DecimalPlacesCookieName = "RRDA_TypePivot_DecimalPlaces";
+        private const int DefaultDecimalPlaces = 4;
+        private const int MaxDecimalPlaces = 15;
+
         public async Task<IActionResult> Subject(int reportTypeId)
         {
             var reportType = await db.ReportTypes.FindAsync(reportTypeId);
@@ -177,8 +182,8 @@ namespace RRDA.Web.Areas.Data.Controllers
 
                     if (!vals.Any()) return false;
 
-                    return vals.All(v => double.TryParse(v, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out _)
-                        || double.TryParse(v, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.CurrentCulture, out _));
+                    return vals.All(v => double.TryParse(v, NumberStyles.Any, CultureInfo.InvariantCulture, out _)
+                                            || double.TryParse(v, NumberStyles.Any, CultureInfo.CurrentCulture, out _));
                 })
                 .ToList();
 
@@ -197,12 +202,28 @@ namespace RRDA.Web.Areas.Data.Controllers
                 TotalFiles = totalFiles,
                 CurrentPage = page,
                 PageSize = pageSize,
-                TotalPages = (int)Math.Ceiling(totalFiles / (double)pageSize)
+                TotalPages = (int)Math.Ceiling(totalFiles / (double)pageSize),
+                DecimalPlaces = ResolveDecimalPlaces()
             };
 
             return View(model);
         }
+
+        private int ResolveDecimalPlaces()
+        {
+            var configured = configuration.GetValue<int?>("TypePivot:DecimalPlaces");
+            var fallback = Math.Clamp(configured ?? DefaultDecimalPlaces, 0, MaxDecimalPlaces);
+
+            if (Request.Cookies.TryGetValue(DecimalPlacesCookieName, out var cookieValue)
+                && int.TryParse(cookieValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var cookiePlaces))
+            {
+                return Math.Clamp(cookiePlaces, 0, MaxDecimalPlaces);
+            }
+
+            return fallback;
+        }
     }
+
     public class TabularPreviewRow
     {
         public int EntityId { get; set; }
@@ -234,6 +255,7 @@ namespace RRDA.Web.Areas.Data.Controllers
         public int CurrentPage { get; set; }
         public int PageSize { get; set; }
         public int TotalPages { get; set; }
+        public int DecimalPlaces { get; set; }
     }
     public class TypePivotRow
     {
