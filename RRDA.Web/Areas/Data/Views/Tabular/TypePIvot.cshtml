@@ -66,7 +66,15 @@
                     <th>BatchId</th>
                     @foreach (var header in Model.Headers)
                     {
-                        <th style="font-family:monospace;font-size:.78rem;">@header</th>
+                        <th style="font-family:monospace;font-size:.78rem;">
+                            <div class="dropdown">
+                                <button class="btn btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="font-family:monospace;font-size:.74rem;">@header</button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" asp-area="Data" asp-controller="Statistics" asp-action="Distribution" asp-route-reportTypeId="@Model.ReportTypeId" asp-route-field="@header" asp-route-batchId="@Model.BatchId" asp-route-uploadedFrom="@(Model.UploadedFrom?.ToString("yyyy-MM-dd"))" asp-route-uploadedTo="@(Model.UploadedTo?.ToString("yyyy-MM-dd"))">Distribuzione</a></li>
+                                    <li><a class="dropdown-item" href="#" onclick="alert('Diagramma di dispersione: vista in implementazione'); return false;">Diagramma di dispersione</a></li>
+                                </ul>
+                            </div>
+                        </th>
                     }
                 </tr>
             </thead>
