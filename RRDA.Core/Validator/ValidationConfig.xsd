@@ -58,6 +58,7 @@
 								</xs:complexType>
 							</xs:element>
 						</xs:sequence>
+						<xs:attribute name="subjectKeyField" type="xs:string" use="required"/>
 					</xs:complexType>
 				</xs:element>
 				<xs:element name="RowRules" minOccurs="0">

@@ -30,7 +30,7 @@ namespace RRDA.RepImp
         private bool _applyForAll = false;
         private DuplicateImportStrategy _duplicateStrategy = DuplicateImportStrategy.NewVersion;
         private readonly ObservableCollection<FileItem> _fileItems = [];
-        
+
         public MainWindow()
         {
             InitializeComponent();
@@ -290,8 +290,22 @@ namespace RRDA.RepImp
                                                                         progressDlg.SetRowProgress(p.ProcessedItems, p.TotalItems, p.Message)))
                                                                 : null;
 
+
+                    // Carica e valida la configurazione XML
+                    var config = ValidationConfig.Load(validationStream ?? Stream.Null);
+
+                    /*
+                     * MainWindow.ImportReport() gestisce già il caso in cui il file XML non esista 
+                     * passando Stream.Null. Con la nuova firma occorre decidere il comportamento: 
+                     * se SubjectKeyField è obbligatorio nello XSD, un file XML mancante diventa un 
+                     * errore bloccante. 
+                     * Loggare un warning e restituire un ImportResult con Success = false prima 
+                     * ancora di chiamare ImportAsync, rendendo esplicito che un import senza 
+                     * configurazione valida non è ammesso?
+                     */
+
                     // ImportAsync restituisce ImportResult; usiamo reflection-safe nel logging dopo l'await
-                    var task = plugin.ImportAsync(fileStream, validationStream ?? Stream.Null, innerProgress, ct);
+                    var task = plugin.ImportAsync(fileStream, config, innerProgress, ct);
                     resultObj = await task;
                 }
                 catch (Exception ex)
@@ -448,6 +462,8 @@ namespace RRDA.RepImp
                         catch (Exception ex)
                         {
                             Log($"Errore persistenza DB: {ex.Message}");
+                            if (ex.InnerException != null)
+                                Log($"Inner exception: {ex.InnerException.Message}");
                         }
                     }
                     else
@@ -658,7 +674,7 @@ namespace RRDA.RepImp
 
                 FileImportMenuItem.IsEnabled = (isFValidFile && firstValidFile != null);
 
-                if (isFValidFile && firstValidFile != null && FilesListView.SelectedItems.Count==1)
+                if (isFValidFile && firstValidFile != null && FilesListView.SelectedItems.Count == 1)
                     FileExportValidatorMenuItem.IsEnabled = (_plugins.FirstOrDefault(p => string.Equals(p.Name, firstValidFile.Tipo, StringComparison.OrdinalIgnoreCase)) != null);
                 else
                     FileExportValidatorMenuItem.IsEnabled = false;
@@ -848,7 +864,7 @@ namespace RRDA.RepImp
 
                 _applyForAll = false; // reset della scelta "applica per tutti" per i duplicati, per i successivi cicli di import
                 _duplicateStrategy = DuplicateImportStrategy.NewVersion; // reset della strategia di importazione per i duplicati
-                
+
                 FilesListView.SelectedItems?.Clear(); // deseleziona tutti i file al termine del ciclo di import
             }
             finally

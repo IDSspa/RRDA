@@ -12,8 +12,17 @@ namespace RRDA.Core.Validator
         public List<FieldRule> FieldRules { get; set; } = [];
         public List<Sheet> Sheets { get; set; } = [];
         public List<RowRule> RowRules { get; set; } = [];
+        public string SubjectKeyField { get; set; } = string.Empty;
+        /// <summary>
+        /// Caricamento e validazione file XML.
+        /// </summary>
+        /// <param name="xmlStream">Stream XML da caricare</param>
+        /// <returns></returns>
         public static ValidationConfig Load(Stream xmlStream)
         {
+            // TODO: Aggiungere validazione XML contro uno schema XSD per garantire la correttezza del formato e dei dati.
+            // Aggiungere gestione eccezioni per errori di parsing, mancanza di attributi obbligatori, o formati di dati
+            // errati, con messaggi chiari per facilitare il debug e la correzione del file XML.
             var doc = XDocument.Load(xmlStream);
 
             var root = doc.Root!;
@@ -24,6 +33,7 @@ namespace RRDA.Core.Validator
             };
 
             var cultureName = (string?)root.Attribute("culture");
+            
             if (!string.IsNullOrEmpty(cultureName)) 
                 cfg.Culture = new CultureInfo(cultureName);
 
@@ -113,6 +123,8 @@ namespace RRDA.Core.Validator
 
                 cfg.FieldRules.Add(fr);
             }
+
+            cfg.SubjectKeyField = (string?)root?.Attribute("subjectKeyField") ?? string.Empty;
 
             var rowRules = root.Element("RowRules")?.Elements("Rule") ?? [];
             

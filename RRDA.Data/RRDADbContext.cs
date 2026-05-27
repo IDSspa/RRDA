@@ -160,6 +160,10 @@ namespace RRDA.Data
                     .HasMaxLength(50)
                     .IsRequired();
 
+                b.Property(x => x.IsSubjectKey)
+                    .IsRequired()
+                    .HasDefaultValue(false);
+
                 b.Property(x => x.ReportEntityId)
                     .IsRequired();
 

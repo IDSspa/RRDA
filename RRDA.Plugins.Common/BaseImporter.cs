@@ -46,13 +46,13 @@ namespace RRDA.Plugins.Common
         /// Trace of the on-going import are notified trough progress and ct parameters.
         /// </summary>
         /// <param name="fileStream"></param>
-        /// <param name="validationConfigXml"></param>
+        /// <param name="config"></param>
         /// <param name="progress"></param>
         /// <param name="ct"></param>
         /// <returns>Import result</returns>
         public async Task<ImportResult> ImportAsync(
                 Stream fileStream,
-                Stream validationConfigXml,
+                ValidationConfig config,
                 IProgress<ImportProgress>? progress = null,
                 CancellationToken ct = default)
         {
@@ -64,10 +64,7 @@ namespace RRDA.Plugins.Common
 
             try
             {
-                // 1. Carica e valida la configurazione XML
-                var config = ValidationConfig.Load(validationConfigXml);
-
-                // 2. Importa i dati dal file Excel
+                // Importa i dati dal file Excel
                 var entities = await ImportData(fileStream, config, progress, ct);
 
                 result.Entities = entities;
@@ -195,6 +192,10 @@ namespace RRDA.Plugins.Common
                         // SINGOLA CELLA  →  row_index = -1, col_index = -1
                         // -----------------------------------------------------------------
                         var cellValue = OpenXmlExcelReader.ReadCellValue(wsPart, startAddress, sharedStrings, wbPart);
+                        bool isSubjectKey = false;
+
+                        if (string.Equals(fieldName, config.SubjectKeyField, StringComparison.OrdinalIgnoreCase))
+                            isSubjectKey = true;
 
                         entities.Add(new ReportEntityDto
                         {
@@ -205,9 +206,9 @@ namespace RRDA.Plugins.Common
                                 ["name"] = fieldName,
                                 ["value"] = cellValue,
                                 ["unit"] = rule.Unit ?? string.Empty,
-                                //["datatype"] = rule.DataType,
                                 ["row_index"] = "-1",
-                                ["col_index"] = "-1"
+                                ["col_index"] = "-1",
+                                ["is_subject_key"] = isSubjectKey ? "1" : "0"
                             }
                         });
                     }
@@ -239,7 +240,6 @@ namespace RRDA.Plugins.Common
                                         ["name"] = fieldName,
                                         ["value"] = cellValue,
                                         ["unit"] = rule.Unit ?? string.Empty,
-                                        //["datatype"] = rule.DataType,
                                         ["row_index"] = dr.ToString(),
                                         ["col_index"] = dc.ToString()
                                     }

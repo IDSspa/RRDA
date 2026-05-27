@@ -11,6 +11,10 @@ namespace RRDA.Plugins.Common
         /// </summary>
         public static string ReadCellValue(WorksheetPart wsPart, string cellAddress, SharedStringTable? sharedStrings, WorkbookPart wbPart)
         {
+            // Controllo nullo su Worksheet
+            if (wsPart.Worksheet == null)
+                return string.Empty;
+
             // Cerca la cella nel worksheet
             var cell = wsPart.Worksheet
                              .Descendants<Cell>()

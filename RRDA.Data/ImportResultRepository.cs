@@ -101,6 +101,11 @@ namespace RRDA.Data
                         {
                             foreach (var kv in dto.Properties)
                             {
+                                // Legge il flag dal dizionario della stessa entità
+                                bool isSubjectKey =
+                                    dto.Properties.TryGetValue("is_subject_key", out var skFlag)
+                                    && skFlag == "1";
+
                                 // Nota: il modello richiede DataType; qui si usa "string" di default.
                                 var prop = new ReportProperty
                                 {
@@ -108,7 +113,8 @@ namespace RRDA.Data
                                     Value = kv.Value ?? string.Empty,
                                     ReportEntity = entity,
                                     Unit = null,
-                                    DataType = "string"
+                                    DataType = "string",
+                                    IsSubjectKey = isSubjectKey
                                 };
 
                                 entity.Properties.Add(prop);

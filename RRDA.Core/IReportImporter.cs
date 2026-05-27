@@ -1,4 +1,6 @@
-﻿namespace RRDA.Core
+﻿using RRDA.Core.Validator;
+
+namespace RRDA.Core
 {
     public interface IReportImporter
     {
@@ -17,8 +19,8 @@
         /// <returns>True se il plugin può gestire il file; altrimenti false.</returns>
         Task<bool> CanImportAsync(string fileName, Stream? fileStream = null, Stream? validationConfigXml = null);
         Task<ImportResult> ImportAsync(
-                Stream fileStream, 
-                Stream validationConfigXml, 
+                Stream fileStream,
+                ValidationConfig config,
                 IProgress<ImportProgress>? progress = null,         // <-- opzionale
                 CancellationToken ct = default
         );

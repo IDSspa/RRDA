@@ -64,7 +64,12 @@
                 @foreach (var f in recentFiles)
                 {
                     <tr>
-                        <td style="font-family:monospace;font-size:.82rem;">@f.FileName</td>
+                        <td style="font-family:monospace;font-size:.82rem;">
+                            <a asp-area="Data" asp-controller="Files" asp-action="Details" asp-route-id="@f.Id"
+                               style="color:#c9d1d9;text-decoration:none;">
+                                @f.FileName
+                            </a>
+                        </td>
                         <td>
                             <span class="badge-pill"
                                   style="background:#1f6feb22;color:#58a6ff;border:1px solid #1f6feb44;">

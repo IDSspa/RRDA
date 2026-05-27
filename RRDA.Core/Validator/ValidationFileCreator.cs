@@ -38,6 +38,18 @@ namespace RRDA.Core.Validator
                 "Filter_Database",
                 "_FilterDatabase",
             };
+
+        /// <summary>
+        /// Definisce i nomi di campo che, se presenti in un DefinedName, suggeriscono che
+        /// il campo è una chiave soggetto.
+        /// </summary>
+        private static readonly HashSet<string> SubjectKeyNames =             
+            new(StringComparer.OrdinalIgnoreCase)
+            {
+                "Serial",
+                "SN"
+            };
+
         /// <summary>
         /// Crea il file di validazione su disco.
         /// </summary>
@@ -85,8 +97,8 @@ namespace RRDA.Core.Validator
                 var wbPart = doc.WorkbookPart ?? throw new InvalidOperationException("WorkbookPart non trovato nel file xlsx.");
 
                 // Tutti i DefinedNames del workbook, filtrati da quelli irrilevanti
-                var allDefinedNames = wb.DefinedNames?.Elements<DefinedName>().ToList()
-                                      ?? [];
+                var allDefinedNames = wb?.DefinedNames?.Elements<DefinedName>().ToList()
+                       ?? [];
 
                 var definedNames = allDefinedNames
                     .Where(dn => IsRelevantDefinedName(dn.Name?.Value))
@@ -94,10 +106,16 @@ namespace RRDA.Core.Validator
 
                 var sheets = wb?.Sheets?.Elements<Sheet>()?.ToList() ?? [];
 
+                var subjectKey = definedNames.FirstOrDefault(dn => dn.Name?.Value is string name && SubjectKeyNames.Contains(name))?.Name?.Value;
+
                 // root conforme a ValidationConfig.xsd
                 var root = new XElement("ValidationConfig");
                 root.SetAttributeValue("failOnError", failOnError.ToString().ToLowerInvariant());
                 root.SetAttributeValue("culture", (culture ?? CultureInfo.CurrentCulture.Name));
+
+                // Imposta il valore di subjectKeyField se è stato identificato un DefinedName che corrisponde a una chiave soggetto
+                if (!string.IsNullOrEmpty(subjectKey))
+                    root.SetAttributeValue("subjectKeyField", subjectKey);
 
                 // Indice sheetName → WorksheetPart (riuso stesso pattern di OpenXmlExcelReader)
                 var sheetIndex = BuildSheetIndex(wb!, wbPart);
@@ -237,9 +255,9 @@ namespace RRDA.Core.Validator
 
             var sheetName = firstPart[..bangIdx].Trim('\'');
             var cellAddr = firstPart[(bangIdx + 1)..].Replace("$", "")
-                                                      .ToUpperInvariant();
+                                              .ToUpperInvariant();
 
-            if (!sheetIndex.TryGetValue(sheetName, out var wsPart))
+            if (!sheetIndex.TryGetValue(sheetName, out var wsPart) || wsPart.Worksheet == null)
                 return null;
 
             return wsPart.Worksheet

@@ -14,7 +14,7 @@ namespace RRDA.Data
         /// per ambienti workgroup. Confronto case-insensitive a livello applicativo.
         /// Es: "IDS\m.santucci"
         /// </summary>
-        public string WindowsUsername { get; set; }
+        public required string WindowsUsername { get; set; }
 
         /// <summary>Ruolo applicativo assegnato all'utente.</summary>
         public AppUserRole Role { get; set; } = AppUserRole.Operator;

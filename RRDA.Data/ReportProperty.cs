@@ -22,5 +22,8 @@
 
         // Tipo dei dati rappresentati (es: "int","double","datetime","string")
         public required string DataType { get; set; }
+
+        // Indica se questa proprietà è la chiave soggetto (es: serial number)
+        public required bool IsSubjectKey { get; set; } = false;
     }
 }

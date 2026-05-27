@@ -20,7 +20,7 @@ namespace RRDA.Web.Areas.Admin.Controllers
         }
 
         // ── GET /Admin/Users/Create ───────────────────────────────────────
-        public IActionResult Create() => View(new AppUser());
+        public IActionResult Create() => View(new AppUser { WindowsUsername = string.Empty });
 
         // ── POST /Admin/Users/Create ──────────────────────────────────────
         [HttpPost, ValidateAntiForgeryToken]
@@ -30,7 +30,7 @@ namespace RRDA.Web.Areas.Admin.Controllers
 
             // Verifica duplicato
             var exists = await db.AppUsers
-                .AnyAsync(u => u.WindowsUsername.ToLower() == model.WindowsUsername.ToLower());
+                .AnyAsync(u => u.WindowsUsername.Equals(model.WindowsUsername, StringComparison.CurrentCultureIgnoreCase));
 
             if (exists)
             {
@@ -64,7 +64,7 @@ namespace RRDA.Web.Areas.Admin.Controllers
 
             // Verifica duplicato su altri utenti
             var exists = await db.AppUsers
-                .AnyAsync(u => u.WindowsUsername.ToLower() == model.WindowsUsername.ToLower()
+                .AnyAsync(u => u.WindowsUsername.Equals(model.WindowsUsername, StringComparison.CurrentCultureIgnoreCase)
                             && u.Id != id);
 
             if (exists)
