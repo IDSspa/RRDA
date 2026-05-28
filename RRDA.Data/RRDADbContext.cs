@@ -31,6 +31,10 @@ namespace RRDA.Data
                 b.Property(x => x.ImportedBy)
                     .HasMaxLength(200);
 
+                b.Property(x => x.FileLastModify)
+                    .HasColumnType("datetime2")
+                    .IsRequired();
+
                 b.Property(x => x.ReportTypeId)
                     .IsRequired();
 

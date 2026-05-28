@@ -14,6 +14,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Threading;
+using static RRDA.Data.ImportResultRepository;
 
 namespace RRDA.RepImp
 {
@@ -439,13 +440,11 @@ namespace RRDA.RepImp
                                 try
                                 {
                                     var (reportFileId, entitiesSaved, propertiesSaved) =
-                                        await ImportResultRepository.SaveAsync(fi.Name,
-                                                                               fi.FullPath,
+                                        await ImportResultRepository.SaveAsync(fi,
                                                                                importResult,
                                                                                db,
                                                                                Log,
-                                                                               user,
-                                                                               batchId,
+                                                                               user, batchId,
                                                                                _duplicateStrategy);
 
                                     Log($"Persistenza completata: ReportFileId={reportFileId}, " +

@@ -4,7 +4,7 @@
     {
         public int FileId { get; set; }
         public string FileName { get; set; } = string.Empty;
-        public DateTime UploadedAt { get; set; }
+        public DateTime LastModified { get; set; }
         public int? BatchId { get; set; }
         public string? BatchName { get; set; }
         public string? SubjectKey { get; set; }

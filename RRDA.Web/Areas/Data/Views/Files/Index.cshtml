@@ -63,6 +63,7 @@
                     <th>Tipo</th>
                     <th>Importato da</th>
                     <th>Data importazione</th>
+                    <th>Ultima modifica file</th>
                     <th></th>
                 </tr>
             </thead>
@@ -88,6 +89,13 @@
                         <td style="color:#8b949e;font-size:.82rem;">
                             @f.UploadedAt.ToString("yyyy-MM-dd HH:mm")
                         </td>
+
+                        <td style="color:#8b949e;font-size:.82rem;">
+                            @(f.FileLastModify != null
+                                ? f.FileLastModify.ToString("yyyy-MM-dd HH:mm")
+                                : "—")
+                        </td>
+
                         <td class="text-end">
                             <a asp-action="Details" asp-route-id="@f.Id"
                                style="color:#8b949e;font-size:.82rem;text-decoration:none;margin-right:.75rem;">

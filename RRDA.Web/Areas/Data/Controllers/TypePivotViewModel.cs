@@ -8,8 +8,8 @@
         public List<TypePivotRow> Rows { get; set; } = [];
         public List<string> DynamicFilterFields { get; set; } = [];
         public int? BatchId { get; set; }
-        public DateTime? UploadedFrom { get; set; }
-        public DateTime? UploadedTo { get; set; }
+        public DateTime? LastModifiedFrom { get; set; }
+        public DateTime? LastModifiedTo { get; set; }
         public string? FilterField { get; set; }
         public string? FilterFrom { get; set; }
         public string? FilterTo { get; set; }

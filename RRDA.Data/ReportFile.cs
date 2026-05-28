@@ -28,5 +28,8 @@
         public int? ReportBatchId { get; set; }
         public ReportBatch? ReportBatch { get; set; }
 
+        // Data dell'ultima modifica del file (secondo il filesystem)
+        public required DateTime FileLastModify { get; set; }
+
     }
 }

@@ -13,19 +13,19 @@ namespace RRDA.Data
         /// Salva ImportResult nel database usando il DbContext EF Core fornito.
         /// Restituisce una tupla con (ReportFileId, EntitiesSaved, PropertiesSaved).
         /// </summary>
-        public static async Task<(int ReportFileId, int EntitiesSaved, int PropertiesSaved)> SaveAsync(string fileName,
-                                                                                                       string fullPath,
+        public static async Task<(int ReportFileId, int EntitiesSaved, int PropertiesSaved)> SaveAsync(FileItem fi,
                                                                                                        ImportResult importResult,
                                                                                                        RRDADbContext db,
                                                                                                        Action<string>? logger = null,
                                                                                                        string? user = null,
-                                                                                                       int? batchId = null, DuplicateImportStrategy duplicateStrategy = DuplicateImportStrategy.NewVersion)
+                                                                                                       int? batchId = null,
+                                                                                                       DuplicateImportStrategy duplicateStrategy = DuplicateImportStrategy.NewVersion)
         {
             ArgumentNullException.ThrowIfNull(db);
             ArgumentNullException.ThrowIfNull(importResult);
             
-            if (string.IsNullOrWhiteSpace(fileName)) 
-                throw new ArgumentException("FileName non valido.", nameof(fileName));
+            if (string.IsNullOrWhiteSpace(fi.Name)) 
+                throw new ArgumentException("FileName non valido.", nameof(fi));
 
             // transazione EF
             await using var tran = await db.Database.BeginTransactionAsync();
@@ -40,7 +40,7 @@ namespace RRDA.Data
                 // -- Gestione duplicato --
                 var existingFiles = await db.ReportFiles
                                             .Where(f =>
-                                                f.FileName == fileName &&
+                                                f.FileName == fi.Name &&
                                                 f.ReportTypeId == reportType.Id)
                                             .ToListAsync();
 
@@ -50,7 +50,7 @@ namespace RRDA.Data
                         case DuplicateImportStrategy.Block:
                             // Interrompe senza toccare il DB; il chiamante intercetta
                             // l'eccezione come segnale di import bloccato.
-                            throw new DuplicateImportException(fileName, existingFiles.Count);
+                            throw new DuplicateImportException(fi.Name, existingFiles.Count);
 
                         case DuplicateImportStrategy.Replace:
                             // DELETE in cascata di tutti i ReportFile esistenti per questo
@@ -59,27 +59,28 @@ namespace RRDA.Data
                             db.ReportFiles.RemoveRange(existingFiles);
                             await db.SaveChangesAsync();
                             logger?.Invoke(
-                                $"[Data] Replace: eliminati {existingFiles.Count} ReportFile esistenti per '{fileName}'.");
+                                $"[Data] Replace: eliminati {existingFiles.Count} ReportFile esistenti per '{fi.Name}'.");
                             break;
 
                         case DuplicateImportStrategy.NewVersion:
                             // Nessuna azione: procede con l'insert affiancato.
                             logger?.Invoke(
-                                $"[Data] NewVersion: mantenuti {existingFiles.Count} ReportFile esistenti per '{fileName}', aggiunto nuovo.");
+                                $"[Data] NewVersion: mantenuti {existingFiles.Count} ReportFile esistenti per '{fi.Name}', aggiunto nuovo.");
                             break;
                     }
                 }
 
                 var reportFile = new ReportFile
                 {
-                    FileName = fileName,
-                    FullPath = fullPath,
+                    FileName = fi.Name,
+                    FullPath = fi.FullPath,
                     UploadedAt = DateTime.UtcNow,
                     ReportTypeId = reportType.Id,
                     ReportType = reportType,
                     ImportedBy = user,
                     ReportBatchId = batchId,
-                    Entities = []
+                    Entities = [],
+                    FileLastModify = fi.LastWriteTime
                 };
 
                 var entitiesSaved = 0;
@@ -176,5 +177,7 @@ namespace RRDA.Data
                                f.FileName == fileName &&
                                f.ReportType.Key == reportTypeKey);
         }
+
+        public sealed record FileItem(string Name, long Length, DateTime LastWriteTime, string Tipo, string FullPath);
     }
 }

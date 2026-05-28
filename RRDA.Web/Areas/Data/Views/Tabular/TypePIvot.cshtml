@@ -53,13 +53,13 @@
         </div>
 
         <div class="col-md-2">
-            <label class="form-label">Uploaded da</label>
-            <input type="date" class="form-control" name="uploadedFrom" value="@(Model.UploadedFrom?.ToString("yyyy-MM-dd"))" />
+            <label class="form-label">Ultima modifica da</label>
+            <input type="date" class="form-control" name="lastModifiedFrom" value="@(Model.LastModifiedFrom?.ToString("yyyy-MM-dd"))" />
         </div>
 
         <div class="col-md-2">
-            <label class="form-label">Uploaded a</label>
-            <input type="date" class="form-control" name="uploadedTo" value="@(Model.UploadedTo?.ToString("yyyy-MM-dd"))" />
+            <label class="form-label">Ultima modifica a</label>
+            <input type="date" class="form-control" name="lastModifiedTo" value="@(Model.LastModifiedTo?.ToString("yyyy-MM-dd"))" />
         </div>
 
         <div class="col-md-3">
@@ -116,8 +116,8 @@
                     }
                     @* ── Colonne statiche file ── *@
                     <th>Batch</th>
-                    <th>FileName</th>
-                    <th>UploadedAt</th>
+                    <th>Nome file</th>
+                    <th>Ultima modifica</th>
                     @* ── Colonne di misura con popup statistico ── *@
                     @foreach (var header in Model.Headers)
                     {
@@ -141,8 +141,8 @@
                                            asp-route-reportTypeId="@Model.ReportTypeId"
                                            asp-route-field="@header"
                                            asp-route-batchId="@Model.BatchId"
-                                           asp-route-uploadedFrom="@(Model.UploadedFrom?.ToString("yyyy-MM-dd"))"
-                                           asp-route-uploadedTo="@(Model.UploadedTo?.ToString("yyyy-MM-dd"))">
+                                           asp-route-uploadedFrom="@(Model.LastModifiedFrom?.ToString("yyyy-MM-dd"))"
+                                           asp-route-uploadedTo="@(Model.LastModifiedTo?.ToString("yyyy-MM-dd"))">
                                             Distribuzione
                                         </a>
                                     </li>
@@ -189,7 +189,7 @@
 
                         <td style="font-size:.78rem;">@(row.BatchName ?? "—")</td>
                         <td style="font-family:monospace;font-size:.78rem;">@row.FileName</td>
-                        <td style="font-size:.78rem;">@row.UploadedAt.ToString("yyyy-MM-dd HH:mm")</td>
+                        <td style="font-size:.78rem;">@row.LastModified.ToString("yyyy-MM-dd HH:mm")</td>
                         @* ── Valori di misura: double con decimali configurati ── *@
                         @foreach (var header in Model.Headers)
                         {
@@ -283,8 +283,8 @@
                asp-route-page="@p"
                asp-route-pageSize="@Model.PageSize"
                asp-route-batchId="@Model.BatchId"
-               asp-route-uploadedFrom="@(Model.UploadedFrom?.ToString("yyyy-MM-dd"))"
-               asp-route-uploadedTo="@(Model.UploadedTo?.ToString("yyyy-MM-dd"))"
+               asp-route-uploadedFrom="@(Model.LastModifiedFrom?.ToString("yyyy-MM-dd"))"
+               asp-route-uploadedTo="@(Model.LastModifiedFrom?.ToString("yyyy-MM-dd"))"
                asp-route-filterField="@Model.FilterField"
                asp-route-filterFrom="@Model.FilterFrom"
                asp-route-filterTo="@Model.FilterTo"

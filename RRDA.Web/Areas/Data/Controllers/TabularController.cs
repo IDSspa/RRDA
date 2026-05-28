@@ -80,8 +80,8 @@ namespace RRDA.Web.Areas.Data.Controllers
         public async Task<IActionResult> TypePivot(
             int reportTypeId,
             int? batchId,
-            DateTime? uploadedFrom,
-            DateTime? uploadedTo,
+            DateTime? lastModifiedFrom,
+            DateTime? lastModifiedTo,
             string? filterField,
             string? filterFrom,
             string? filterTo,
@@ -133,20 +133,20 @@ namespace RRDA.Web.Areas.Data.Controllers
             // Applicazione filtri di batch e data
             if (batchId.HasValue)
                 filesQuery = filesQuery.Where(f => f.ReportBatchId == batchId.Value);
-            if (uploadedFrom.HasValue)
-                filesQuery = filesQuery.Where(f => f.UploadedAt >= uploadedFrom.Value);
-            if (uploadedTo.HasValue)
-                filesQuery = filesQuery.Where(f => f.UploadedAt <= uploadedTo.Value);
+            if (lastModifiedFrom.HasValue)
+                filesQuery = filesQuery.Where(f => f.FileLastModify >= lastModifiedFrom.Value);
+            if (lastModifiedTo.HasValue)
+                filesQuery = filesQuery.Where(f => f.FileLastModify <= lastModifiedTo.Value);
 
             // Ordinamento: per data di upload decrescente
-            filesQuery = filesQuery.OrderByDescending(f => f.UploadedAt);
+            filesQuery = filesQuery.OrderByDescending(f => f.FileLastModify);
 
             var totalFiles = await filesQuery.CountAsync();
 
             var filesPage = await filesQuery
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
-                .Select(f => new { f.Id, f.FileName, f.UploadedAt, f.ReportBatchId })
+                .Select(f => new { f.Id, f.FileName, f.FileLastModify, f.ReportBatchId })
                 .ToListAsync();
 
             var pageFileIds = filesPage.Select(f => f.Id).ToList();
@@ -163,8 +163,8 @@ namespace RRDA.Web.Areas.Data.Controllers
                     TotalPages = (int)Math.Ceiling(totalFiles / (double)pageSize),
                     DecimalPlaces = ResolveDecimalPlaces(),
                     BatchId = batchId,
-                    UploadedFrom = uploadedFrom,
-                    UploadedTo = uploadedTo,
+                    LastModifiedFrom = lastModifiedFrom,
+                    LastModifiedTo = lastModifiedTo,
                     FilterField = filterField,
                     FilterFrom = filterFrom,
                     FilterTo = filterTo,
@@ -266,7 +266,7 @@ namespace RRDA.Web.Areas.Data.Controllers
                 {
                     FileId     = f.Id,
                     FileName   = f.FileName,
-                    UploadedAt = f.UploadedAt,
+                    LastModified = f.FileLastModify,
                     BatchId    = f.ReportBatchId,
                     BatchName = f.ReportBatchId.HasValue
                         && batchNames.TryGetValue(f.ReportBatchId.Value, out var description)
@@ -294,15 +294,15 @@ namespace RRDA.Web.Areas.Data.Controllers
                 ColumnStatistics    = columnStatistics,
                 DynamicFilterFields = allMeasureHeaders,
                 BatchId             = batchId,
-                UploadedFrom        = uploadedFrom,
-                UploadedTo          = uploadedTo,
+                LastModifiedFrom        = lastModifiedFrom,
+                LastModifiedTo          = lastModifiedTo,
                 FilterField         = filterField,
                 FilterFrom          = filterFrom,
                 FilterTo            = filterTo,
                 SubjectKeyFrom      = subjectKeyFrom,
                 SubjectKeyTo        = subjectKeyTo,
                 BatchOptions        = batchOptions,
-                Rows                = [.. rows.Values.OrderByDescending(r => r.UploadedAt)],
+                Rows                = [.. rows.Values.OrderByDescending(r => r.LastModified)],
                 TotalFiles          = totalFiles,
                 CurrentPage         = page,
                 PageSize            = pageSize,
