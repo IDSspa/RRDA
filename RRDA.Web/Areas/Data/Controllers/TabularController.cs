@@ -122,6 +122,7 @@ namespace RRDA.Web.Areas.Data.Controllers
                 })
                 .ToList();
 
+                .ToDictionary(b => b.Id, b => b.Description);
             // Query base: tutti i file del ReportType con i filtri di batch e data
             var filesQuery = db.ReportFiles
                 .AsNoTracking()
