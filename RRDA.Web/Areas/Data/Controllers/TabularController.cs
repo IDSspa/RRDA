@@ -15,7 +15,6 @@ namespace RRDA.Web.Areas.Data.Controllers
         private const int DefaultDecimalPlaces = 4;
         private const int MaxDecimalPlaces = 15;
 
-        // Vista debug verticale (legacy)
         public async Task<IActionResult> Subject(int reportTypeId)
         {
             var reportType = await db.ReportTypes.FindAsync(reportTypeId);
@@ -39,7 +38,6 @@ namespace RRDA.Web.Areas.Data.Controllers
             return View(rows);
         }
 
-        // Vista pivot orizzontale per singolo file (legacy)
         public async Task<IActionResult> FilePivot(int fileId)
         {
             var file = await db.ReportFiles
@@ -79,192 +77,160 @@ namespace RRDA.Web.Areas.Data.Controllers
             return View(model);
         }
 
-        // Vista pivot orizzontale per tutti i file dello stesso reportType (target principale)
-        public async Task<IActionResult> TypePivot(int reportTypeId, int? batchId, DateTime? uploadedFrom, DateTime? uploadedTo, string? filterField, string? filterValue, int page = 1, int pageSize = 50)
+        public async Task<IActionResult> TypePivot(
+            int reportTypeId,
+            int? batchId,
+            DateTime? uploadedFrom,
+            DateTime? uploadedTo,
+            string? filterField,
+            string? filterValue,
+            int page = 1,
+            int pageSize = 50)
         {
-            // Validazione parametri di paging
-            if (page < 1) 
-                page = 1;
-
-            // Limitiamo pageSize per evitare query troppo pesanti
+            if (page < 1) page = 1;
             pageSize = pageSize switch { <= 0 => 50, > 200 => 200, _ => pageSize };
 
-            // Recuperiamo il reportType per validare l'input e ottenere eventuali informazioni aggiuntive
             var reportType = await db.ReportTypes
                 .AsNoTracking()
                 .FirstOrDefaultAsync(t => t.Id == reportTypeId);
+            if (reportType is null) return NotFound();
 
-            // Se il reportType non esiste, restituiamo 404
-            if (reportType is null) 
-                return NotFound();
-
-            // Costruiamo la query base per recuperare i file del reportType, applicando i filtri di batch e data se presenti
             var filesQuery = db.ReportFiles
                 .AsNoTracking()
                 .Where(f => f.ReportTypeId == reportTypeId);
 
-            // Applichiamo i filtri di batch e data se sono stati specificati
             if (batchId.HasValue)
                 filesQuery = filesQuery.Where(f => f.ReportBatchId == batchId.Value);
-
             if (uploadedFrom.HasValue)
                 filesQuery = filesQuery.Where(f => f.UploadedAt >= uploadedFrom.Value);
-
             if (uploadedTo.HasValue)
                 filesQuery = filesQuery.Where(f => f.UploadedAt <= uploadedTo.Value);
 
-            // Ordiniamo i file per data di upload decrescente (i più recenti prima)
             filesQuery = filesQuery.OrderByDescending(f => f.UploadedAt);
 
             var totalFiles = await filesQuery.CountAsync();
 
-            // Recuperiamo la pagina di file richiesta, proiettando solo i campi necessari per costruire la vista
             var filesPage = await filesQuery
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .Select(f => new { f.Id, f.FileName, f.UploadedAt, f.ReportBatchId })
                 .ToListAsync();
 
-            //  Recuperiamo tutte le coppie chiave-valore per i file della pagina, in modo da costruire la matrice pivot
             var pageFileIds = filesPage.Select(f => f.Id).ToList();
 
-            // Se non ci sono file nella pagina, evitiamo di fare la query sulle entità e restituiamo subito un modello vuoto
-            var pairs = pageFileIds.Count == 0
-                ? []
-                : await db.ReportEntities
-                    .AsNoTracking()
-                    .Where(e => pageFileIds.Contains(e.ReportFileId))
-                    .SelectMany(e => e.Properties
-                        .Where(p => p.Name == "value")
-                        .Select(p => new PivotPair
-                        {
-                            FileId = e.ReportFileId,
-                            Key = e.Key,
-                            Value = p.Value
-                        }))
-                    .ToListAsync();
+            if (pageFileIds.Count == 0)
+            {
+                return View(new TypePivotViewModel
+                {
+                    ReportTypeId = reportType.Id,
+                    ReportTypeKey = reportType.Key,
+                    TotalFiles = totalFiles,
+                    CurrentPage = page,
+                    PageSize = pageSize,
+                    TotalPages = (int)Math.Ceiling(totalFiles / (double)pageSize),
+                    DecimalPlaces = ResolveDecimalPlaces()
+                });
+            }
 
-            // Otteniamo l'elenco completo di header (chiavi) presenti nelle coppie chiave-valore,
-            // in modo da costruire le colonne della matrice pivot
-            var headers = pairs
+            // Query unica: recupera sia SubjectKey sia le misure proiettando IsSubjectKey
+            var allPairs = await db.ReportEntities
+                .AsNoTracking()
+                .Where(e => pageFileIds.Contains(e.ReportFileId))
+                .SelectMany(e => e.Properties
+                    .Where(p => p.Name == "value")
+                    .Select(p => new PivotPair
+                    {
+                        FileId       = e.ReportFileId,
+                        Key          = e.Key,
+                        Value        = p.Value,
+                        IsSubjectKey = p.IsSubjectKey
+                    }))
+                .ToListAsync();
+
+            // Separazione SubjectKey / misure
+            var subjectKeyPairs = allPairs.Where(p => p.IsSubjectKey).ToList();
+            var measurePairs    = allPairs.Where(p => !p.IsSubjectKey).ToList();
+
+            // Header di misura per il selettore del filtro dinamico
+            var allMeasureHeaders = measurePairs
                 .Select(p => p.Key)
                 .Where(k => !string.IsNullOrWhiteSpace(k))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .OrderBy(k => k, StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
-            // Costruiamo un dizionario di righe della matrice pivot, indicizzate per fileId,
-            // inizializzando i campi fissi (FileId, FileName, UploadedAt, BatchId)
-            var rows = filesPage
-                .Select(file => new TypePivotRow
-                {
-                    FileId = file.Id,
-                    FileName = file.FileName,
-                    UploadedAt = file.UploadedAt,
-                    BatchId = file.ReportBatchId,
-                    Values = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)
-                })
-                .ToDictionary(r => r.FileId);
-
-            // Popoliamo i valori dinamici delle righe della matrice pivot, utilizzando
-            // le coppie chiave-valore recuperate
-            foreach (var pair in pairs)
-                rows[pair.FileId].Values[pair.Key] = pair.Value;
-
-            // Se sono stati specificati i parametri di filtro dinamico, applichiamo il filtro alle coppie chiave-valore
+            // Filtro dinamico su campo misura
             if (!string.IsNullOrWhiteSpace(filterField) && !string.IsNullOrWhiteSpace(filterValue))
             {
-                pairs = [.. pairs
+                var allowedFileIds = measurePairs
                     .Where(p => string.Equals(p.Key, filterField, StringComparison.OrdinalIgnoreCase)
-                        && (p.Value ?? string.Empty).Contains(filterValue, StringComparison.OrdinalIgnoreCase))];
+                             && (p.Value ?? string.Empty).Contains(filterValue, StringComparison.OrdinalIgnoreCase))
+                    .Select(p => p.FileId)
+                    .Distinct()
+                    .ToHashSet();
 
-                var allowedFileIds = pairs.Select(p => p.FileId).Distinct().ToHashSet();
-                rows = rows
-                    .Where(kv => allowedFileIds.Contains(kv.Key))
-                    .ToDictionary(kv => kv.Key, kv => kv.Value);
+                filesPage       = filesPage.Where(f => allowedFileIds.Contains(f.Id)).ToList();
+                measurePairs    = measurePairs.Where(p => allowedFileIds.Contains(p.FileId)).ToList();
+                subjectKeyPairs = subjectKeyPairs.Where(p => allowedFileIds.Contains(p.FileId)).ToList();
             }
 
-            // Dopo aver applicato il filtro dinamico, ricaviamo nuovamente l'elenco di header (chiavi) presenti
-            // nelle coppie chiave-valore filtrate,
-            var dynamicFilterFields = pairs
-                            .Select(p => p.Key)
-                            .Where(k => !string.IsNullOrWhiteSpace(k))
-                            .Distinct(StringComparer.OrdinalIgnoreCase)
-                            .OrderBy(k => k, StringComparer.OrdinalIgnoreCase)
-                            .ToList();
-
-            // Recuperiamo l'eventuale header chiave soggetto (es. "name") per il reportType, in modo da
-            // evidenziarlo nella matrice pivot
-            var subjectKeyHeader = await db.ReportEntities
-                .AsNoTracking()
-                .Where(e => pageFileIds.Contains(e.ReportFileId))
-                .SelectMany(e => e.Properties
-                    .Where(p => p.IsSubjectKey)
-                    .Select(p => new { EntityKey = e.Key, PropertyName = p.Name, PropertyValue = p.Value }))
-                .Select(x =>
-                    x.PropertyName == "name" && !string.IsNullOrWhiteSpace(x.PropertyValue)
-                        ? x.PropertyValue!
-                        : x.EntityKey)
-                .FirstOrDefaultAsync(k => !string.IsNullOrWhiteSpace(k));
-
-            // Infine, costruiamo la lista di header visibili nella matrice pivot, applicando le seguenti regole:
-            var visibleHeaders = headers
+            // Header visibili: solo colonne con tutti i valori numerici (escluso SubjectKey)
+            var visibleHeaders = allMeasureHeaders
                 .Where(h =>
                 {
-                    var vals = pairs.Where(p => string.Equals(p.Key, h, StringComparison.OrdinalIgnoreCase))
-                                    .Select(p => p.Value)
-                                    .Where(v => !string.IsNullOrWhiteSpace(v))
-                                    .ToList();
+                    var vals = measurePairs
+                        .Where(p => string.Equals(p.Key, h, StringComparison.OrdinalIgnoreCase))
+                        .Select(p => p.Value)
+                        .Where(v => !string.IsNullOrWhiteSpace(v))
+                        .ToList();
 
-                    if (vals.Count == 0) return false;
-
-                    // Mostriamo solo gli header per cui TUTTI i valori non vuoti sono numerici,
-                    // in modo da evitare di mostrare colonne con dati testuali non significativi
-                    return vals.All(v => double.TryParse(v, NumberStyles.Any, CultureInfo.InvariantCulture, out _)
-                                            || double.TryParse(v, NumberStyles.Any, CultureInfo.CurrentCulture, out _));
+                    return vals.Any() && vals.All(v =>
+                        double.TryParse(v, NumberStyles.Any, CultureInfo.InvariantCulture, out _) ||
+                        double.TryParse(v, NumberStyles.Any, CultureInfo.CurrentCulture, out _));
                 })
                 .ToList();
 
-            // Se l'header chiave soggetto è presente tra gli header visibili, lo spostiamo come prima colonna della matrice pivot,
-            if (!string.IsNullOrWhiteSpace(subjectKeyHeader))
-            {
-                if (!visibleHeaders.Any(h => string.Equals(h, subjectKeyHeader, StringComparison.OrdinalIgnoreCase)))
+            // Costruzione righe
+            var rows = filesPage
+                .Select(f => new TypePivotRow
                 {
-                    var subjectKeyFromHeaders = headers
-                        .FirstOrDefault(h =>
-                            string.Equals(h, subjectKeyHeader, StringComparison.OrdinalIgnoreCase)
-                            || h.StartsWith(subjectKeyHeader + "[", StringComparison.OrdinalIgnoreCase));
+                    FileId     = f.Id,
+                    FileName   = f.FileName,
+                    UploadedAt = f.UploadedAt,
+                    BatchId    = f.ReportBatchId,
+                    SubjectKey = null,
+                    Values     = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)
+                })
+                .ToDictionary(r => r.FileId);
 
-                    if (!string.IsNullOrWhiteSpace(subjectKeyFromHeaders))
-                        visibleHeaders.Add(subjectKeyFromHeaders);
-                }
+            foreach (var p in subjectKeyPairs)
+                if (rows.TryGetValue(p.FileId, out var row))
+                    row.SubjectKey = p.Value;
 
-                visibleHeaders = [.. visibleHeaders
-                    .OrderBy(h => string.Equals(h, subjectKeyHeader, StringComparison.OrdinalIgnoreCase) ? 0 : 1)
-                    .ThenBy(h => h, StringComparer.OrdinalIgnoreCase)];
-            }
+            foreach (var p in measurePairs)
+                if (rows.TryGetValue(p.FileId, out var row))
+                    row.Values[p.Key] = p.Value;
 
-            // Costruiamo il modello da passare alla vista, includendo tutte le informazioni necessarie per la visualizzazione
-            var model = new TypePivotViewModel
+            return View(new TypePivotViewModel
             {
-                ReportTypeId = reportType.Id,
-                ReportTypeKey = reportType.Key,
-                Headers = visibleHeaders,
-                DynamicFilterFields = dynamicFilterFields,
-                BatchId = batchId,
-                UploadedFrom = uploadedFrom,
-                UploadedTo = uploadedTo,
-                FilterField = filterField,
-                FilterValue = filterValue,
-                Rows = [.. rows.Values.OrderByDescending(r => r.UploadedAt)],
-                TotalFiles = totalFiles,
-                CurrentPage = page,
-                PageSize = pageSize,
-                TotalPages = (int)Math.Ceiling(totalFiles / (double)pageSize),
-                DecimalPlaces = ResolveDecimalPlaces()
-            };
-
-            return View(model);
+                ReportTypeId        = reportType.Id,
+                ReportTypeKey       = reportType.Key,
+                Headers             = visibleHeaders,
+                DynamicFilterFields = allMeasureHeaders,
+                BatchId             = batchId,
+                UploadedFrom        = uploadedFrom,
+                UploadedTo          = uploadedTo,
+                FilterField         = filterField,
+                FilterValue         = filterValue,
+                Rows                = rows.Values.OrderByDescending(r => r.UploadedAt).ToList(),
+                TotalFiles          = totalFiles,
+                CurrentPage         = page,
+                PageSize            = pageSize,
+                TotalPages          = (int)Math.Ceiling(totalFiles / (double)pageSize),
+                DecimalPlaces       = ResolveDecimalPlaces(),
+                HasSubjectKey       = subjectKeyPairs.Count > 0,
+                SubjectKeyLabel     = subjectKeyPairs.FirstOrDefault()?.Key ?? "SubjectKey"
+            });
         }
 
         private int ResolveDecimalPlaces()
@@ -274,13 +240,13 @@ namespace RRDA.Web.Areas.Data.Controllers
 
             if (Request.Cookies.TryGetValue(DecimalPlacesCookieName, out var cookieValue)
                 && int.TryParse(cookieValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var cookiePlaces))
-            {
                 return Math.Clamp(cookiePlaces, 0, MaxDecimalPlaces);
-            }
 
             return fallback;
         }
     }
+
+    // ViewModels
 
     public class TabularPreviewRow
     {
@@ -289,6 +255,7 @@ namespace RRDA.Web.Areas.Data.Controllers
         public string ReportSheet { get; set; } = string.Empty;
         public int PropertiesCount { get; set; }
     }
+
     public class FilePivotViewModel
     {
         public int FileId { get; set; }
@@ -297,6 +264,7 @@ namespace RRDA.Web.Areas.Data.Controllers
         public List<string> Headers { get; set; } = [];
         public Dictionary<string, string?> Row { get; set; } = new(StringComparer.OrdinalIgnoreCase);
     }
+
     public class TypePivotViewModel
     {
         public int ReportTypeId { get; set; }
@@ -314,19 +282,25 @@ namespace RRDA.Web.Areas.Data.Controllers
         public int PageSize { get; set; }
         public int TotalPages { get; set; }
         public int DecimalPlaces { get; set; }
+        public bool HasSubjectKey { get; set; }
+        public string SubjectKeyLabel { get; set; } = string.Empty;
     }
+
     public class TypePivotRow
     {
         public int FileId { get; set; }
         public string FileName { get; set; } = string.Empty;
         public DateTime UploadedAt { get; set; }
         public int? BatchId { get; set; }
+        public string? SubjectKey { get; set; }
         public Dictionary<string, string?> Values { get; set; } = new(StringComparer.OrdinalIgnoreCase);
     }
+
     public class PivotPair
     {
         public int FileId { get; set; }
         public string Key { get; set; } = string.Empty;
         public string? Value { get; set; }
+        public bool IsSubjectKey { get; set; }
     }
 }

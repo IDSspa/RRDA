@@ -1,4 +1,5 @@
-﻿@model RRDA.Web.Areas.Data.Controllers.TypePivotViewModel
+﻿@using System.Globalization
+@model RRDA.Web.Areas.Data.Controllers.TypePivotViewModel
 @{
     ViewData["Title"] = $"Type Pivot - {Model.ReportTypeKey}";
 }
@@ -7,7 +8,6 @@
     <h4 style="margin:0;color:#c9d1d9;font-weight:600;">Vista orizzontale per tipo report: @Model.ReportTypeKey</h4>
     <div style="color:#8b949e;font-size:.85rem;">File totali: @Model.TotalFiles</div>
 </div>
-
 
 <div class="rrda-card mb-3">
     <form method="get" class="row g-2 align-items-end">
@@ -60,18 +60,44 @@
         <table class="table table-borderless mb-0" style="min-width:1400px;">
             <thead>
                 <tr>
+                    @* ── SubjectKey: prima colonna, header semplice senza popup ── *@
+                    @if (Model.HasSubjectKey)
+                    {
+                        <th style="font-family:monospace;font-size:.78rem;white-space:nowrap;">@Model.SubjectKeyLabel</th>
+                    }
+                    @* ── Colonne statiche file ── *@
                     <th>FileId</th>
                     <th>FileName</th>
                     <th>UploadedAt</th>
                     <th>BatchId</th>
+                    @* ── Colonne di misura con popup statistico ── *@
                     @foreach (var header in Model.Headers)
                     {
                         <th style="font-family:monospace;font-size:.78rem;">
                             <div class="dropdown">
-                                <button class="btn btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="font-family:monospace;font-size:.74rem;">@header</button>
+                                <button class="btn btn-sm dropdown-toggle" type="button"
+                                        data-bs-toggle="dropdown" aria-expanded="false"
+                                        style="font-family:monospace;font-size:.74rem;">@header</button>
                                 <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item" asp-area="Data" asp-controller="Statistics" asp-action="Distribution" asp-route-reportTypeId="@Model.ReportTypeId" asp-route-field="@header" asp-route-batchId="@Model.BatchId" asp-route-uploadedFrom="@(Model.UploadedFrom?.ToString("yyyy-MM-dd"))" asp-route-uploadedTo="@(Model.UploadedTo?.ToString("yyyy-MM-dd"))">Distribuzione</a></li>
-                                    <li><a class="dropdown-item" href="#" onclick="alert('Diagramma di dispersione: vista in implementazione'); return false;">Diagramma di dispersione</a></li>
+                                    <li>
+                                        <a class="dropdown-item"
+                                           asp-area="Data"
+                                           asp-controller="Statistics"
+                                           asp-action="Distribution"
+                                           asp-route-reportTypeId="@Model.ReportTypeId"
+                                           asp-route-field="@header"
+                                           asp-route-batchId="@Model.BatchId"
+                                           asp-route-uploadedFrom="@(Model.UploadedFrom?.ToString("yyyy-MM-dd"))"
+                                           asp-route-uploadedTo="@(Model.UploadedTo?.ToString("yyyy-MM-dd"))">
+                                            Distribuzione
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="#"
+                                           onclick="alert('Diagramma di dispersione: vista in implementazione'); return false;">
+                                            Diagramma di dispersione
+                                        </a>
+                                    </li>
                                 </ul>
                             </div>
                         </th>
@@ -82,22 +108,55 @@
                 @foreach (var row in Model.Rows)
                 {
                     <tr>
+                        @* ── SubjectKey: renderizzato come intero (o stringa se non numerico) ── *@
+                        @if (Model.HasSubjectKey)
+                        {
+                            <td style="font-family:monospace;font-size:.78rem;white-space:nowrap;">
+                                @{
+                                    var skRaw = row.SubjectKey;
+                                    if (!string.IsNullOrWhiteSpace(skRaw)
+                                        && long.TryParse(skRaw, NumberStyles.Any, CultureInfo.InvariantCulture, out var skLong))
+                                    {
+                                        @skLong
+                                    }
+                                    else if (!string.IsNullOrWhiteSpace(skRaw)
+                                             && double.TryParse(skRaw, NumberStyles.Any, CultureInfo.InvariantCulture, out var skDouble))
+                                    {
+                                        @((long)Math.Round(skDouble))
+                                    }
+                                    else
+                                    {
+                                        @(skRaw ?? "")
+                                    }
+                                }
+                            </td>
+                        }
+                        @* ── Colonne statiche ── *@
                         <td>@row.FileId</td>
                         <td style="font-family:monospace;font-size:.78rem;">@row.FileName</td>
                         <td style="font-size:.78rem;">@row.UploadedAt.ToString("yyyy-MM-dd HH:mm")</td>
                         <td style="font-size:.78rem;">@(row.BatchId?.ToString() ?? "—")</td>
+                        @* ── Valori di misura: double con decimali configurati ── *@
                         @foreach (var header in Model.Headers)
                         {
                             <td style="font-family:monospace;font-size:.78rem;white-space:nowrap;">
-                                @(
-                                                    row.Values.TryGetValue(header, out var value)
-                                                    ? (double.TryParse(value, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var dInv)
-                                                    ? Math.Round(dInv, Model.DecimalPlaces).ToString($"F{Model.DecimalPlaces}", System.Globalization.CultureInfo.InvariantCulture)
-                                                    : double.TryParse(value, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.CurrentCulture, out var dCur)
-                                                    ? Math.Round(dCur, Model.DecimalPlaces).ToString($"F{Model.DecimalPlaces}", System.Globalization.CultureInfo.CurrentCulture)
-                                                    : value)
-                                                    : ""
-                                                    )
+                                @{
+                                    if (row.Values.TryGetValue(header, out var value))
+                                    {
+                                        if (double.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out var dInv))
+                                        {
+                                            @Math.Round(dInv, Model.DecimalPlaces).ToString($"F{Model.DecimalPlaces}", CultureInfo.InvariantCulture)
+                                        }
+                                        else if (double.TryParse(value, NumberStyles.Any, CultureInfo.CurrentCulture, out var dCur))
+                                        {
+                                            @Math.Round(dCur, Model.DecimalPlaces).ToString($"F{Model.DecimalPlaces}", CultureInfo.CurrentCulture)
+                                        }
+                                        else
+                                        {
+                                            @(value ?? "")
+                                        }
+                                    }
+                                }
                             </td>
                         }
                     </tr>
@@ -112,8 +171,17 @@
     <div class="d-flex gap-2 mt-3">
         @for (int p = 1; p <= Model.TotalPages; p++)
         {
-            <a asp-action="TypePivot" asp-route-reportTypeId="@Model.ReportTypeId" asp-route-page="@p" asp-route-pageSize="@Model.PageSize" asp-route-batchId="@Model.BatchId" asp-route-uploadedFrom="@(Model.UploadedFrom?.ToString("yyyy-MM-dd"))" asp-route-uploadedTo="@(Model.UploadedTo?.ToString("yyyy-MM-dd"))" asp-route-filterField="@Model.FilterField" asp-route-filterValue="@Model.FilterValue"
-               style="padding:.2rem .55rem;border:1px solid #30363d;border-radius:5px;text-decoration:none;color:@(p == Model.CurrentPage ? "#58a6ff" : "#8b949e");">
+            <a asp-action="TypePivot"
+               asp-route-reportTypeId="@Model.ReportTypeId"
+               asp-route-page="@p"
+               asp-route-pageSize="@Model.PageSize"
+               asp-route-batchId="@Model.BatchId"
+               asp-route-uploadedFrom="@(Model.UploadedFrom?.ToString("yyyy-MM-dd"))"
+               asp-route-uploadedTo="@(Model.UploadedTo?.ToString("yyyy-MM-dd"))"
+               asp-route-filterField="@Model.FilterField"
+               asp-route-filterValue="@Model.FilterValue"
+               style="padding:.2rem .55rem;border:1px solid #30363d;border-radius:5px;
+                      text-decoration:none;color:@(p == Model.CurrentPage ? "#58a6ff" : "#8b949e");">
                 @p
             </a>
         }
