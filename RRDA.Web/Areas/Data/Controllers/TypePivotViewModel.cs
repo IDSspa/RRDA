@@ -20,5 +20,6 @@
         public bool HasSubjectKey { get; set; }
         public string SubjectKeyLabel { get; set; } = string.Empty;
         public Dictionary<string, string?> HeaderUnits { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+        public Dictionary<string, TypePivotColumnStatistics> ColumnStatistics { get; set; } = new(StringComparer.OrdinalIgnoreCase);
     }
 }

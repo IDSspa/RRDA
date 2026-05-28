@@ -206,6 +206,14 @@ namespace RRDA.Web.Areas.Data.Controllers
                     g => g.Select(p => p.Unit).FirstOrDefault(u => !string.IsNullOrWhiteSpace(u)),
                     StringComparer.OrdinalIgnoreCase);
 
+            var columnStatistics = measurePairs
+                .Where(p => visibleHeaderSet.Contains(p.Key))
+                .GroupBy(p => p.Key, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(
+                    g => g.Key,
+                    g => CalculateColumnStatistics(g.Select(p => p.Value)),
+                    StringComparer.OrdinalIgnoreCase);
+
             // Costruzione righe
             var rows = filesPage
                 .Select(f => new TypePivotRow
@@ -233,6 +241,7 @@ namespace RRDA.Web.Areas.Data.Controllers
                 ReportTypeKey       = reportType.Key,
                 Headers             = visibleHeaders,
                 HeaderUnits         = headerUnits,
+                ColumnStatistics    = columnStatistics,
                 DynamicFilterFields = allMeasureHeaders,
                 BatchId             = batchId,
                 UploadedFrom        = uploadedFrom,
@@ -266,6 +275,54 @@ namespace RRDA.Web.Areas.Data.Controllers
         {
             return string.Equals(dataType, "int", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(dataType, "double", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static TypePivotColumnStatistics CalculateColumnStatistics(IEnumerable<string?> rawValues)
+        {
+            var values = rawValues
+                .Select(TryParseDouble)
+                .Where(v => v.HasValue)
+                .Select(v => v!.Value)
+                .OrderBy(v => v)
+                .ToList();
+
+            if (values.Count == 0)
+                return new TypePivotColumnStatistics();
+
+            var mean = values.Average();
+            var median = values.Count % 2 == 1
+                ? values[values.Count / 2]
+                : (values[(values.Count / 2) - 1] + values[values.Count / 2]) / 2;
+            var variance = values.Count > 1
+                ? values.Sum(v => Math.Pow(v - mean, 2)) / (values.Count - 1)
+                : 0;
+
+            var max = values.Last();
+            var min = values.First();
+
+            return new TypePivotColumnStatistics
+            {
+                Count = values.Count,
+                Mean = mean,
+                Median = median,
+                StandardDeviation = Math.Sqrt(variance),
+                Max = max,
+                Min = min
+            };
+        }
+
+        private static double? TryParseDouble(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return null;
+
+            if (double.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out var invariantValue))
+                return invariantValue;
+
+            if (double.TryParse(value, NumberStyles.Any, CultureInfo.CurrentCulture, out var currentValue))
+                return currentValue;
+
+            return null;
         }
     }
 }

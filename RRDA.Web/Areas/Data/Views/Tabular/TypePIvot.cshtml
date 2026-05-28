@@ -2,6 +2,14 @@
 @model RRDA.Web.Areas.Data.Controllers.TypePivotViewModel
 @{
     ViewData["Title"] = $"Type Pivot - {Model.ReportTypeKey}";
+    var staticFooterColumns = Model.HasSubjectKey ? 5 : 4;
+
+    string FormatStatistic(double? value)
+    {
+        return value.HasValue
+            ? Math.Round(value.Value, Model.DecimalPlaces).ToString($"F{Model.DecimalPlaces}", CultureInfo.InvariantCulture)
+            : "";
+    }
 }
 
 <style>
@@ -188,6 +196,58 @@
                     </tr>
                 }
             </tbody>
+            <tfoot>
+                <tr>
+                    <th colspan="@staticFooterColumns" style="font-size:.76rem;color:#8b949e;">Max</th>
+                    @foreach (var header in Model.Headers)
+                    {
+                        Model.ColumnStatistics.TryGetValue(header, out var stats);
+                        <td style="font-family:monospace;font-size:.76rem;white-space:nowrap;color:#c9d1d9;">
+                            @FormatStatistic(stats?.Max)
+                        </td>
+                    }
+                </tr>
+                <tr>
+                    <th colspan="@staticFooterColumns" style="font-size:.76rem;color:#8b949e;">Media</th>
+                    @foreach (var header in Model.Headers)
+                    {
+                        Model.ColumnStatistics.TryGetValue(header, out var stats);
+                        <td style="font-family:monospace;font-size:.76rem;white-space:nowrap;color:#c9d1d9;">
+                            @FormatStatistic(stats?.Mean)
+                        </td>
+                    }
+                </tr>
+                <tr>
+                    <th colspan="@staticFooterColumns" style="font-size:.76rem;color:#8b949e;">Min</th>
+                    @foreach (var header in Model.Headers)
+                    {
+                        Model.ColumnStatistics.TryGetValue(header, out var stats);
+                        <td style="font-family:monospace;font-size:.76rem;white-space:nowrap;color:#c9d1d9;">
+                            @FormatStatistic(stats?.Min)
+                        </td>
+                    }
+                </tr>
+@*                 <tr>
+                    <th colspan="@staticFooterColumns" style="font-size:.76rem;color:#8b949e;">Mediana</th>
+                    @foreach (var header in Model.Headers)
+                    {
+                        Model.ColumnStatistics.TryGetValue(header, out var stats);
+                        <td style="font-family:monospace;font-size:.76rem;white-space:nowrap;color:#c9d1d9;">
+                            @FormatStatistic(stats?.Median)
+                        </td>
+                    }
+                </tr> *@
+                <tr>
+                    <th colspan="@staticFooterColumns" style="font-size:.76rem;color:#8b949e;">Dev. std</th>
+                    @foreach (var header in Model.Headers)
+                    {
+                        Model.ColumnStatistics.TryGetValue(header, out var stats);
+                        <td style="font-family:monospace;font-size:.76rem;white-space:nowrap;color:#c9d1d9;">
+                            @FormatStatistic(stats?.StandardDeviation)
+                        </td>
+                    }
+                </tr>
+            </tfoot>
         </table>
     }
 </div>
