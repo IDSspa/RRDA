@@ -122,7 +122,9 @@ namespace RRDA.Web.Areas.Data.Controllers
                 })
                 .ToList();
 
-                .ToDictionary(b => b.Id, b => b.Description);
+            var batchNames = batchRecords
+                .ToDictionary(b => b.Id, b => b.Name);
+
             // Query base: tutti i file del ReportType con i filtri di batch e data
             var filesQuery = db.ReportFiles
                 .AsNoTracking()
@@ -266,6 +268,10 @@ namespace RRDA.Web.Areas.Data.Controllers
                     FileName   = f.FileName,
                     UploadedAt = f.UploadedAt,
                     BatchId    = f.ReportBatchId,
+                    BatchName = f.ReportBatchId.HasValue
+                        && batchNames.TryGetValue(f.ReportBatchId.Value, out var description)
+                        ? description
+                        : null,
                     SubjectKey = null,
                     Values     = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)
                 })

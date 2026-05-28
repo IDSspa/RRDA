@@ -2,7 +2,7 @@
 @model RRDA.Web.Areas.Data.Controllers.TypePivotViewModel
 @{
     ViewData["Title"] = $"Type Pivot - {Model.ReportTypeKey}";
-    var staticFooterColumns = Model.HasSubjectKey ? 5 : 4;
+    var staticFooterColumns = Model.HasSubjectKey ? 4 : 3;
 
     string FormatStatistic(double? value)
     {
@@ -115,10 +115,9 @@
                         <th style="font-family:monospace;font-size:.78rem;white-space:nowrap;">@Model.SubjectKeyLabel</th>
                     }
                     @* ── Colonne statiche file ── *@
-                    <th>FileId</th>
+                    <th>Batch</th>
                     <th>FileName</th>
                     <th>UploadedAt</th>
-                    <th>BatchId</th>
                     @* ── Colonne di misura con popup statistico ── *@
                     @foreach (var header in Model.Headers)
                     {
@@ -187,10 +186,10 @@
                             </td>
                         }
                         @* ── Colonne statiche ── *@
-                        <td>@row.FileId</td>
+
+                        <td style="font-size:.78rem;">@(row.BatchName ?? "—")</td>
                         <td style="font-family:monospace;font-size:.78rem;">@row.FileName</td>
                         <td style="font-size:.78rem;">@row.UploadedAt.ToString("yyyy-MM-dd HH:mm")</td>
-                        <td style="font-size:.78rem;">@(row.BatchId?.ToString() ?? "—")</td>
                         @* ── Valori di misura: double con decimali configurati ── *@
                         @foreach (var header in Model.Headers)
                         {
@@ -214,6 +213,7 @@
                                 }
                             </td>
                         }
+                    
                     </tr>
                 }
             </tbody>
