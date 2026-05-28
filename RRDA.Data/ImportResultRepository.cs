@@ -99,12 +99,23 @@ namespace RRDA.Data
 
                         if (dto.Properties != null && dto.Properties.Count > 0)
                         {
+                            var dataType = dto.Properties.TryGetValue("data_type", out var dt) && !string.IsNullOrWhiteSpace(dt)
+    ? dt
+    : "string";
+
+                            var unit = dto.Properties.TryGetValue("unit", out var u) && !string.IsNullOrWhiteSpace(u)
+                                ? u
+                                : null;
+
                             foreach (var kv in dto.Properties)
                             {
                                 // Legge il flag dal dizionario della stessa entità
-                                bool isSubjectKey =
-                                    dto.Properties.TryGetValue("is_subject_key", out var skFlag)
-                                    && skFlag == "1";
+                                bool isSubjectKey = false;
+                                if (dto.Properties != null)
+                                {
+                                    isSubjectKey = dto.Properties.TryGetValue("is_subject_key", out var skFlag)
+                                                   && skFlag == "1";
+                                }
 
                                 // Nota: il modello richiede DataType; qui si usa "string" di default.
                                 var prop = new ReportProperty
@@ -112,8 +123,8 @@ namespace RRDA.Data
                                     Name = kv.Key ?? string.Empty,
                                     Value = kv.Value ?? string.Empty,
                                     ReportEntity = entity,
-                                    Unit = null,
-                                    DataType = "string",
+                                    Unit = string.Equals(kv.Key, "value", StringComparison.OrdinalIgnoreCase) ? unit : null,
+                                    DataType = dataType,
                                     IsSubjectKey = isSubjectKey
                                 };
 

@@ -87,18 +87,28 @@ namespace RRDA.Web.Areas.Data.Controllers
             int page = 1,
             int pageSize = 50)
         {
-            if (page < 1) page = 1;
+            // Validazione parametri di paging
+            if (page < 1) 
+                page = 1;
+
+            // Limiti di pageSize: default 50, max 200
             pageSize = pageSize switch { <= 0 => 50, > 200 => 200, _ => pageSize };
 
+            // Recupero ReportType e validazione esistenza
             var reportType = await db.ReportTypes
                 .AsNoTracking()
                 .FirstOrDefaultAsync(t => t.Id == reportTypeId);
-            if (reportType is null) return NotFound();
 
+            // Se il ReportType non esiste, restituisco 404
+            if (reportType is null)
+                return NotFound();
+
+            // Query base: tutti i file del ReportType con i filtri di batch e data
             var filesQuery = db.ReportFiles
                 .AsNoTracking()
                 .Where(f => f.ReportTypeId == reportTypeId);
 
+            // Applicazione filtri di batch e data
             if (batchId.HasValue)
                 filesQuery = filesQuery.Where(f => f.ReportBatchId == batchId.Value);
             if (uploadedFrom.HasValue)
@@ -106,6 +116,7 @@ namespace RRDA.Web.Areas.Data.Controllers
             if (uploadedTo.HasValue)
                 filesQuery = filesQuery.Where(f => f.UploadedAt <= uploadedTo.Value);
 
+            // Ordinamento: per data di upload decrescente
             filesQuery = filesQuery.OrderByDescending(f => f.UploadedAt);
 
             var totalFiles = await filesQuery.CountAsync();
@@ -143,7 +154,9 @@ namespace RRDA.Web.Areas.Data.Controllers
                         FileId       = e.ReportFileId,
                         Key          = e.Key,
                         Value        = p.Value,
-                        IsSubjectKey = p.IsSubjectKey
+                        IsSubjectKey = p.IsSubjectKey,
+                        DataType     = p.DataType,
+                        Unit         = p.Unit
                     }))
                 .ToListAsync();
 
@@ -169,26 +182,29 @@ namespace RRDA.Web.Areas.Data.Controllers
                     .Distinct()
                     .ToHashSet();
 
-                filesPage       = filesPage.Where(f => allowedFileIds.Contains(f.Id)).ToList();
-                measurePairs    = measurePairs.Where(p => allowedFileIds.Contains(p.FileId)).ToList();
-                subjectKeyPairs = subjectKeyPairs.Where(p => allowedFileIds.Contains(p.FileId)).ToList();
+                filesPage       = [.. filesPage.Where(f => allowedFileIds.Contains(f.Id))];
+                measurePairs    = [.. measurePairs.Where(p => allowedFileIds.Contains(p.FileId))];
+                subjectKeyPairs = [.. subjectKeyPairs.Where(p => allowedFileIds.Contains(p.FileId))];
             }
 
-            // Header visibili: solo colonne con tutti i valori numerici (escluso SubjectKey)
-            var visibleHeaders = allMeasureHeaders
-                .Where(h =>
-                {
-                    var vals = measurePairs
-                        .Where(p => string.Equals(p.Key, h, StringComparison.OrdinalIgnoreCase))
-                        .Select(p => p.Value)
-                        .Where(v => !string.IsNullOrWhiteSpace(v))
-                        .ToList();
-
-                    return vals.Any() && vals.All(v =>
-                        double.TryParse(v, NumberStyles.Any, CultureInfo.InvariantCulture, out _) ||
-                        double.TryParse(v, NumberStyles.Any, CultureInfo.CurrentCulture, out _));
-                })
+            // Header visibili: solo colonne con i valori numerici (dal data type)
+            // per evitare di mostrare campi non significativi in un pivot tabellare
+            var visibleHeaders = measurePairs
+                .Where(p => IsNumericDataType(p.DataType))
+                .Select(p => p.Key)
+                .Where(k => !string.IsNullOrWhiteSpace(k))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(k => k, StringComparer.OrdinalIgnoreCase)
                 .ToList();
+
+            var visibleHeaderSet = visibleHeaders.ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var headerUnits = measurePairs
+                .Where(p => visibleHeaderSet.Contains(p.Key))
+                .GroupBy(p => p.Key, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.Select(p => p.Unit).FirstOrDefault(u => !string.IsNullOrWhiteSpace(u)),
+                    StringComparer.OrdinalIgnoreCase);
 
             // Costruzione righe
             var rows = filesPage
@@ -216,13 +232,14 @@ namespace RRDA.Web.Areas.Data.Controllers
                 ReportTypeId        = reportType.Id,
                 ReportTypeKey       = reportType.Key,
                 Headers             = visibleHeaders,
+                HeaderUnits         = headerUnits,
                 DynamicFilterFields = allMeasureHeaders,
                 BatchId             = batchId,
                 UploadedFrom        = uploadedFrom,
                 UploadedTo          = uploadedTo,
                 FilterField         = filterField,
                 FilterValue         = filterValue,
-                Rows                = rows.Values.OrderByDescending(r => r.UploadedAt).ToList(),
+                Rows                = [.. rows.Values.OrderByDescending(r => r.UploadedAt)],
                 TotalFiles          = totalFiles,
                 CurrentPage         = page,
                 PageSize            = pageSize,
@@ -244,63 +261,11 @@ namespace RRDA.Web.Areas.Data.Controllers
 
             return fallback;
         }
-    }
 
-    // ViewModels
-
-    public class TabularPreviewRow
-    {
-        public int EntityId { get; set; }
-        public string EntityKey { get; set; } = string.Empty;
-        public string ReportSheet { get; set; } = string.Empty;
-        public int PropertiesCount { get; set; }
-    }
-
-    public class FilePivotViewModel
-    {
-        public int FileId { get; set; }
-        public string FileName { get; set; } = string.Empty;
-        public string ReportTypeKey { get; set; } = string.Empty;
-        public List<string> Headers { get; set; } = [];
-        public Dictionary<string, string?> Row { get; set; } = new(StringComparer.OrdinalIgnoreCase);
-    }
-
-    public class TypePivotViewModel
-    {
-        public int ReportTypeId { get; set; }
-        public string ReportTypeKey { get; set; } = string.Empty;
-        public List<string> Headers { get; set; } = [];
-        public List<TypePivotRow> Rows { get; set; } = [];
-        public List<string> DynamicFilterFields { get; set; } = [];
-        public int? BatchId { get; set; }
-        public DateTime? UploadedFrom { get; set; }
-        public DateTime? UploadedTo { get; set; }
-        public string? FilterField { get; set; }
-        public string? FilterValue { get; set; }
-        public int TotalFiles { get; set; }
-        public int CurrentPage { get; set; }
-        public int PageSize { get; set; }
-        public int TotalPages { get; set; }
-        public int DecimalPlaces { get; set; }
-        public bool HasSubjectKey { get; set; }
-        public string SubjectKeyLabel { get; set; } = string.Empty;
-    }
-
-    public class TypePivotRow
-    {
-        public int FileId { get; set; }
-        public string FileName { get; set; } = string.Empty;
-        public DateTime UploadedAt { get; set; }
-        public int? BatchId { get; set; }
-        public string? SubjectKey { get; set; }
-        public Dictionary<string, string?> Values { get; set; } = new(StringComparer.OrdinalIgnoreCase);
-    }
-
-    public class PivotPair
-    {
-        public int FileId { get; set; }
-        public string Key { get; set; } = string.Empty;
-        public string? Value { get; set; }
-        public bool IsSubjectKey { get; set; }
+        private static bool IsNumericDataType(string? dataType)
+        {
+            return string.Equals(dataType, "int", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(dataType, "double", StringComparison.OrdinalIgnoreCase);
+        }
     }
 }

@@ -4,6 +4,26 @@
     ViewData["Title"] = $"Type Pivot - {Model.ReportTypeKey}";
 }
 
+<style>
+    .type-pivot-header-btn {
+        color: #c9d1d9;
+        background: #161b22;
+        border: 1px solid #30363d;
+        font-family: monospace;
+        font-size: .74rem;
+        white-space: nowrap;
+    }
+
+    .type-pivot-header-btn:hover,
+    .type-pivot-header-btn:focus,
+    .type-pivot-header-btn.show {
+        color: #f0f6fc;
+        background: #21262d;
+        border-color: #58a6ff;
+        box-shadow: none;
+    }
+</style>
+
 <div class="d-flex align-items-center justify-content-between mb-3">
     <h4 style="margin:0;color:#c9d1d9;font-weight:600;">Vista orizzontale per tipo report: @Model.ReportTypeKey</h4>
     <div style="color:#8b949e;font-size:.85rem;">File totali: @Model.TotalFiles</div>
@@ -73,11 +93,17 @@
                     @* ── Colonne di misura con popup statistico ── *@
                     @foreach (var header in Model.Headers)
                     {
+                        var headerLabel = header;
+                        if (Model.HeaderUnits.TryGetValue(header, out var unit)
+                            && !string.IsNullOrWhiteSpace(unit))
+                        {
+                            headerLabel = $"{header} [{unit}]";
+                        }
+
                         <th style="font-family:monospace;font-size:.78rem;">
                             <div class="dropdown">
-                                <button class="btn btn-sm dropdown-toggle" type="button"
-                                        data-bs-toggle="dropdown" aria-expanded="false"
-                                        style="font-family:monospace;font-size:.74rem;">@header</button>
+                                <button class="btn btn-sm dropdown-toggle type-pivot-header-btn" type="button"
+                                        data-bs-toggle="dropdown" aria-expanded="false">@headerLabel</button>
                                 <ul class="dropdown-menu">
                                     <li>
                                         <a class="dropdown-item"

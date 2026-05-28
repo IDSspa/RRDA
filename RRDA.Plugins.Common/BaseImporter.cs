@@ -208,7 +208,8 @@ namespace RRDA.Plugins.Common
                                 ["unit"] = rule.Unit ?? string.Empty,
                                 ["row_index"] = "-1",
                                 ["col_index"] = "-1",
-                                ["is_subject_key"] = isSubjectKey ? "1" : "0"
+                                ["is_subject_key"] = isSubjectKey ? "1" : "0",
+                                ["data_type"] = SerializeDataType(rule.DataType)
                             }
                         });
                     }
@@ -241,7 +242,8 @@ namespace RRDA.Plugins.Common
                                         ["value"] = cellValue,
                                         ["unit"] = rule.Unit ?? string.Empty,
                                         ["row_index"] = dr.ToString(),
-                                        ["col_index"] = dc.ToString()
+                                        ["col_index"] = dc.ToString(),
+                                        ["data_type"] = SerializeDataType(rule.DataType)
                                     }
                                 });
                             }
@@ -258,5 +260,14 @@ namespace RRDA.Plugins.Common
 
             return Task.FromResult<IEnumerable<ReportEntityDto>>(entities);
         }
+
+        private static string SerializeDataType(FieldDataType dt) => dt switch
+        {
+            FieldDataType.Int => "int",
+            FieldDataType.Double => "double",
+            FieldDataType.DateTime => "datetime",
+            FieldDataType.Bool => "bool",
+            _ => "string"
+        };
     }
 }
