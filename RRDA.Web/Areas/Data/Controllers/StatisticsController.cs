@@ -63,7 +63,7 @@ namespace RRDA.Web.Areas.Data.Controllers
                 Samples = values.Count
             };
 
-            if (!values.Any()) return model;
+            if (values.Count == 0) return model;
 
             var min = values.Min();
             var max = values.Max();

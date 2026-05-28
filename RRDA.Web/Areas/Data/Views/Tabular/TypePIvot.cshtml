@@ -41,9 +41,15 @@
     <form method="get" class="row g-2 align-items-end">
         <input type="hidden" name="reportTypeId" value="@Model.ReportTypeId" />
 
-        <div class="col-md-2">
-            <label class="form-label">BatchId</label>
-            <input class="form-control" name="batchId" value="@Model.BatchId" />
+        <div class="col-md-3">
+            <label class="form-label">Batch</label>
+            <select class="form-select" name="batchId">
+                <option value="">Tutti</option>
+                @foreach (var batch in Model.BatchOptions)
+                {
+                    <option value="@batch.Id" selected="@(Model.BatchId == batch.Id)">@batch.Label</option>
+                }
+            </select>
         </div>
 
         <div class="col-md-2">
@@ -56,7 +62,7 @@
             <input type="date" class="form-control" name="uploadedTo" value="@(Model.UploadedTo?.ToString("yyyy-MM-dd"))" />
         </div>
 
-        <div class="col-md-2">
+        <div class="col-md-3">
             <label class="form-label">Campo filtro</label>
             <select class="form-select" name="filterField">
                 <option value="">--</option>
@@ -67,9 +73,24 @@
             </select>
         </div>
 
-        <div class="col-md-3">
-            <label class="form-label">Valore filtro</label>
-            <input class="form-control" name="filterValue" value="@Model.FilterValue" />
+        <div class="col-md-2">
+            <label class="form-label">Campo da</label>
+            <input class="form-control" name="filterFrom" value="@Model.FilterFrom" />
+        </div>
+
+        <div class="col-md-2">
+            <label class="form-label">Campo a</label>
+            <input class="form-control" name="filterTo" value="@Model.FilterTo" />
+        </div>
+
+        <div class="col-md-2">
+            <label class="form-label">@Model.SubjectKeyLabel da</label>
+            <input class="form-control" name="subjectKeyFrom" value="@Model.SubjectKeyFrom" />
+        </div>
+
+        <div class="col-md-2">
+            <label class="form-label">@Model.SubjectKeyLabel a</label>
+            <input class="form-control" name="subjectKeyTo" value="@Model.SubjectKeyTo" />
         </div>
 
         <div class="col-md-1">
@@ -265,7 +286,10 @@
                asp-route-uploadedFrom="@(Model.UploadedFrom?.ToString("yyyy-MM-dd"))"
                asp-route-uploadedTo="@(Model.UploadedTo?.ToString("yyyy-MM-dd"))"
                asp-route-filterField="@Model.FilterField"
-               asp-route-filterValue="@Model.FilterValue"
+               asp-route-filterFrom="@Model.FilterFrom"
+               asp-route-filterTo="@Model.FilterTo"
+               asp-route-subjectKeyFrom="@Model.SubjectKeyFrom"
+               asp-route-subjectKeyTo="@Model.SubjectKeyTo"
                style="padding:.2rem .55rem;border:1px solid #30363d;border-radius:5px;
                       text-decoration:none;color:@(p == Model.CurrentPage ? "#58a6ff" : "#8b949e");">
                 @p

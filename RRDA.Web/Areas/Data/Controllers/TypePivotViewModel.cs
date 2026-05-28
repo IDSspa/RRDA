@@ -11,7 +11,11 @@
         public DateTime? UploadedFrom { get; set; }
         public DateTime? UploadedTo { get; set; }
         public string? FilterField { get; set; }
-        public string? FilterValue { get; set; }
+        public string? FilterFrom { get; set; }
+        public string? FilterTo { get; set; }
+        public string? SubjectKeyFrom { get; set; }
+        public string? SubjectKeyTo { get; set; }
+        public List<TypePivotBatchOption> BatchOptions { get; set; } = [];
         public int TotalFiles { get; set; }
         public int CurrentPage { get; set; }
         public int PageSize { get; set; }

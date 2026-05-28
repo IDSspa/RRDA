@@ -83,7 +83,10 @@ namespace RRDA.Web.Areas.Data.Controllers
             DateTime? uploadedFrom,
             DateTime? uploadedTo,
             string? filterField,
-            string? filterValue,
+            string? filterFrom,
+            string? filterTo,
+            string? subjectKeyFrom,
+            string? subjectKeyTo,
             int page = 1,
             int pageSize = 50)
         {
@@ -102,6 +105,22 @@ namespace RRDA.Web.Areas.Data.Controllers
             // Se il ReportType non esiste, restituisco 404
             if (reportType is null)
                 return NotFound();
+
+            var batchRecords = await db.ReportBatches
+                .AsNoTracking()
+                .OrderBy(b => b.Name)
+                .Select(b => new { b.Id, b.Name, b.Description })
+                .ToListAsync();
+
+            var batchOptions = batchRecords
+                .Select(b => new TypePivotBatchOption
+                {
+                    Id = b.Id,
+                    Label = string.IsNullOrWhiteSpace(b.Description)
+                        ? b.Name
+                        : $"{b.Name} - {b.Description}"
+                })
+                .ToList();
 
             // Query base: tutti i file del ReportType con i filtri di batch e data
             var filesQuery = db.ReportFiles
@@ -139,7 +158,16 @@ namespace RRDA.Web.Areas.Data.Controllers
                     CurrentPage = page,
                     PageSize = pageSize,
                     TotalPages = (int)Math.Ceiling(totalFiles / (double)pageSize),
-                    DecimalPlaces = ResolveDecimalPlaces()
+                    DecimalPlaces = ResolveDecimalPlaces(),
+                    BatchId = batchId,
+                    UploadedFrom = uploadedFrom,
+                    UploadedTo = uploadedTo,
+                    FilterField = filterField,
+                    FilterFrom = filterFrom,
+                    FilterTo = filterTo,
+                    SubjectKeyFrom = subjectKeyFrom,
+                    SubjectKeyTo = subjectKeyTo,
+                    BatchOptions = batchOptions
                 });
             }
 
@@ -173,11 +201,26 @@ namespace RRDA.Web.Areas.Data.Controllers
                 .ToList();
 
             // Filtro dinamico su campo misura
-            if (!string.IsNullOrWhiteSpace(filterField) && !string.IsNullOrWhiteSpace(filterValue))
+            if (!string.IsNullOrWhiteSpace(filterField)
+                && (!string.IsNullOrWhiteSpace(filterFrom) || !string.IsNullOrWhiteSpace(filterTo)))
             {
                 var allowedFileIds = measurePairs
                     .Where(p => string.Equals(p.Key, filterField, StringComparison.OrdinalIgnoreCase)
-                             && (p.Value ?? string.Empty).Contains(filterValue, StringComparison.OrdinalIgnoreCase))
+                             && IsValueInRange(p.Value, filterFrom, filterTo))
+                    .Select(p => p.FileId)
+                    .Distinct()
+                    .ToHashSet();
+
+                filesPage       = [.. filesPage.Where(f => allowedFileIds.Contains(f.Id))];
+                measurePairs    = [.. measurePairs.Where(p => allowedFileIds.Contains(p.FileId))];
+                subjectKeyPairs = [.. subjectKeyPairs.Where(p => allowedFileIds.Contains(p.FileId))];
+            }
+
+            // Filtro dinamico su SubjectKey
+            if (!string.IsNullOrWhiteSpace(subjectKeyFrom) || !string.IsNullOrWhiteSpace(subjectKeyTo))
+            {
+                var allowedFileIds = subjectKeyPairs
+                    .Where(p => IsValueInRange(p.Value, subjectKeyFrom, subjectKeyTo))
                     .Select(p => p.FileId)
                     .Distinct()
                     .ToHashSet();
@@ -247,7 +290,11 @@ namespace RRDA.Web.Areas.Data.Controllers
                 UploadedFrom        = uploadedFrom,
                 UploadedTo          = uploadedTo,
                 FilterField         = filterField,
-                FilterValue         = filterValue,
+                FilterFrom          = filterFrom,
+                FilterTo            = filterTo,
+                SubjectKeyFrom      = subjectKeyFrom,
+                SubjectKeyTo        = subjectKeyTo,
+                BatchOptions        = batchOptions,
                 Rows                = [.. rows.Values.OrderByDescending(r => r.UploadedAt)],
                 TotalFiles          = totalFiles,
                 CurrentPage         = page,
@@ -275,6 +322,19 @@ namespace RRDA.Web.Areas.Data.Controllers
         {
             return string.Equals(dataType, "int", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(dataType, "double", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsValueInRange(string? rawValue, string? rawFrom, string? rawTo)
+        {
+            var value = TryParseDouble(rawValue);
+            if (!value.HasValue)
+                return false;
+
+            var from = TryParseDouble(rawFrom);
+            var to = TryParseDouble(rawTo);
+
+            return (!from.HasValue || value.Value >= from.Value)
+                && (!to.HasValue || value.Value <= to.Value);
         }
 
         private static TypePivotColumnStatistics CalculateColumnStatistics(IEnumerable<string?> rawValues)
