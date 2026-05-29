@@ -141,6 +141,27 @@ namespace RRDA.Web.Areas.Data.Controllers
             // Ordinamento: per data di upload decrescente
             filesQuery = filesQuery.OrderByDescending(f => f.FileLastModify);
 
+            // Query per statistiche: TUTTI i file filtrati, senza paging
+            var allFilteredFileIds = await filesQuery
+                .Select(f => f.Id)
+                .ToListAsync();
+
+            var statsQueryPairs = allFilteredFileIds.Count == 0 ? [] : await db.ReportEntities
+                .AsNoTracking()
+                .Where(e => allFilteredFileIds.Contains(e.ReportFileId))
+                .SelectMany(e => e.Properties
+                    .Where(p => p.Name == "value" && !p.IsSubjectKey)
+                    .Select(p => new PivotPair
+                    {
+                        FileId = e.ReportFileId,
+                        Key = e.Key,
+                        Value = p.Value,
+                        IsSubjectKey = false,
+                        DataType = p.DataType,
+                        Unit = p.Unit
+                    }))
+                .ToListAsync();
+
             var totalFiles = await filesQuery.CountAsync();
 
             var filesPage = await filesQuery
@@ -219,6 +240,20 @@ namespace RRDA.Web.Areas.Data.Controllers
                 subjectKeyPairs = [.. subjectKeyPairs.Where(p => allowedFileIds.Contains(p.FileId))];
             }
 
+            // Applica filtro dinamico su campo misura (stesso logic del filtro su measurePairs)
+            if (!string.IsNullOrWhiteSpace(filterField)
+                && (!string.IsNullOrWhiteSpace(filterFrom) || !string.IsNullOrWhiteSpace(filterTo)))
+            {
+                var allowedIds = statsQueryPairs
+                    .Where(p => string.Equals(p.Key, filterField, StringComparison.OrdinalIgnoreCase)
+                             && IsValueInRange(p.Value, filterFrom, filterTo))
+                    .Select(p => p.FileId)
+                    .Distinct()
+                    .ToHashSet();
+
+                statsQueryPairs = [.. statsQueryPairs.Where(p => allowedIds.Contains(p.FileId))];
+            }
+
             // Filtro dinamico su SubjectKey
             if (!string.IsNullOrWhiteSpace(subjectKeyFrom) || !string.IsNullOrWhiteSpace(subjectKeyTo))
             {
@@ -244,6 +279,7 @@ namespace RRDA.Web.Areas.Data.Controllers
                 .ToList();
 
             var visibleHeaderSet = visibleHeaders.ToHashSet(StringComparer.OrdinalIgnoreCase);
+            
             var headerUnits = measurePairs
                 .Where(p => visibleHeaderSet.Contains(p.Key))
                 .GroupBy(p => p.Key, StringComparer.OrdinalIgnoreCase)
@@ -252,7 +288,7 @@ namespace RRDA.Web.Areas.Data.Controllers
                     g => g.Select(p => p.Unit).FirstOrDefault(u => !string.IsNullOrWhiteSpace(u)),
                     StringComparer.OrdinalIgnoreCase);
 
-            var columnStatistics = measurePairs
+            var columnStatistics = statsQueryPairs
                 .Where(p => visibleHeaderSet.Contains(p.Key))
                 .GroupBy(p => p.Key, StringComparer.OrdinalIgnoreCase)
                 .ToDictionary(
