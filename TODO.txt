@@ -1,0 +1,11 @@
+0) implementazione grafici statistici
+1) verificare aggiornamento tabella ReportTypes (inserimento/aggiornamento plugins)
+2) importazione plugin applicazione web
+3) importazione singolo report applicazione web
+4) gestione paginazione tabella:
+   4.1) se la pagina viene 'filtrata' il numero di pagine e la posizione per pagina dei record non cambia -> filtraggio rigenerazione pagine;
+   4.2) la gestione attuale dei valori statistici (media, max, min, dev. std) sulla pagina non è efficiente, tempi di attesa di 4-5 secondi per 100 valori
+   4.3) implementazione ordinamento vista tabellare -> default SubjectKey (pulsanti asc/desc)
+5) revisione criticità strutturali
+6) revisione UI WEB:
+   6.1) accesso 'veloce' alla vista tabellare per ogni tipologia di report da sidebar/dashboard
