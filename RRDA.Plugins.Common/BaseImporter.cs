@@ -18,10 +18,10 @@ namespace RRDA.Plugins.Common
         /// Check if fileName can be imported by the implemented plugin class
         /// </summary>
         /// <param name="fileName"></param>
-        /// <param name="fileStream"></param>
         /// <param name="validationConfigXml"></param>
+        /// 
         /// <returns>True if file can be imported false otherwise</returns>
-        public Task<bool> CanImportAsync(string fileName, Stream? fileStream = null, Stream? validationConfigXml = null)
+        public Task<bool> CanImportAsync(string fileName, Stream? validationConfigXml = null)
         {
             if (string.IsNullOrWhiteSpace(fileName))
                 return Task.FromResult(false);

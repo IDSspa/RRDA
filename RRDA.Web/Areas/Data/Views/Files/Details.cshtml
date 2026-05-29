@@ -58,9 +58,7 @@
 
         <div class="col-3" style="color:#8b949e;">Ultima modifica file</div>
         <div class="col-9" style="font-family:monospace;">
-            @(Model.FileLastModify != null
-                        ? Model.FileLastModify.ToString("yyyy-MM-dd HH:mm")
-                        : "—")
+            @Model.FileLastModify.ToString("yyyy-MM-dd HH:mm")
         </div>
     </div>
 </div>

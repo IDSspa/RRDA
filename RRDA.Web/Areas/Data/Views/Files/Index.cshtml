@@ -91,9 +91,7 @@
                         </td>
 
                         <td style="color:#8b949e;font-size:.82rem;">
-                            @(f.FileLastModify != null
-                                ? f.FileLastModify.ToString("yyyy-MM-dd HH:mm")
-                                : "—")
+                            @f.FileLastModify.ToString("yyyy-MM-dd HH:mm")
                         </td>
 
                         <td class="text-end">

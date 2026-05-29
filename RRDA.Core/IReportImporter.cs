@@ -14,10 +14,10 @@ namespace RRDA.Core
         /// Deve essere usato prima di chiamare <see cref="ImportAsync"/>.
         /// </summary>
         /// <param name="fileName">Nome del file di report da verificare.</param>
-        /// <param name="fileStream">(Opzionale) Stream del file di report da verificare (opzionale per verifiche basate solo sul nome).</param>
         /// <param name="validationConfigXml">(Opzionale) Stream del file XML di configurazione di validazione associato al plugin.</param>
+        /// 
         /// <returns>True se il plugin può gestire il file; altrimenti false.</returns>
-        Task<bool> CanImportAsync(string fileName, Stream? fileStream = null, Stream? validationConfigXml = null);
+        Task<bool> CanImportAsync(string fileName, Stream? validationConfigXml = null);
         Task<ImportResult> ImportAsync(
                 Stream fileStream,
                 ValidationConfig config,
