@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/Elementi di soluzione/">
     <File Path="Directory.Build.targets" />
+    <File Path="TODO.txt" />
   </Folder>
   <Folder Name="/RRDA.Plugins/">
     <Project Path="RRDA.Plugins.Common/RRDA.Plugins.Common.csproj" Id="4b9e852e-531a-41e5-b6bc-b916cb5d8bfc" />
