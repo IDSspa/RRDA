@@ -8,7 +8,7 @@ namespace RRDA.Core
         string Version { get; }
         string SupportedFileExtension { get; } // ".xlsx"
         string MatchingPattern { get; }
-        string EntityKind { get; }
+        ReportSubjectKind SubjectKind { get; }
         /// <summary>
         /// Verifica se il plugin è idoneo al caricamento del file di report fornito.
         /// Deve essere usato prima di chiamare <see cref="ImportAsync"/>.

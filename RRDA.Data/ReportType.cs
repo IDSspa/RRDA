@@ -1,4 +1,6 @@
-﻿namespace RRDA.Data
+﻿using RRDA.Core;
+
+namespace RRDA.Data
 {
     /// <summary>
     /// Tipo di report (mappato su tabella ReportTypes).

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RRDA.Data;
+using RRDA.Core;
 using RRDA.Web.Security;
 
 namespace RRDA.Web.Areas.Plugins.Controllers

@@ -1,4 +1,5 @@
-﻿using RRDA.Plugins.Common;
+﻿using RRDA.Core;
+using RRDA.Plugins.Common;
 
 namespace RRDA.Plugins.ALI
 {
@@ -8,6 +9,6 @@ namespace RRDA.Plugins.ALI
         public override string Version => "1.0.0";
         public override string SupportedFileExtension => ".xlsx";
         public override string MatchingPattern => "NCH_PAIPL_ALI";
-        public override string EntityKind => "TestMeasurement";
+        public override ReportSubjectKind SubjectKind => ReportSubjectKind.Component;
     }
 }

@@ -13,7 +13,7 @@ namespace RRDA.Plugins.Common
         public abstract string Version { get; }
         public abstract string SupportedFileExtension { get; }
         public abstract string MatchingPattern { get; }
-        public abstract string EntityKind { get; }
+        public abstract ReportSubjectKind SubjectKind { get; }
         /// <summary>
         /// Check if fileName can be imported by the implemented plugin class
         /// </summary>

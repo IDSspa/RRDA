@@ -13,6 +13,10 @@
 }
 
 <style>
+    .type-pivot-table td, .type-pivot-table th {
+        padding: .25rem .5rem;
+    }
+
     .type-pivot-header-btn {
         color: #c9d1d9;
         background: #161b22;
@@ -106,7 +110,7 @@
     }
     else
     {
-        <table class="table table-borderless mb-0" style="min-width:1400px;">
+        <table class="table table-borderless mb-0 type-pivot-table" style="min-width:1400px;">
             <thead>
                 <tr>
                     @* ── SubjectKey: prima colonna, header semplice senza popup ── *@

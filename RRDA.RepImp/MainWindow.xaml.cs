@@ -191,12 +191,92 @@ namespace RRDA.RepImp
                 _plugins = loaded;
                 PluginsListBox.ItemsSource = _plugins;
                 Log($"Caricati {loaded.Count} plugin da '{pluginsFolder}'.");
+
+                // Sync asincrono non bloccante — fire-and-forget con gestione errori interna
+                _ = SyncReportTypesAsync();
             }
             catch (Exception ex)
             {
                 _plugins = [];
                 PluginsListBox.ItemsSource = null;
                 Log($"Errore caricamento plugin: {ex.Message}");
+            }
+        }
+
+        private async Task SyncReportTypesAsync()
+        {
+            if (_plugins.Count == 0)
+                return;
+
+            try
+            {
+                var connStr = Properties.Settings.Default.ConnectionString;
+                RRDADbContext db;
+
+                if (!string.IsNullOrWhiteSpace(connStr))
+                {
+                    var opt = new DbContextOptionsBuilder<RRDADbContext>();
+                    opt.UseSqlServer(connStr);
+                    db = new RRDADbContext(opt.Options);
+                }
+                else
+                {
+                    db = new RRDAContextFactory().CreateDbContext([]);
+                }
+
+                await using (db)
+                {
+                    var existingTypes = await db.ReportTypes
+                        .ToDictionaryAsync(t => t.Key, StringComparer.OrdinalIgnoreCase);
+
+                    var inserted = new List<string>();
+                    var updated = new List<string>();
+
+                    foreach (var plugin in _plugins)
+                    {
+                        if (existingTypes.TryGetValue(plugin.Name, out var existing))
+                        {
+                            // Aggiorna solo se SubjectKind è cambiato
+                            if (existing.SubjectKind != plugin.SubjectKind)
+                            {
+                                existing.SubjectKind = plugin.SubjectKind;
+                                updated.Add(plugin.Name);
+                            }
+                        }
+                        else
+                        {
+                            db.ReportTypes.Add(new ReportType
+                            {
+                                Key = plugin.Name,
+                                Name = plugin.Name,          // l'utente può affinare da web
+                                Description = string.Empty,
+                                SubjectKind = plugin.SubjectKind,
+                                Files = [],
+                                TabularSessions = []
+                            });
+                            inserted.Add(plugin.Name);
+                        }
+                    }
+
+                    if (inserted.Count > 0 || updated.Count > 0)
+                    {
+                        await db.SaveChangesAsync();
+
+                        if (inserted.Count > 0)
+                            Log($"ReportTypes: aggiunti {inserted.Count} nuovi tipi: {string.Join(", ", inserted)}.");
+                        if (updated.Count > 0)
+                            Log($"ReportTypes: aggiornati {updated.Count} tipi (SubjectKind): {string.Join(", ", updated)}.");
+                    }
+                    else
+                    {
+                        Log("ReportTypes: nessuna variazione rilevata.");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // Non bloccante: se il DB non è raggiungibile, l'import può comunque proseguire
+                Log($"Avviso: impossibile sincronizzare ReportTypes con i plugin caricati: {ex.Message}");
             }
         }
 
