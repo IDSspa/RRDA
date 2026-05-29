@@ -11,6 +11,7 @@ var isDevelopment = builder.Environment.IsDevelopment();
 var skipWindowsAuth = isDevelopment &&
     builder.Configuration.GetValue<bool>("DevSettings:SkipWindowsAuth");
 
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Database
 // ─────────────────────────────────────────────────────────────────────────────
@@ -60,6 +61,8 @@ builder.Services.AddAuthorizationBuilder()
 // ─────────────────────────────────────────────────────────────────────────────
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
+// Add services
+builder.Services.AddMemoryCache();
 
 var app = builder.Build();
 

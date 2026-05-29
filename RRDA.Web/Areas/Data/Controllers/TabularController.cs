@@ -1,19 +1,25 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using RRDA.Data;
 using RRDA.Web.Security;
 using System.Globalization;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace RRDA.Web.Areas.Data.Controllers
 {
     [Area("Data")]
     [Authorize(Policy = Policies.AtLeastSupervisor)]
-    public class TabularController(RRDADbContext db, IConfiguration configuration) : Controller
+    public class TabularController(RRDADbContext db, IConfiguration configuration,
+        IMemoryCache cache) : Controller
     {
         private const string DecimalPlacesCookieName = "RRDA_TypePivot_DecimalPlaces";
         private const int DefaultDecimalPlaces = 4;
         private const int MaxDecimalPlaces = 15;
+        private const int StatsCacheDurationMinutes = 10;  // Cache for 10 minutes
+        private const string StatsCacheKeyPrefix = "TypePivot_Stats_";
 
         public async Task<IActionResult> Subject(int reportTypeId)
         {
@@ -91,7 +97,7 @@ namespace RRDA.Web.Areas.Data.Controllers
             int pageSize = 50)
         {
             // Validazione parametri di paging
-            if (page < 1) 
+            if (page < 1)
                 page = 1;
 
             // Limiti di pageSize: default 50, max 200
@@ -102,7 +108,6 @@ namespace RRDA.Web.Areas.Data.Controllers
                 .AsNoTracking()
                 .FirstOrDefaultAsync(t => t.Id == reportTypeId);
 
-            // Se il ReportType non esiste, restituisco 404
             if (reportType is null)
                 return NotFound();
 
@@ -146,22 +151,6 @@ namespace RRDA.Web.Areas.Data.Controllers
                 .Select(f => f.Id)
                 .ToListAsync();
 
-            var statsQueryPairs = allFilteredFileIds.Count == 0 ? [] : await db.ReportEntities
-                .AsNoTracking()
-                .Where(e => allFilteredFileIds.Contains(e.ReportFileId))
-                .SelectMany(e => e.Properties
-                    .Where(p => p.Name == "value" && !p.IsSubjectKey)
-                    .Select(p => new PivotPair
-                    {
-                        FileId = e.ReportFileId,
-                        Key = e.Key,
-                        Value = p.Value,
-                        IsSubjectKey = false,
-                        DataType = p.DataType,
-                        Unit = p.Unit
-                    }))
-                .ToListAsync();
-
             var totalFiles = await filesQuery.CountAsync();
 
             var filesPage = await filesQuery
@@ -203,18 +192,18 @@ namespace RRDA.Web.Areas.Data.Controllers
                     .Where(p => p.Name == "value")
                     .Select(p => new PivotPair
                     {
-                        FileId       = e.ReportFileId,
-                        Key          = e.Key,
-                        Value        = p.Value,
+                        FileId = e.ReportFileId,
+                        Key = e.Key,
+                        Value = p.Value,
                         IsSubjectKey = p.IsSubjectKey,
-                        DataType     = p.DataType,
-                        Unit         = p.Unit
+                        DataType = p.DataType,
+                        Unit = p.Unit
                     }))
                 .ToListAsync();
 
             // Separazione SubjectKey / misure
             var subjectKeyPairs = allPairs.Where(p => p.IsSubjectKey).ToList();
-            var measurePairs    = allPairs.Where(p => !p.IsSubjectKey).ToList();
+            var measurePairs = allPairs.Where(p => !p.IsSubjectKey).ToList();
 
             // Header di misura per il selettore del filtro dinamico
             var allMeasureHeaders = measurePairs
@@ -235,23 +224,9 @@ namespace RRDA.Web.Areas.Data.Controllers
                     .Distinct()
                     .ToHashSet();
 
-                filesPage       = [.. filesPage.Where(f => allowedFileIds.Contains(f.Id))];
-                measurePairs    = [.. measurePairs.Where(p => allowedFileIds.Contains(p.FileId))];
+                filesPage = [.. filesPage.Where(f => allowedFileIds.Contains(f.Id))];
+                measurePairs = [.. measurePairs.Where(p => allowedFileIds.Contains(p.FileId))];
                 subjectKeyPairs = [.. subjectKeyPairs.Where(p => allowedFileIds.Contains(p.FileId))];
-            }
-
-            // Applica filtro dinamico su campo misura (stesso logic del filtro su measurePairs)
-            if (!string.IsNullOrWhiteSpace(filterField)
-                && (!string.IsNullOrWhiteSpace(filterFrom) || !string.IsNullOrWhiteSpace(filterTo)))
-            {
-                var allowedIds = statsQueryPairs
-                    .Where(p => string.Equals(p.Key, filterField, StringComparison.OrdinalIgnoreCase)
-                             && IsValueInRange(p.Value, filterFrom, filterTo))
-                    .Select(p => p.FileId)
-                    .Distinct()
-                    .ToHashSet();
-
-                statsQueryPairs = [.. statsQueryPairs.Where(p => allowedIds.Contains(p.FileId))];
             }
 
             // Filtro dinamico su SubjectKey
@@ -263,13 +238,12 @@ namespace RRDA.Web.Areas.Data.Controllers
                     .Distinct()
                     .ToHashSet();
 
-                filesPage       = [.. filesPage.Where(f => allowedFileIds.Contains(f.Id))];
-                measurePairs    = [.. measurePairs.Where(p => allowedFileIds.Contains(p.FileId))];
+                filesPage = [.. filesPage.Where(f => allowedFileIds.Contains(f.Id))];
+                measurePairs = [.. measurePairs.Where(p => allowedFileIds.Contains(p.FileId))];
                 subjectKeyPairs = [.. subjectKeyPairs.Where(p => allowedFileIds.Contains(p.FileId))];
             }
 
             // Header visibili: solo colonne con i valori numerici (dal data type)
-            // per evitare di mostrare campi non significativi in un pivot tabellare
             var visibleHeaders = measurePairs
                 .Where(p => IsNumericDataType(p.DataType))
                 .Select(p => p.Key)
@@ -279,7 +253,7 @@ namespace RRDA.Web.Areas.Data.Controllers
                 .ToList();
 
             var visibleHeaderSet = visibleHeaders.ToHashSet(StringComparer.OrdinalIgnoreCase);
-            
+
             var headerUnits = measurePairs
                 .Where(p => visibleHeaderSet.Contains(p.Key))
                 .GroupBy(p => p.Key, StringComparer.OrdinalIgnoreCase)
@@ -288,28 +262,28 @@ namespace RRDA.Web.Areas.Data.Controllers
                     g => g.Select(p => p.Unit).FirstOrDefault(u => !string.IsNullOrWhiteSpace(u)),
                     StringComparer.OrdinalIgnoreCase);
 
-            var columnStatistics = statsQueryPairs
-                .Where(p => visibleHeaderSet.Contains(p.Key))
-                .GroupBy(p => p.Key, StringComparer.OrdinalIgnoreCase)
-                .ToDictionary(
-                    g => g.Key,
-                    g => CalculateColumnStatistics(g.Select(p => p.Value)),
-                    StringComparer.OrdinalIgnoreCase);
+            // Use cached method instead of inline calculation
+            var columnStatistics = await GetColumnStatisticsAsync(
+                allFilteredFileIds,
+                visibleHeaderSet,
+                filterField,
+                filterFrom,
+                filterTo);
 
             // Costruzione righe
             var rows = filesPage
                 .Select(f => new TypePivotRow
                 {
-                    FileId     = f.Id,
-                    FileName   = f.FileName,
+                    FileId = f.Id,
+                    FileName = f.FileName,
                     LastModified = f.FileLastModify,
-                    BatchId    = f.ReportBatchId,
+                    BatchId = f.ReportBatchId,
                     BatchName = f.ReportBatchId.HasValue
                         && batchNames.TryGetValue(f.ReportBatchId.Value, out var description)
                         ? description
                         : null,
                     SubjectKey = null,
-                    Values     = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)
+                    Values = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)
                 })
                 .ToDictionary(r => r.FileId);
 
@@ -323,32 +297,31 @@ namespace RRDA.Web.Areas.Data.Controllers
 
             return View(new TypePivotViewModel
             {
-                ReportTypeId        = reportType.Id,
-                ReportTypeKey       = reportType.Key,
-                Headers             = visibleHeaders,
-                HeaderUnits         = headerUnits,
-                ColumnStatistics    = columnStatistics,
+                ReportTypeId = reportType.Id,
+                ReportTypeKey = reportType.Key,
+                Headers = visibleHeaders,
+                HeaderUnits = headerUnits,
+                ColumnStatistics = columnStatistics,
                 DynamicFilterFields = allMeasureHeaders,
-                BatchId             = batchId,
-                LastModifiedFrom        = lastModifiedFrom,
-                LastModifiedTo          = lastModifiedTo,
-                FilterField         = filterField,
-                FilterFrom          = filterFrom,
-                FilterTo            = filterTo,
-                SubjectKeyFrom      = subjectKeyFrom,
-                SubjectKeyTo        = subjectKeyTo,
-                BatchOptions        = batchOptions,
-                Rows                = [.. rows.Values.OrderByDescending(r => r.LastModified)],
-                TotalFiles          = totalFiles,
-                CurrentPage         = page,
-                PageSize            = pageSize,
-                TotalPages          = (int)Math.Ceiling(totalFiles / (double)pageSize),
-                DecimalPlaces       = ResolveDecimalPlaces(),
-                HasSubjectKey       = subjectKeyPairs.Count > 0,
-                SubjectKeyLabel     = subjectKeyPairs.FirstOrDefault()?.Key ?? "SubjectKey"
+                BatchId = batchId,
+                LastModifiedFrom = lastModifiedFrom,
+                LastModifiedTo = lastModifiedTo,
+                FilterField = filterField,
+                FilterFrom = filterFrom,
+                FilterTo = filterTo,
+                SubjectKeyFrom = subjectKeyFrom,
+                SubjectKeyTo = subjectKeyTo,
+                BatchOptions = batchOptions,
+                Rows = [.. rows.Values.OrderByDescending(r => r.LastModified)],
+                TotalFiles = totalFiles,
+                CurrentPage = page,
+                PageSize = pageSize,
+                TotalPages = (int)Math.Ceiling(totalFiles / (double)pageSize),
+                DecimalPlaces = ResolveDecimalPlaces(),
+                HasSubjectKey = subjectKeyPairs.Count > 0,
+                SubjectKeyLabel = subjectKeyPairs.FirstOrDefault()?.Key ?? "SubjectKey"
             });
         }
-
         private int ResolveDecimalPlaces()
         {
             var configured = configuration.GetValue<int?>("TypePivot:DecimalPlaces");
@@ -426,6 +399,112 @@ namespace RRDA.Web.Areas.Data.Controllers
                 return currentValue;
 
             return null;
+        }
+
+        /// <summary>
+        /// Generates a hash-based cache key from the actual filtered file IDs and dynamic filter parameters.
+        /// This ensures the cache key changes whenever the filtered dataset changes.
+        /// </summary>
+        private string GenerateStatsCacheKey(
+            List<int> allFilteredFileIds,
+            string? filterField,
+            string? filterFrom,
+            string? filterTo)
+        {
+            // Create a string representation of the filtered file IDs
+            var fileIdsString = string.Join(",", allFilteredFileIds.OrderBy(x => x));
+
+            // Include dynamic filter parameters
+            var filterString = $"{filterField ?? "null"}_{filterFrom ?? "null"}_{filterTo ?? "null"}";
+
+            // Combine and hash to create a stable, short cache key
+            var combined = $"{fileIdsString}|{filterString}";
+            var hash = ComputeSha256Hash(combined);
+
+            return $"{StatsCacheKeyPrefix}{hash}";
+        }
+
+        /// <summary>
+        /// Computes SHA256 hash of a string to create a stable cache key.
+        /// </summary>
+        private string ComputeSha256Hash(string input)
+        {
+            using (var sha256 = SHA256.Create())
+            {
+                var hashedBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(input));
+                return Convert.ToBase64String(hashedBytes).Replace("/", "_").Replace("+", "-");
+            }
+        }
+
+        /// <summary>
+        /// Fetches and calculates column statistics for the filtered dataset.
+        /// Uses caching to avoid redundant calculations for the same filtered data.
+        /// </summary>
+        private async Task<Dictionary<string, TypePivotColumnStatistics>> GetColumnStatisticsAsync(
+            List<int> allFilteredFileIds,
+            HashSet<string> visibleHeaderSet,
+            string? filterField,
+            string? filterFrom,
+            string? filterTo)
+        {
+            // Generate cache key based on actual filtered data
+            string cacheKey = GenerateStatsCacheKey(allFilteredFileIds, filterField, filterFrom, filterTo);
+
+            // Try to get from cache
+            if (cache.TryGetValue(cacheKey, out Dictionary<string, TypePivotColumnStatistics>? cachedStats))
+            {
+                return cachedStats ?? [];
+            }
+
+            // Not in cache - fetch and calculate statistics
+            var statsQueryPairs = allFilteredFileIds.Count == 0 ? [] : await db.ReportEntities
+                .AsNoTracking()
+                .Where(e => allFilteredFileIds.Contains(e.ReportFileId))
+                .SelectMany(e => e.Properties
+                    .Where(p => p.Name == "value" && !p.IsSubjectKey)
+                    .Select(p => new PivotPair
+                    {
+                        FileId = e.ReportFileId,
+                        Key = e.Key,
+                        Value = p.Value,
+                        IsSubjectKey = false,
+                        DataType = p.DataType,
+                        Unit = p.Unit
+                    }))
+                .ToListAsync();
+
+            // Apply dynamic filter on measure field
+            if (!string.IsNullOrWhiteSpace(filterField)
+                && (!string.IsNullOrWhiteSpace(filterFrom) || !string.IsNullOrWhiteSpace(filterTo)))
+            {
+                var allowedIds = statsQueryPairs
+                    .Where(p => string.Equals(p.Key, filterField, StringComparison.OrdinalIgnoreCase)
+                             && IsValueInRange(p.Value, filterFrom, filterTo))
+                    .Select(p => p.FileId)
+                    .Distinct()
+                    .ToHashSet();
+
+                statsQueryPairs = [.. statsQueryPairs.Where(p => allowedIds.Contains(p.FileId))];
+            }
+
+            // Calculate statistics for visible headers
+            var columnStatistics = statsQueryPairs
+                .Where(p => visibleHeaderSet.Contains(p.Key))
+                .GroupBy(p => p.Key, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(
+                    g => g.Key,
+                    g => CalculateColumnStatistics(g.Select(p => p.Value)),
+                    StringComparer.OrdinalIgnoreCase);
+
+            // Store in cache with 10-minute expiration
+            var cacheOptions = new MemoryCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(StatsCacheDurationMinutes)
+            };
+
+            cache.Set(cacheKey, columnStatistics, cacheOptions);
+
+            return columnStatistics;
         }
     }
 }
