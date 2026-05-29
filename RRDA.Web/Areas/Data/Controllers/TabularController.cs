@@ -209,17 +209,14 @@ namespace RRDA.Web.Areas.Data.Controllers
                 allFilteredFileIds = [.. allFilteredFileIds.Where(id => allowedFileIds.Contains(id))];
             }
 
-            var totalFiles = await filesQuery.CountAsync();
+            var totalFiles = allFilteredFileIds.Count;
 
-            var filesPage = await filesQuery
+            var filesPage = allFilteredFileIds
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
-                .Select(f => new { f.Id, f.FileName, f.FileLastModify, f.ReportBatchId })
-                .ToListAsync();
+                .ToList();
 
-            var pageFileIds = filesPage.Select(f => f.Id).ToList();
-
-            if (pageFileIds.Count == 0)
+            if (filesPage.Count == 0)
             {
                 return View(new TypePivotViewModel
                 {
@@ -241,6 +238,15 @@ namespace RRDA.Web.Areas.Data.Controllers
                     BatchOptions = batchOptions
                 });
             }
+
+            // Fetch file details for the current page
+            var filesPageDetails = await db.ReportFiles
+                .AsNoTracking()
+                .Where(f => filesPage.Contains(f.Id))
+                .Select(f => new { f.Id, f.FileName, f.FileLastModify, f.ReportBatchId })
+                .ToListAsync();
+
+            var pageFileIds = filesPageDetails.Select(f => f.Id).ToList();
 
             // Query unica: recupera sia SubjectKey sia le misure proiettando IsSubjectKey
             var allPairs = await db.ReportEntities
@@ -271,36 +277,6 @@ namespace RRDA.Web.Areas.Data.Controllers
                 .OrderBy(k => k, StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
-            // Filtro dinamico su campo misura - per la visualizzazione della pagina corrente
-            if (!string.IsNullOrWhiteSpace(filterField)
-                && (!string.IsNullOrWhiteSpace(filterFrom) || !string.IsNullOrWhiteSpace(filterTo)))
-            {
-                var allowedFileIds = measurePairs
-                    .Where(p => string.Equals(p.Key, filterField, StringComparison.OrdinalIgnoreCase)
-                             && IsValueInRange(p.Value, filterFrom, filterTo))
-                    .Select(p => p.FileId)
-                    .Distinct()
-                    .ToHashSet();
-
-                filesPage = [.. filesPage.Where(f => allowedFileIds.Contains(f.Id))];
-                measurePairs = [.. measurePairs.Where(p => allowedFileIds.Contains(p.FileId))];
-                subjectKeyPairs = [.. subjectKeyPairs.Where(p => allowedFileIds.Contains(p.FileId))];
-            }
-
-            // Filtro dinamico su SubjectKey - per la visualizzazione della pagina corrente
-            if (!string.IsNullOrWhiteSpace(subjectKeyFrom) || !string.IsNullOrWhiteSpace(subjectKeyTo))
-            {
-                var allowedFileIds = subjectKeyPairs
-                    .Where(p => IsValueInRange(p.Value, subjectKeyFrom, subjectKeyTo))
-                    .Select(p => p.FileId)
-                    .Distinct()
-                    .ToHashSet();
-
-                filesPage = [.. filesPage.Where(f => allowedFileIds.Contains(f.Id))];
-                measurePairs = [.. measurePairs.Where(p => allowedFileIds.Contains(p.FileId))];
-                subjectKeyPairs = [.. subjectKeyPairs.Where(p => allowedFileIds.Contains(p.FileId))];
-            }
-
             // Header visibili: solo colonne con i valori numerici (dal data type)
             var visibleHeaders = measurePairs
                 .Where(p => IsNumericDataType(p.DataType))
@@ -326,7 +302,7 @@ namespace RRDA.Web.Areas.Data.Controllers
                 visibleHeaderSet);
 
             // Costruzione righe
-            var rows = filesPage
+            var rows = filesPageDetails
                 .Select(f => new TypePivotRow
                 {
                     FileId = f.Id,
