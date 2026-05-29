@@ -48,6 +48,19 @@
     .sort-desc::after {
         content: " ▼";
     }
+
+    /* Zebra stripe styling for improved readability */
+    .type-pivot-table tbody tr:nth-child(odd) {
+        background-color: #0d1117;
+    }
+
+    .type-pivot-table tbody tr:nth-child(even) {
+        background-color: #1c2128;
+    }
+
+    .type-pivot-table tbody tr:hover {
+        background-color: #262c36;
+    }
 </style>
 
 <div class="d-flex align-items-center justify-content-between mb-3">
