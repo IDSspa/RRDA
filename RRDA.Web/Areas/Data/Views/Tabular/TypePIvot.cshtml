@@ -33,6 +33,20 @@
         background: #21262d;
         border-color: #58a6ff;
         box-shadow: none;
+        }
+
+    .sort-indicator {
+        display: inline-block;
+        margin-left: 0.25rem;
+        font-size: 0.75rem;
+    }
+
+    .sort-asc::after {
+        content: " ▲";
+    }
+
+    .sort-desc::after {
+        content: " ▼";
     }
 </style>
 
@@ -116,7 +130,27 @@
                     @* ── SubjectKey: prima colonna, header semplice senza popup ── *@
                     @if (Model.HasSubjectKey)
                     {
-                        <th style="font-family:monospace;font-size:.78rem;white-space:nowrap;">@Model.SubjectKeyLabel</th>
+                        <th style="font-family:monospace;font-size:.78rem;white-space:nowrap;">
+                            <div class="dropdown">
+                                <button class="btn btn-sm dropdown-toggle type-pivot-header-btn" type="button"
+                                        data-bs-toggle="dropdown" aria-expanded="false">
+                                    @Model.SubjectKeyLabel
+                                    <span class="sort-indicator sort-asc"></span>
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li>
+                                        <a class="dropdown-item" href="#">
+                                            Ordinamento crescente ▲
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="#">
+                                            Ordinamento decrescente ▼
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </th>
                     }
                     @* ── Colonne statiche file ── *@
                     <th>Batch</th>
@@ -294,9 +328,8 @@
                asp-route-filterTo="@Model.FilterTo"
                asp-route-subjectKeyFrom="@Model.SubjectKeyFrom"
                asp-route-subjectKeyTo="@Model.SubjectKeyTo"
-               style="padding:.2rem .55rem;border:1px solid #30363d;border-radius:5px;
-                      text-decoration:none;color:@(p == Model.CurrentPage ? "#58a6ff" : "#8b949e");">
-                @p
+               style="padding:.2rem .55rem;border:1px solid #30363d;border-radius:5px; text-decoration:none;color:
+                    @(p == Model.CurrentPage ? "#58a6ff" : "#8b949e");">@p
             </a>
         }
     </div>
