@@ -2,10 +2,11 @@
 1) verificare aggiornamento tabella ReportTypes tramite RepImp (inserimento/aggiornamento plugins)
 2) importazione plugin applicazione web
 3) importazione singolo report applicazione web
-4) gestione paginazione tabella:
-   4.1) implementazione ordinamento vista tabellare -> default SubjectKey (pulsanti asc/desc)
-   4.2) ottimizzazione query statistiche
-5) revisione criticità strutturali
-6) revisione UI WEB:
-   6.1) accesso 'veloce' alla vista tabellare per ogni tipologia di report da sidebar/dashboard
-7) creare installer per RepImp
+4) cancellazione massiva applicazione web (per batch, per tipo?)
+5) gestione paginazione tabella:
+   5.1) implementazione ordinamento vista tabellare -> default SubjectKey (pulsanti asc/desc)
+   5.2) ottimizzazione query statistiche
+6) revisione criticità strutturali
+7) revisione UI WEB:
+   7.1) accesso 'veloce' alla vista tabellare per ogni tipologia di report da sidebar/dashboard
+8) creare installer per RepImp
