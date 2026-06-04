@@ -1,18 +1,25 @@
 1) implementazione grafici statistici
-2) gestione/visualizzazione valori 'ranged'
-3) gestione collegamenti/navigazione:
-   3.1) RADAR/COMPONENTE, 
-   3.2) RADAR/SOTTOASSIEME ?
-   3.3) SOTTOASSIEME/COMPONENTE 
-4) importazione singolo report applicazione web
-5) cancellazione massiva applicazione web (per batch, per tipo?)
+2) gestione esportazione dati filtrati vista tablellare (csv, xls)
+3) gestione/visualizzazione valori 'ranged'
+4) gestione collegamenti/navigazione:
+   4.1) RADAR/COMPONENTE, 
+   4.2) RADAR/SOTTOASSIEME ?
+   4.3) SOTTOASSIEME/COMPONENTE 
+5) importazione singolo report applicazione web
+6) cancellazione massiva applicazione web (per batch, per tipo?)
    5.1) logging applicazione web su registro di sistema (login, operazioni critiche)
-6) gestione paginazione tabella:
+7) gestione paginazione tabella:
    6.1) implementazione ordinamento vista tabellare -> default SubjectKey (pulsanti asc/desc)
    6.2) ottimizzazione query statistiche
-7) revisione criticità strutturali intera soluzione (implementazione "per services")
-8) revisione UI WEB:
-   8.1) accesso 'veloce' alla vista tabellare per ogni tipologia di report da sidebar/dashboard
-9) importazione plugin applicazione web
-10) verificare aggiornamento tabella ReportTypes tramite RepImp (inserimento/aggiornamento plugins)
-11) creare installer per RepImp
+8) revisione criticità strutturali intera soluzione (implementazione "per services")
+9) revisione UI WEB:
+   9.1) accesso 'veloce' alla vista tabellare per ogni tipologia di report da sidebar/dashboard
+10) importazione plugin applicazione web
+11) verificare aggiornamento tabella ReportTypes tramite RepImp (inserimento/aggiornamento plugins)
+12) creare installer per RepImp
+13) gestione relazioni Radar/Componente
+14) footer header vista tabellare fissi righe dati scrollabili
+15) semplificazione struttura database (es. ReportProperties?)
+	15.1) spostare Unit e IsSubjectKey in ReportEntities?
+	15.2) eliminare ridondanza tra valori memorizzati in ReportEntities e campi di ReportEntities stessa
+16) rimozione codice non utilizzato
