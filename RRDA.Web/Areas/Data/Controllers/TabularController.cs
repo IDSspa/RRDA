@@ -103,112 +103,23 @@ namespace RRDA.Web.Areas.Data.Controllers
             // Limiti di pageSize: default 50, max 200
             pageSize = pageSize switch { <= 0 => 50, > 200 => 200, _ => pageSize };
 
-            // Recupero ReportType e validazione esistenza
-            var reportType = await db.ReportTypes
-                .AsNoTracking()
-                .FirstOrDefaultAsync(t => t.Id == reportTypeId);
+            var filterResult = await GetTypePivotFilterResultAsync(
+                reportTypeId,
+                batchId,
+                lastModifiedFrom,
+                lastModifiedTo,
+                filterField,
+                filterFrom,
+                filterTo,
+                subjectKeyFrom,
+                subjectKeyTo);
 
-            if (reportType is null)
+            if (filterResult is null)
                 return NotFound();
 
-            var batchRecords = await db.ReportBatches
-                .AsNoTracking()
-                .OrderBy(b => b.Name)
-                .Select(b => new { b.Id, b.Name, b.Description })
-                .ToListAsync();
-
-            var batchOptions = batchRecords
-                .Select(b => new TypePivotBatchOption
-                {
-                    Id = b.Id,
-                    Label = string.IsNullOrWhiteSpace(b.Description)
-                        ? b.Name
-                        : $"{b.Name} - {b.Description}"
-                })
-                .ToList();
-
-            var batchNames = batchRecords
-                .ToDictionary(b => b.Id, b => b.Name);
-
-            // Query base: tutti i file del ReportType con i filtri di batch e data
-            var filesQuery = db.ReportFiles
-                .AsNoTracking()
-                .Where(f => f.ReportTypeId == reportTypeId);
-
-            // Applicazione filtri di batch e data
-            if (batchId.HasValue)
-                filesQuery = filesQuery.Where(f => f.ReportBatchId == batchId.Value);
-            if (lastModifiedFrom.HasValue)
-                filesQuery = filesQuery.Where(f => f.FileLastModify >= lastModifiedFrom.Value);
-            if (lastModifiedTo.HasValue)
-                filesQuery = filesQuery.Where(f => f.FileLastModify <= lastModifiedTo.Value);
-
-            // Ordinamento: per data di upload decrescente
-            filesQuery = filesQuery.OrderByDescending(f => f.FileLastModify);
-
-            // Query per statistiche: TUTTI i file filtrati, senza paging
-            var allFilteredFileIds = await filesQuery
-                .Select(f => f.Id)
-                .ToListAsync();
-
-            // ✅ APPLY DYNAMIC FILTERS TO allFilteredFileIds BEFORE CALCULATING STATISTICS
-            // Apply dynamic filter on measure field
-            if (!string.IsNullOrWhiteSpace(filterField)
-                && (!string.IsNullOrWhiteSpace(filterFrom) || !string.IsNullOrWhiteSpace(filterTo)))
-            {
-                var measurePairsForFilter = allFilteredFileIds.Count == 0 ? [] : await db.ReportEntities
-                    .AsNoTracking()
-                    .Where(e => allFilteredFileIds.Contains(e.ReportFileId))
-                    .SelectMany(e => e.Properties
-                        .Where(p => p.Name == "value" && !p.IsSubjectKey && e.Key == filterField)
-                        .Select(p => new PivotPair
-                        {
-                            FileId = e.ReportFileId,
-                            Key = e.Key,
-                            Value = p.Value,
-                            IsSubjectKey = false,
-                            DataType = p.DataType,
-                            Unit = p.Unit
-                        }))
-                    .ToListAsync();
-
-                var allowedFileIds = measurePairsForFilter
-                    .Where(p => IsValueInRange(p.Value, filterFrom, filterTo))
-                    .Select(p => p.FileId)
-                    .Distinct()
-                    .ToHashSet();
-
-                allFilteredFileIds = [.. allFilteredFileIds.Where(id => allowedFileIds.Contains(id))];
-            }
-
-            // Apply SubjectKey filter to allFilteredFileIds
-            if (!string.IsNullOrWhiteSpace(subjectKeyFrom) || !string.IsNullOrWhiteSpace(subjectKeyTo))
-            {
-                var subjectKeyPairsForFilter = allFilteredFileIds.Count == 0 ? [] : await db.ReportEntities
-                    .AsNoTracking()
-                    .Where(e => allFilteredFileIds.Contains(e.ReportFileId))
-                    .SelectMany(e => e.Properties
-                        .Where(p => p.Name == "value" && p.IsSubjectKey)
-                        .Select(p => new PivotPair
-                        {
-                            FileId = e.ReportFileId,
-                            Key = e.Key,
-                            Value = p.Value,
-                            IsSubjectKey = true,
-                            DataType = p.DataType,
-                            Unit = p.Unit
-                        }))
-                    .ToListAsync();
-
-                var allowedFileIds = subjectKeyPairsForFilter
-                    .Where(p => IsValueInRange(p.Value, subjectKeyFrom, subjectKeyTo))
-                    .Select(p => p.FileId)
-                    .Distinct()
-                    .ToHashSet();
-
-                allFilteredFileIds = [.. allFilteredFileIds.Where(id => allowedFileIds.Contains(id))];
-            }
-
+            var reportType = filterResult.ReportType;
+            var allFilteredFileIds = filterResult.AllFilteredFileIds;
+            var metadata = await GetTypePivotMetadataAsync(allFilteredFileIds);
             var totalFiles = allFilteredFileIds.Count;
 
             var filesPage = allFilteredFileIds
@@ -235,7 +146,14 @@ namespace RRDA.Web.Areas.Data.Controllers
                     FilterTo = filterTo,
                     SubjectKeyFrom = subjectKeyFrom,
                     SubjectKeyTo = subjectKeyTo,
-                    BatchOptions = batchOptions
+                    BatchOptions = filterResult.BatchOptions,
+                    DynamicFilterFields = metadata.AllMeasureHeaders,
+                    Headers = metadata.VisibleHeaders,
+                    HeaderUnits = metadata.HeaderUnits,
+                    HasSubjectKey = metadata.HasSubjectKey,
+                    SubjectKeyLabel = metadata.SubjectKeyLabel,
+                    PlotXAxisFields = metadata.PlotXAxisFields,
+                    PlotYAxisFields = metadata.VisibleHeaders
                 });
             }
 
@@ -269,32 +187,8 @@ namespace RRDA.Web.Areas.Data.Controllers
             var subjectKeyPairs = allPairs.Where(p => p.IsSubjectKey).ToList();
             var measurePairs = allPairs.Where(p => !p.IsSubjectKey).ToList();
 
-            // Header di misura per il selettore del filtro dinamico
-            var allMeasureHeaders = measurePairs
-                .Select(p => p.Key)
-                .Where(k => !string.IsNullOrWhiteSpace(k))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .OrderBy(k => k, StringComparer.OrdinalIgnoreCase)
-                .ToList();
-
-            // Header visibili: solo colonne con i valori numerici (dal data type)
-            var visibleHeaders = measurePairs
-                .Where(p => IsNumericDataType(p.DataType))
-                .Select(p => p.Key)
-                .Where(k => !string.IsNullOrWhiteSpace(k))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .OrderBy(k => k, StringComparer.OrdinalIgnoreCase)
-                .ToList();
-
+            var visibleHeaders = metadata.VisibleHeaders;
             var visibleHeaderSet = visibleHeaders.ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-            var headerUnits = measurePairs
-                .Where(p => visibleHeaderSet.Contains(p.Key))
-                .GroupBy(p => p.Key, StringComparer.OrdinalIgnoreCase)
-                .ToDictionary(
-                    g => g.Key,
-                    g => g.Select(p => p.Unit).FirstOrDefault(u => !string.IsNullOrWhiteSpace(u)),
-                    StringComparer.OrdinalIgnoreCase);
 
             // ✅ Use cached method with ALREADY-FILTERED allFilteredFileIds
             var columnStatistics = await GetColumnStatisticsAsync(
@@ -310,7 +204,7 @@ namespace RRDA.Web.Areas.Data.Controllers
                     LastModified = f.FileLastModify,
                     BatchId = f.ReportBatchId,
                     BatchName = f.ReportBatchId.HasValue
-                        && batchNames.TryGetValue(f.ReportBatchId.Value, out var description)
+                        && filterResult.BatchNames.TryGetValue(f.ReportBatchId.Value, out var description)
                         ? description
                         : null,
                     SubjectKey = null,
@@ -331,9 +225,9 @@ namespace RRDA.Web.Areas.Data.Controllers
                 ReportTypeId = reportType.Id,
                 ReportTypeKey = reportType.Key,
                 Headers = visibleHeaders,
-                HeaderUnits = headerUnits,
+                HeaderUnits = metadata.HeaderUnits,
                 ColumnStatistics = columnStatistics,
-                DynamicFilterFields = allMeasureHeaders,
+                DynamicFilterFields = metadata.AllMeasureHeaders,
                 BatchId = batchId,
                 LastModifiedFrom = lastModifiedFrom,
                 LastModifiedTo = lastModifiedTo,
@@ -342,16 +236,402 @@ namespace RRDA.Web.Areas.Data.Controllers
                 FilterTo = filterTo,
                 SubjectKeyFrom = subjectKeyFrom,
                 SubjectKeyTo = subjectKeyTo,
-                BatchOptions = batchOptions,
+                BatchOptions = filterResult.BatchOptions,
                 Rows = [.. rows.Values.OrderByDescending(r => r.LastModified)],
                 TotalFiles = totalFiles,
                 CurrentPage = page,
                 PageSize = pageSize,
                 TotalPages = (int)Math.Ceiling(totalFiles / (double)pageSize),
                 DecimalPlaces = ResolveDecimalPlaces(),
-                HasSubjectKey = subjectKeyPairs.Count > 0,
-                SubjectKeyLabel = subjectKeyPairs.FirstOrDefault()?.Key ?? "SubjectKey"
+                HasSubjectKey = metadata.HasSubjectKey,
+                SubjectKeyLabel = metadata.SubjectKeyLabel,
+                PlotXAxisFields = metadata.PlotXAxisFields,
+                PlotYAxisFields = metadata.VisibleHeaders
             });
+        }
+
+        public async Task<IActionResult> TypePivotPlotData(
+            int reportTypeId,
+            int? batchId,
+            DateTime? lastModifiedFrom,
+            DateTime? lastModifiedTo,
+            string? filterField,
+            string? filterFrom,
+            string? filterTo,
+            string? subjectKeyFrom,
+            string? subjectKeyTo,
+            string? xField,
+            [FromQuery] string[] yFields,
+            [FromQuery] int[] selectedFileIds)
+        {
+            var filterResult = await GetTypePivotFilterResultAsync(
+                reportTypeId,
+                batchId,
+                lastModifiedFrom,
+                lastModifiedTo,
+                filterField,
+                filterFrom,
+                filterTo,
+                subjectKeyFrom,
+                subjectKeyTo);
+
+            if (filterResult is null)
+                return NotFound();
+
+            var metadata = await GetTypePivotMetadataAsync(filterResult.AllFilteredFileIds);
+            var allowedYFields = metadata.VisibleHeaders.ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var selectedYFields = yFields
+                .Where(f => !string.IsNullOrWhiteSpace(f) && allowedYFields.Contains(f))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(f => f, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (selectedYFields.Count == 0)
+                return BadRequest(new
+                {
+                    message = "Selezionare almeno una colonna numerica valida per l'asse Y.",
+                    availableYFields = metadata.VisibleHeaders
+                });
+
+            var selectedFileIdSet = selectedFileIds.ToHashSet();
+            var plotFileIds = selectedFileIdSet.Count == 0
+                ? filterResult.AllFilteredFileIds
+                : [.. filterResult.AllFilteredFileIds.Where(selectedFileIdSet.Contains)];
+
+            var files = plotFileIds.Count == 0 ? [] : await db.ReportFiles
+                .AsNoTracking()
+                .Where(f => plotFileIds.Contains(f.Id))
+                .Select(f => new { f.Id, f.FileName, f.FileLastModify, f.ReportBatchId })
+                .ToListAsync();
+
+            var fileOrder = filterResult.AllFilteredFileIds
+                .Select((id, index) => new { id, index })
+                .ToDictionary(x => x.id, x => x.index);
+
+            files = [.. files.OrderBy(f => fileOrder.TryGetValue(f.Id, out var index) ? index : int.MaxValue)];
+            var fileIds = files.Select(f => f.Id).ToList();
+
+            var pairs = fileIds.Count == 0 ? [] : await db.ReportEntities
+                .AsNoTracking()
+                .Where(e => fileIds.Contains(e.ReportFileId))
+                .SelectMany(e => e.Properties
+                    .Where(p => p.Name == "value" && (p.IsSubjectKey || selectedYFields.Contains(e.Key)))
+                    .Select(p => new PivotPair
+                    {
+                        FileId = e.ReportFileId,
+                        Key = e.Key,
+                        Value = p.Value,
+                        IsSubjectKey = p.IsSubjectKey,
+                        DataType = p.DataType,
+                        Unit = p.Unit
+                    }))
+                .ToListAsync();
+
+            var subjectKeysByFileId = pairs
+                .Where(p => p.IsSubjectKey)
+                .GroupBy(p => p.FileId)
+                .ToDictionary(g => g.Key, g => g.FirstOrDefault()?.Value);
+
+            var measureValuesByFileId = pairs
+                .Where(p => !p.IsSubjectKey)
+                .GroupBy(p => p.FileId)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.GroupBy(p => p.Key, StringComparer.OrdinalIgnoreCase)
+                        .ToDictionary(
+                            keyGroup => keyGroup.Key,
+                            keyGroup => keyGroup.LastOrDefault()?.Value,
+                            StringComparer.OrdinalIgnoreCase));
+
+            var resolvedXField = ResolvePlotXAxisField(xField, metadata.HasSubjectKey);
+
+            var traces = selectedYFields.Select(field =>
+            {
+                var xValues = new List<object?>();
+                var yValues = new List<double?>();
+                var textValues = new List<string>();
+
+                foreach (var file in files)
+                {
+                    if (!measureValuesByFileId.TryGetValue(file.Id, out var values)
+                        || !values.TryGetValue(field, out var rawY))
+                        continue;
+
+                    var y = TryParseDouble(rawY);
+                    if (!y.HasValue)
+                        continue;
+
+                    xValues.Add(GetPlotXAxisValue(
+                        resolvedXField,
+                        file.Id,
+                        file.FileName,
+                        file.FileLastModify,
+                        file.ReportBatchId,
+                        filterResult.BatchNames,
+                        subjectKeysByFileId));
+                    yValues.Add(y.Value);
+                    textValues.Add(file.FileName);
+                }
+
+                return new
+                {
+                    name = FormatHeaderLabel(field, metadata.HeaderUnits),
+                    type = "scatter",
+                    mode = "markers",
+                    x = xValues,
+                    y = yValues,
+                    text = textValues
+                };
+            }).ToList();
+
+            return Json(new
+            {
+                reportTypeId = filterResult.ReportType.Id,
+                reportTypeKey = filterResult.ReportType.Key,
+                rowCount = files.Count,
+                selectedFileIds = fileIds,
+                availableXFields = metadata.PlotXAxisFields,
+                availableYFields = metadata.VisibleHeaders,
+                layout = new
+                {
+                    title = $"Scatter - {filterResult.ReportType.Key}",
+                    xaxis = new { title = GetPlotXAxisTitle(resolvedXField, metadata.SubjectKeyLabel) },
+                    yaxis = new { title = "Valore" },
+                    hovermode = "closest"
+                },
+                traces
+            });
+        }
+
+        private async Task<TypePivotFilterResult?> GetTypePivotFilterResultAsync(
+            int reportTypeId,
+            int? batchId,
+            DateTime? lastModifiedFrom,
+            DateTime? lastModifiedTo,
+            string? filterField,
+            string? filterFrom,
+            string? filterTo,
+            string? subjectKeyFrom,
+            string? subjectKeyTo)
+        {
+            var reportType = await db.ReportTypes
+                .AsNoTracking()
+                .FirstOrDefaultAsync(t => t.Id == reportTypeId);
+
+            if (reportType is null)
+                return null;
+
+            var batchRecords = await db.ReportBatches
+                .AsNoTracking()
+                .OrderBy(b => b.Name)
+                .Select(b => new { b.Id, b.Name, b.Description })
+                .ToListAsync();
+
+            var filesQuery = db.ReportFiles
+                .AsNoTracking()
+                .Where(f => f.ReportTypeId == reportTypeId);
+
+            if (batchId.HasValue)
+                filesQuery = filesQuery.Where(f => f.ReportBatchId == batchId.Value);
+            if (lastModifiedFrom.HasValue)
+                filesQuery = filesQuery.Where(f => f.FileLastModify >= lastModifiedFrom.Value);
+            if (lastModifiedTo.HasValue)
+                filesQuery = filesQuery.Where(f => f.FileLastModify <= lastModifiedTo.Value);
+
+            var allFilteredFileIds = await filesQuery
+                .OrderByDescending(f => f.FileLastModify)
+                .Select(f => f.Id)
+                .ToListAsync();
+
+            if (!string.IsNullOrWhiteSpace(filterField)
+                && (!string.IsNullOrWhiteSpace(filterFrom) || !string.IsNullOrWhiteSpace(filterTo)))
+            {
+                var measurePairsForFilter = allFilteredFileIds.Count == 0 ? [] : await db.ReportEntities
+                    .AsNoTracking()
+                    .Where(e => allFilteredFileIds.Contains(e.ReportFileId))
+                    .SelectMany(e => e.Properties
+                        .Where(p => p.Name == "value" && !p.IsSubjectKey && e.Key == filterField)
+                        .Select(p => new PivotPair
+                        {
+                            FileId = e.ReportFileId,
+                            Key = e.Key,
+                            Value = p.Value,
+                            IsSubjectKey = false,
+                            DataType = p.DataType,
+                            Unit = p.Unit
+                        }))
+                    .ToListAsync();
+
+                var allowedFileIds = measurePairsForFilter
+                    .Where(p => IsValueInRange(p.Value, filterFrom, filterTo))
+                    .Select(p => p.FileId)
+                    .Distinct()
+                    .ToHashSet();
+
+                allFilteredFileIds = [.. allFilteredFileIds.Where(id => allowedFileIds.Contains(id))];
+            }
+
+            if (!string.IsNullOrWhiteSpace(subjectKeyFrom) || !string.IsNullOrWhiteSpace(subjectKeyTo))
+            {
+                var subjectKeyPairsForFilter = allFilteredFileIds.Count == 0 ? [] : await db.ReportEntities
+                    .AsNoTracking()
+                    .Where(e => allFilteredFileIds.Contains(e.ReportFileId))
+                    .SelectMany(e => e.Properties
+                        .Where(p => p.Name == "value" && p.IsSubjectKey)
+                        .Select(p => new PivotPair
+                        {
+                            FileId = e.ReportFileId,
+                            Key = e.Key,
+                            Value = p.Value,
+                            IsSubjectKey = true,
+                            DataType = p.DataType,
+                            Unit = p.Unit
+                        }))
+                    .ToListAsync();
+
+                var allowedFileIds = subjectKeyPairsForFilter
+                    .Where(p => IsValueInRange(p.Value, subjectKeyFrom, subjectKeyTo))
+                    .Select(p => p.FileId)
+                    .Distinct()
+                    .ToHashSet();
+
+                allFilteredFileIds = [.. allFilteredFileIds.Where(id => allowedFileIds.Contains(id))];
+            }
+
+            return new TypePivotFilterResult
+            {
+                ReportType = reportType,
+                AllFilteredFileIds = allFilteredFileIds,
+                BatchOptions = batchRecords
+                    .Select(b => new TypePivotBatchOption
+                    {
+                        Id = b.Id,
+                        Label = string.IsNullOrWhiteSpace(b.Description)
+                            ? b.Name
+                            : $"{b.Name} - {b.Description}"
+                    })
+                    .ToList(),
+                BatchNames = batchRecords.ToDictionary(b => b.Id, b => b.Name)
+            };
+        }
+
+        private async Task<TypePivotMetadata> GetTypePivotMetadataAsync(List<int> allFilteredFileIds)
+        {
+            var pairs = allFilteredFileIds.Count == 0 ? [] : await db.ReportEntities
+                .AsNoTracking()
+                .Where(e => allFilteredFileIds.Contains(e.ReportFileId))
+                .SelectMany(e => e.Properties
+                    .Where(p => p.Name == "value")
+                    .Select(p => new PivotPair
+                    {
+                        FileId = e.ReportFileId,
+                        Key = e.Key,
+                        Value = p.Value,
+                        IsSubjectKey = p.IsSubjectKey,
+                        DataType = p.DataType,
+                        Unit = p.Unit
+                    }))
+                .ToListAsync();
+
+            var subjectKeyPairs = pairs.Where(p => p.IsSubjectKey).ToList();
+            var measurePairs = pairs.Where(p => !p.IsSubjectKey).ToList();
+            var visibleHeaders = measurePairs
+                .Where(p => IsNumericDataType(p.DataType))
+                .Select(p => p.Key)
+                .Where(k => !string.IsNullOrWhiteSpace(k))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(k => k, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            var visibleHeaderSet = visibleHeaders.ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            var plotXAxisFields = new List<string> { "FileName", "LastModified", "Batch" };
+            if (subjectKeyPairs.Count > 0)
+                plotXAxisFields.Insert(0, "SubjectKey");
+
+            return new TypePivotMetadata
+            {
+                AllMeasureHeaders = measurePairs
+                    .Select(p => p.Key)
+                    .Where(k => !string.IsNullOrWhiteSpace(k))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .OrderBy(k => k, StringComparer.OrdinalIgnoreCase)
+                    .ToList(),
+                VisibleHeaders = visibleHeaders,
+                HeaderUnits = measurePairs
+                    .Where(p => visibleHeaderSet.Contains(p.Key))
+                    .GroupBy(p => p.Key, StringComparer.OrdinalIgnoreCase)
+                    .ToDictionary(
+                        g => g.Key,
+                        g => g.Select(p => p.Unit).FirstOrDefault(u => !string.IsNullOrWhiteSpace(u)),
+                        StringComparer.OrdinalIgnoreCase),
+                HasSubjectKey = subjectKeyPairs.Count > 0,
+                SubjectKeyLabel = subjectKeyPairs.FirstOrDefault()?.Key ?? "SubjectKey",
+                PlotXAxisFields = plotXAxisFields
+            };
+        }
+
+        private static string ResolvePlotXAxisField(string? xField, bool hasSubjectKey)
+        {
+            if (string.Equals(xField, "FileName", StringComparison.OrdinalIgnoreCase))
+                return "FileName";
+            if (string.Equals(xField, "LastModified", StringComparison.OrdinalIgnoreCase))
+                return "LastModified";
+            if (string.Equals(xField, "Batch", StringComparison.OrdinalIgnoreCase))
+                return "Batch";
+
+            return hasSubjectKey ? "SubjectKey" : "FileName";
+        }
+
+        private static object? GetPlotXAxisValue(
+            string xField,
+            int fileId,
+            string fileName,
+            DateTime lastModified,
+            int? batchId,
+            Dictionary<int, string> batchNames,
+            Dictionary<int, string?> subjectKeysByFileId)
+        {
+            return xField switch
+            {
+                "SubjectKey" => subjectKeysByFileId.TryGetValue(fileId, out var subjectKey)
+                    ? FormatSubjectKeyValue(subjectKey)
+                    : null,
+                "LastModified" => lastModified.ToString("O", CultureInfo.InvariantCulture),
+                "Batch" => batchId.HasValue && batchNames.TryGetValue(batchId.Value, out var batchName)
+                    ? batchName
+                    : null,
+                _ => fileName
+            };
+        }
+
+        private static object? FormatSubjectKeyValue(string? rawValue)
+        {
+            if (string.IsNullOrWhiteSpace(rawValue))
+                return null;
+            if (long.TryParse(rawValue, NumberStyles.Any, CultureInfo.InvariantCulture, out var integerValue))
+                return integerValue;
+            if (double.TryParse(rawValue, NumberStyles.Any, CultureInfo.InvariantCulture, out var doubleValue))
+                return doubleValue;
+
+            return rawValue;
+        }
+
+        private static string GetPlotXAxisTitle(string xField, string subjectKeyLabel)
+        {
+            return xField switch
+            {
+                "SubjectKey" => subjectKeyLabel,
+                "LastModified" => "Ultima modifica",
+                "Batch" => "Batch",
+                _ => "Nome file"
+            };
+        }
+
+        private static string FormatHeaderLabel(string header, Dictionary<string, string?> headerUnits)
+        {
+            return headerUnits.TryGetValue(header, out var unit) && !string.IsNullOrWhiteSpace(unit)
+                ? $"{header} [{unit}]"
+                : header;
         }
 
         private int ResolveDecimalPlaces()
@@ -510,6 +790,24 @@ namespace RRDA.Web.Areas.Data.Controllers
             cache.Set(cacheKey, columnStatistics, cacheOptions);
 
             return columnStatistics;
+        }
+
+        private sealed class TypePivotFilterResult
+        {
+            public required RRDA.Data.ReportType ReportType { get; init; }
+            public required List<int> AllFilteredFileIds { get; init; }
+            public required List<TypePivotBatchOption> BatchOptions { get; init; }
+            public required Dictionary<int, string> BatchNames { get; init; }
+        }
+
+        private sealed class TypePivotMetadata
+        {
+            public List<string> AllMeasureHeaders { get; init; } = [];
+            public List<string> VisibleHeaders { get; init; } = [];
+            public Dictionary<string, string?> HeaderUnits { get; init; } = new(StringComparer.OrdinalIgnoreCase);
+            public bool HasSubjectKey { get; init; }
+            public string SubjectKeyLabel { get; init; } = "SubjectKey";
+            public List<string> PlotXAxisFields { get; init; } = [];
         }
     }
 }

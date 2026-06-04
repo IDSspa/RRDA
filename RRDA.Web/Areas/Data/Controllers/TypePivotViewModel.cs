@@ -23,6 +23,8 @@
         public int DecimalPlaces { get; set; }
         public bool HasSubjectKey { get; set; }
         public string SubjectKeyLabel { get; set; } = string.Empty;
+        public List<string> PlotXAxisFields { get; set; } = [];
+        public List<string> PlotYAxisFields { get; set; } = [];
         public Dictionary<string, string?> HeaderUnits { get; set; } = new(StringComparer.OrdinalIgnoreCase);
         public Dictionary<string, TypePivotColumnStatistics> ColumnStatistics { get; set; } = new(StringComparer.OrdinalIgnoreCase);
     }

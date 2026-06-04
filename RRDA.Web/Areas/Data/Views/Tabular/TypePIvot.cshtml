@@ -2,7 +2,7 @@
 @model RRDA.Web.Areas.Data.Controllers.TypePivotViewModel
 @{
     ViewData["Title"] = $"Type Pivot - {Model.ReportTypeKey}";
-    var staticFooterColumns = Model.HasSubjectKey ? 4 : 3;
+    var staticFooterColumns = Model.HasSubjectKey ? 5 : 4;
 
     string FormatStatistic(double? value)
     {
@@ -61,6 +61,42 @@
     .type-pivot-table tbody tr:hover {
         background-color: #262c36;
     }
+
+    .type-pivot-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+    }
+
+    .type-pivot-toolbar-title {
+        color: #c9d1d9;
+        font-weight: 600;
+        margin: 0;
+    }
+
+    .type-pivot-toolbar-summary {
+        color: #8b949e;
+        font-size: .82rem;
+        margin-top: .15rem;
+    }
+
+    .type-pivot-collapse-body {
+        border-top: 1px solid #30363d;
+        margin-top: .75rem;
+        padding-top: .75rem;
+    }
+
+    .type-pivot-plot-grid {
+        display: grid;
+        grid-template-columns: minmax(180px, 240px) minmax(280px, 1fr) auto;
+        gap: .75rem;
+        align-items: end;
+    }
+
+    .type-pivot-plot-y-select {
+        min-height: 7rem;
+    }
 </style>
 
 <div class="d-flex align-items-center justify-content-between mb-3">
@@ -68,69 +104,146 @@
     <div style="color:#8b949e;font-size:.85rem;">File totali: @Model.TotalFiles</div>
 </div>
 
-<div class="rrda-card mb-3">
-    <form method="get" class="row g-2 align-items-end">
-        <input type="hidden" name="reportTypeId" value="@Model.ReportTypeId" />
-
-        <div class="col-md-3">
-            <label class="form-label">Batch</label>
-            <select class="form-select" name="batchId">
-                <option value="">Tutti</option>
-                @foreach (var batch in Model.BatchOptions)
-                {
-                    <option value="@batch.Id" selected="@(Model.BatchId == batch.Id)">@batch.Label</option>
-                }
-            </select>
+<div class="rrda-card mb-2">
+    <div class="type-pivot-toolbar">
+        <div>
+            <p class="type-pivot-toolbar-title">Filtri dati</p>
+            <div class="type-pivot-toolbar-summary">Batch, data modifica, campo misura e @Model.SubjectKeyLabel</div>
         </div>
+        <button class="btn-rrda-primary" type="button" data-bs-toggle="collapse" data-bs-target="#typePivotFilters" aria-expanded="false" aria-controls="typePivotFilters">
+            Filtri
+        </button>
+    </div>
+    <div class="collapse" id="typePivotFilters">
+        <div class="type-pivot-collapse-body">
+            <form method="get" class="row g-2 align-items-end">
+                <input type="hidden" name="reportTypeId" value="@Model.ReportTypeId" />
 
-        <div class="col-md-2">
-            <label class="form-label">Ultima modifica da</label>
-            <input type="date" class="form-control" name="lastModifiedFrom" value="@(Model.LastModifiedFrom?.ToString("yyyy-MM-dd"))" />
-        </div>
+                <div class="col-md-3">
+                    <label class="form-label">Batch</label>
+                    <select class="form-select" name="batchId">
+                        <option value="">Tutti</option>
+                        @foreach (var batch in Model.BatchOptions)
+                        {
+                            <option value="@batch.Id" selected="@(Model.BatchId == batch.Id)">@batch.Label</option>
+                        }
+                    </select>
+                </div>
 
-        <div class="col-md-2">
-            <label class="form-label">Ultima modifica a</label>
-            <input type="date" class="form-control" name="lastModifiedTo" value="@(Model.LastModifiedTo?.ToString("yyyy-MM-dd"))" />
-        </div>
+                <div class="col-md-2">
+                    <label class="form-label">Ultima modifica da</label>
+                    <input type="date" class="form-control" name="lastModifiedFrom" value="@(Model.LastModifiedFrom?.ToString("yyyy-MM-dd"))" />
+                </div>
 
-        <div class="col-md-3">
-            <label class="form-label">Campo filtro</label>
-            <select class="form-select" name="filterField">
-                <option value="">--</option>
-                @foreach (var f in Model.DynamicFilterFields)
-                {
-                    <option value="@f" selected="@(Model.FilterField == f)">@f</option>
-                }
-            </select>
-        </div>
+                <div class="col-md-2">
+                    <label class="form-label">Ultima modifica a</label>
+                    <input type="date" class="form-control" name="lastModifiedTo" value="@(Model.LastModifiedTo?.ToString("yyyy-MM-dd"))" />
+                </div>
 
-        <div class="col-md-2">
-            <label class="form-label">Campo da</label>
-            <input class="form-control" name="filterFrom" value="@Model.FilterFrom" />
-        </div>
+                <div class="col-md-3">
+                    <label class="form-label">Campo filtro</label>
+                    <select class="form-select" name="filterField">
+                        <option value="">--</option>
+                        @foreach (var f in Model.DynamicFilterFields)
+                        {
+                            <option value="@f" selected="@(Model.FilterField == f)">@f</option>
+                        }
+                    </select>
+                </div>
 
-        <div class="col-md-2">
-            <label class="form-label">Campo a</label>
-            <input class="form-control" name="filterTo" value="@Model.FilterTo" />
-        </div>
+                <div class="col-md-2">
+                    <label class="form-label">Campo da</label>
+                    <input class="form-control" name="filterFrom" value="@Model.FilterFrom" />
+                </div>
 
-        <div class="col-md-2">
-            <label class="form-label">@Model.SubjectKeyLabel da</label>
-            <input class="form-control" name="subjectKeyFrom" value="@Model.SubjectKeyFrom" />
-        </div>
+                <div class="col-md-2">
+                    <label class="form-label">Campo a</label>
+                    <input class="form-control" name="filterTo" value="@Model.FilterTo" />
+                </div>
 
-        <div class="col-md-2">
-            <label class="form-label">@Model.SubjectKeyLabel a</label>
-            <input class="form-control" name="subjectKeyTo" value="@Model.SubjectKeyTo" />
-        </div>
+                <div class="col-md-2">
+                    <label class="form-label">@Model.SubjectKeyLabel da</label>
+                    <input class="form-control" name="subjectKeyFrom" value="@Model.SubjectKeyFrom" />
+                </div>
 
-        <div class="col-md-1">
-            <button class="btn-rrda-primary" type="submit">Applica</button>
+                <div class="col-md-2">
+                    <label class="form-label">@Model.SubjectKeyLabel a</label>
+                    <input class="form-control" name="subjectKeyTo" value="@Model.SubjectKeyTo" />
+                </div>
+
+                <div class="col-md-1">
+                    <button class="btn-rrda-primary" type="submit">Applica</button>
+                </div>
+            </form>
         </div>
-    </form>
+    </div>
 </div>
 
-<div class="rrda-card" style="overflow:auto;">
+<div class="rrda-card mb-2">
+    <div class="type-pivot-toolbar">
+        <div>
+            <p class="type-pivot-toolbar-title">Parametri grafico</p>
+            <div class="type-pivot-toolbar-summary">Asse X, colonne asse Y e righe selezionate dalla tabella</div>
+        </div>
+        <button class="btn-rrda-primary" type="button" data-bs-toggle="collapse" data-bs-target="#typePivotPlotParameters" aria-expanded="false" aria-controls="typePivotPlotParameters">
+            Grafico
+        </button>
+    </div>
+    <div class="collapse" id="typePivotPlotParameters">
+        <div class="type-pivot-collapse-body">
+            <form id="plot-data-form"
+                  asp-area="Data"
+                  asp-controller="Tabular"
+                  asp-action="TypePivotPlotData"
+                  method="get"
+                  target="_blank"
+                  class="type-pivot-plot-grid">
+                <input type="hidden" name="reportTypeId" value="@Model.ReportTypeId" />
+                <input type="hidden" name="batchId" value="@Model.BatchId" />
+                <input type="hidden" name="lastModifiedFrom" value="@(Model.LastModifiedFrom?.ToString("yyyy-MM-dd"))" />
+                <input type="hidden" name="lastModifiedTo" value="@(Model.LastModifiedTo?.ToString("yyyy-MM-dd"))" />
+                <input type="hidden" name="filterField" value="@Model.FilterField" />
+                <input type="hidden" name="filterFrom" value="@Model.FilterFrom" />
+                <input type="hidden" name="filterTo" value="@Model.FilterTo" />
+                <input type="hidden" name="subjectKeyFrom" value="@Model.SubjectKeyFrom" />
+                <input type="hidden" name="subjectKeyTo" value="@Model.SubjectKeyTo" />
+
+                <div>
+                    <label class="form-label">Asse X</label>
+                    <select class="form-select" name="xField">
+                        @foreach (var field in Model.PlotXAxisFields)
+                        {
+                            <option value="@field">@field</option>
+                        }
+                    </select>
+                </div>
+
+                <div>
+                    <label class="form-label">Colonne asse Y</label>
+                    <select class="form-select type-pivot-plot-y-select" name="yFields" multiple size="5">
+                        @foreach (var field in Model.PlotYAxisFields)
+                        {
+                            var label = field;
+                            if (Model.HeaderUnits.TryGetValue(field, out var unit)
+                                && !string.IsNullOrWhiteSpace(unit))
+                            {
+                                label = $"{field} [{unit}]";
+                            }
+
+                            <option value="@field">@label</option>
+                        }
+                    </select>
+                </div>
+
+                <div>
+                    <button class="btn-rrda-primary" type="submit">JSON grafico</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="rrda-card mt-3" style="overflow:auto;">
     @if (!Model.Rows.Any())
     {
         <p style="color:#8b949e;margin:0;">Nessun file disponibile per questo report type.</p>
@@ -140,6 +253,9 @@
         <table class="table table-borderless mb-0 type-pivot-table" style="min-width:1400px;">
             <thead>
                 <tr>
+                    <th style="font-size:.78rem;white-space:nowrap;">
+                        <input class="form-check-input" type="checkbox" id="plot-select-all" title="Seleziona tutte le righe della pagina" />
+                    </th>
                     @* ── SubjectKey: prima colonna, header semplice senza popup ── *@
                     @if (Model.HasSubjectKey)
                     {
@@ -213,6 +329,14 @@
                 @foreach (var row in Model.Rows)
                 {
                     <tr>
+                        <td>
+                            <input class="form-check-input plot-row-selector"
+                                   type="checkbox"
+                                   name="selectedFileIds"
+                                   value="@row.FileId"
+                                   form="plot-data-form"
+                                   title="Usa questa riga nel JSON grafico" />
+                        </td>
                         @* ── SubjectKey: renderizzato come intero (o stringa se non numerico) ── *@
                         @if (Model.HasSubjectKey)
                         {
@@ -334,8 +458,8 @@
                asp-route-page="@p"
                asp-route-pageSize="@Model.PageSize"
                asp-route-batchId="@Model.BatchId"
-               asp-route-uploadedFrom="@(Model.LastModifiedFrom?.ToString("yyyy-MM-dd"))"
-               asp-route-uploadedTo="@(Model.LastModifiedFrom?.ToString("yyyy-MM-dd"))"
+               asp-route-lastModifiedFrom="@(Model.LastModifiedFrom?.ToString("yyyy-MM-dd"))"
+               asp-route-lastModifiedTo="@(Model.LastModifiedTo?.ToString("yyyy-MM-dd"))"
                asp-route-filterField="@Model.FilterField"
                asp-route-filterFrom="@Model.FilterFrom"
                asp-route-filterTo="@Model.FilterTo"
@@ -346,4 +470,20 @@
             </a>
         }
     </div>
+}
+
+@section Scripts {
+    <script>
+        (() => {
+            const selectAll = document.getElementById('plot-select-all');
+            if (!selectAll) {
+                return;
+            }
+
+            selectAll.addEventListener('change', () => {
+                document.querySelectorAll('.plot-row-selector')
+                    .forEach(checkbox => checkbox.checked = selectAll.checked);
+            });
+        })();
+    </script>
 }
