@@ -260,6 +260,7 @@ namespace RRDA.Web.Areas.Data.Controllers
             string? filterTo,
             string? subjectKeyFrom,
             string? subjectKeyTo,
+            string? chartType,
             string? xField,
             [FromQuery] string[] yFields,
             [FromQuery] int[] selectedFileIds)
@@ -293,6 +294,19 @@ namespace RRDA.Web.Areas.Data.Controllers
                     message = "Selezionare almeno una colonna numerica valida per l'asse Y.",
                     availableYFields = metadata.VisibleHeaders
                 });
+
+            var normalizedChartType = string.Equals(chartType, "pdf", StringComparison.OrdinalIgnoreCase)
+                ? "pdf"
+                : "scatter";
+
+            if (normalizedChartType == "pdf")
+            {
+                return await BuildTypePivotPdfPlotDataAsync(
+                    filterResult,
+                    metadata,
+                    selectedYFields,
+                    selectedFileIds);
+            }
 
             var selectedFileIdSet = selectedFileIds.ToHashSet();
             var plotFileIds = selectedFileIdSet.Count == 0
@@ -419,6 +433,236 @@ namespace RRDA.Web.Areas.Data.Controllers
                     xaxis = new { title = new { text = GetPlotXAxisTitle(resolvedXField, metadata.SubjectKeyLabel) } },
                     yaxis = new { title = new { text = yAxisTitle } },
                     hovermode = "closest"
+                },
+                traces
+            });
+        }
+
+        private async Task<IActionResult> BuildTypePivotPdfPlotDataAsync(
+            TypePivotFilterResult filterResult,
+            TypePivotMetadata metadata,
+            List<string> selectedYFields,
+            int[] selectedFileIds)
+        {
+            var fileIds = filterResult.AllFilteredFileIds;
+            var pairs = fileIds.Count == 0 ? [] : await db.ReportEntities
+                .AsNoTracking()
+                .Where(e => fileIds.Contains(e.ReportFileId))
+                .SelectMany(e => e.Properties
+                    .Where(p => p.Name == "value" && (p.IsSubjectKey || selectedYFields.Contains(e.Key)))
+                    .Select(p => new PivotPair
+                    {
+                        FileId = e.ReportFileId,
+                        Key = e.Key,
+                        Value = p.Value,
+                        IsSubjectKey = p.IsSubjectKey,
+                        DataType = p.DataType,
+                        Unit = p.Unit
+                    }))
+                .ToListAsync();
+
+            var subjectKeysByFileId = pairs
+                .Where(p => p.IsSubjectKey)
+                .GroupBy(p => p.FileId)
+                .ToDictionary(g => g.Key, g => g.FirstOrDefault()?.Value);
+
+            var selectedFileIdSet = selectedFileIds.ToHashSet();
+            var colors = new[]
+            {
+                "#1f77b4",
+                "#d62728",
+                "#2ca02c",
+                "#ff7f0e",
+                "#9467bd",
+                "#17becf",
+                "#8c564b",
+                "#e377c2"
+            };
+            var traces = new List<object>();
+            var skippedFields = new List<string>();
+            var maxDensity = 0d;
+
+            foreach (var field in selectedYFields)
+            {
+                var seriesIndex = selectedYFields.IndexOf(field);
+                var color = colors[seriesIndex % colors.Length];
+                var valuesByFileId = pairs
+                    .Where(p => !p.IsSubjectKey && string.Equals(p.Key, field, StringComparison.OrdinalIgnoreCase))
+                    .GroupBy(p => p.FileId)
+                    .Select(g => new
+                    {
+                        FileId = g.Key,
+                        Value = TryParseDouble(g.LastOrDefault()?.Value)
+                    })
+                    .Where(x => x.Value.HasValue)
+                    .Select(x => new PdfSample { FileId = x.FileId, Value = x.Value!.Value })
+                    .OrderBy(x => x.Value)
+                    .ToList();
+
+                if (valuesByFileId.Count < 2)
+                {
+                    skippedFields.Add(field);
+                    continue;
+                }
+
+                var values = valuesByFileId.Select(x => x.Value).ToList();
+                var mean = values.Average();
+                var variance = values.Sum(v => Math.Pow(v - mean, 2)) / (values.Count - 1);
+                var stdDev = Math.Sqrt(variance);
+                if (stdDev <= 0)
+                {
+                    skippedFields.Add(field);
+                    continue;
+                }
+
+                var min = values.Min();
+                var max = values.Max();
+                var binWidth = stdDev / 2;
+                var binStart = mean - Math.Ceiling((mean - min) / binWidth) * binWidth;
+                var binEnd = mean + Math.Ceiling((max - mean) / binWidth) * binWidth;
+                var curveStart = Math.Min(min, mean - 4 * stdDev);
+                var curveEnd = Math.Max(max, mean + 4 * stdDev);
+                var curveStep = (curveEnd - curveStart) / 160;
+                if (curveStep <= 0)
+                    curveStep = stdDev / 20;
+
+                var curveX = new List<double>();
+                var curveY = new List<double>();
+                for (var x = curveStart; x <= curveEnd; x += curveStep)
+                {
+                    curveX.Add(x);
+                    curveY.Add(NormalPdf(x, mean, stdDev));
+                }
+
+                var histogramBins = BuildPdfHistogramBins(
+                    valuesByFileId,
+                    subjectKeysByFileId,
+                    metadata.SubjectKeyLabel,
+                    binStart,
+                    binEnd + binWidth,
+                    binWidth);
+                var curveMax = curveY.Count == 0 ? 0 : curveY.Max();
+                var histMax = histogramBins.Count == 0 ? 0 : histogramBins.Max(b => b.Density);
+                var seriesMaxDensity = Math.Max(curveMax, histMax);
+                maxDensity = Math.Max(maxDensity, seriesMaxDensity);
+                var displayName = FormatHeaderLabel(field, metadata.HeaderUnits);
+
+                traces.Add(new
+                {
+                    name = $"{displayName} istogramma",
+                    type = "bar",
+                    opacity = 0.45,
+                    x = histogramBins.Select(b => b.Center).ToList(),
+                    y = histogramBins.Select(b => b.Density).ToList(),
+                    width = histogramBins.Select(_ => binWidth).ToList(),
+                    customdata = histogramBins
+                        .Select(b => new object[] { b.RangeLabel, b.Count, b.SubjectKeysSummary })
+                        .ToList(),
+                    marker = new
+                    {
+                        color = ToRgba(color, 0.55),
+                        line = new { color, width = 1 }
+                    },
+                    hovertemplate = $"Intervallo: %{{customdata[0]}}<br>Campioni: %{{customdata[1]}}<br>{metadata.SubjectKeyLabel}: %{{customdata[2]}}<br>Densita: %{{y}}<extra>%{{fullData.name}}</extra>"
+                });
+
+                traces.Add(new
+                {
+                    name = $"{displayName} gaussiana",
+                    type = "scatter",
+                    mode = "lines",
+                    x = curveX,
+                    y = curveY,
+                    line = new { color, width = 2 },
+                    hovertemplate = "Valore: %{x}<br>Densita: %{y}<extra>%{fullData.name}</extra>"
+                });
+
+                var lineHeight = seriesMaxDensity * 1.1;
+                traces.Add(new
+                {
+                    name = $"{displayName} media",
+                    type = "scatter",
+                    mode = "lines",
+                    x = new[] { mean, mean },
+                    y = new[] { 0, lineHeight },
+                    line = new { color, width = 3 },
+                    showlegend = false,
+                    hovertemplate = $"Media: {mean.ToString("G6", CultureInfo.InvariantCulture)}<extra>{displayName}</extra>"
+                });
+
+                foreach (var sigmaValue in new[] { mean - stdDev, mean + stdDev })
+                {
+                    traces.Add(new
+                    {
+                        name = $"{displayName} sigma",
+                        type = "scatter",
+                        mode = "lines",
+                        x = new[] { sigmaValue, sigmaValue },
+                        y = new[] { 0, lineHeight },
+                        line = new { color, width = 2, dash = "dash" },
+                        showlegend = false,
+                        hovertemplate = $"Sigma: {sigmaValue.ToString("G6", CultureInfo.InvariantCulture)}<extra>{displayName}</extra>"
+                    });
+                }
+
+                var selectedValues = valuesByFileId
+                    .Where(x => selectedFileIdSet.Contains(x.FileId))
+                    .Select(x => new
+                    {
+                        x.FileId,
+                        x.Value,
+                        Density = NormalPdf(x.Value, mean, stdDev),
+                        SubjectKey = subjectKeysByFileId.TryGetValue(x.FileId, out var subjectKey)
+                            ? FormatSubjectKeyValue(subjectKey)
+                            : null
+                    })
+                    .ToList();
+
+                if (selectedValues.Count > 0)
+                {
+                    traces.Add(new
+                    {
+                        name = $"{displayName} selezionati",
+                        type = "scatter",
+                        mode = "markers",
+                        x = selectedValues.Select(x => x.Value).ToList(),
+                        y = selectedValues.Select(x => x.Density).ToList(),
+                        customdata = selectedValues.Select(x => x.SubjectKey).ToList(),
+                        marker = new
+                        {
+                            color,
+                            size = 10,
+                            symbol = "circle",
+                            line = new { color = "#000000", width = 1 }
+                        },
+                        hovertemplate = $"{metadata.SubjectKeyLabel}: %{{customdata}}<br>Valore: %{{x}}<br>Densita: %{{y}}<extra>%{{fullData.name}}</extra>"
+                    });
+                }
+            }
+
+            if (traces.Count == 0)
+                return BadRequest(new
+                {
+                    message = "Non ci sono abbastanza campioni numerici per generare la densita di probabilita.",
+                    skippedFields
+                });
+
+            var xAxisTitle = GetPlotYAxisTitle(selectedYFields, metadata.HeaderUnits);
+
+            return Json(new
+            {
+                reportTypeId = filterResult.ReportType.Id,
+                reportTypeKey = filterResult.ReportType.Key,
+                chartType = "pdf",
+                rowCount = fileIds.Count,
+                skippedFields,
+                layout = new
+                {
+                    title = $"PDF - {filterResult.ReportType.Key}",
+                    xaxis = new { title = new { text = xAxisTitle } },
+                    yaxis = new { title = new { text = "Probability Density Function" }, range = new[] { 0, maxDensity * 1.25 } },
+                    hovermode = "closest",
+                    barmode = "overlay"
                 },
                 traces
             });
@@ -673,6 +917,106 @@ namespace RRDA.Web.Areas.Data.Controllers
                 : $"Valore [{string.Join(" / ", units)}]";
         }
 
+        private static double NormalPdf(double x, double mean, double standardDeviation)
+        {
+            if (standardDeviation <= 0)
+                return 0;
+
+            var z = (x - mean) / standardDeviation;
+            return Math.Exp(-0.5 * z * z) / (standardDeviation * Math.Sqrt(2 * Math.PI));
+        }
+
+        private static List<PdfHistogramBin> BuildPdfHistogramBins(
+            List<PdfSample> samples,
+            Dictionary<int, string?> subjectKeysByFileId,
+            string subjectKeyLabel,
+            double start,
+            double end,
+            double binWidth)
+        {
+            if (samples.Count == 0 || binWidth <= 0 || end <= start)
+                return [];
+
+            var binCount = Math.Max(1, (int)Math.Ceiling((end - start) / binWidth));
+            var bins = Enumerable.Range(0, binCount)
+                .Select(index => new List<PdfSample>())
+                .ToList();
+
+            foreach (var sample in samples)
+            {
+                var index = Math.Min(binCount - 1, Math.Max(0, (int)Math.Floor((sample.Value - start) / binWidth)));
+                bins[index].Add(sample);
+            }
+
+            return bins
+                .Select((binSamples, index) =>
+                {
+                    var binStart = start + index * binWidth;
+                    var binEnd = binStart + binWidth;
+                    var subjectKeys = binSamples
+                        .Select(sample => subjectKeysByFileId.TryGetValue(sample.FileId, out var subjectKey)
+                            ? FormatSubjectKeyValue(subjectKey)?.ToString()
+                            : null)
+                        .Where(subjectKey => !string.IsNullOrWhiteSpace(subjectKey))
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .OrderBy(subjectKey => subjectKey, StringComparer.OrdinalIgnoreCase)
+                        .ToList();
+
+                    return new PdfHistogramBin
+                    {
+                        Center = binStart + binWidth / 2,
+                        Density = binSamples.Count / (samples.Count * binWidth),
+                        Count = binSamples.Count,
+                        RangeLabel = FormattableString.Invariant($"{binStart:G6} - {binEnd:G6}"),
+                        SubjectKeysSummary = FormatSubjectKeySummary(subjectKeys, subjectKeyLabel)
+                    };
+                })
+                .ToList();
+        }
+
+        private static string FormatSubjectKeySummary(List<string?> subjectKeys, string subjectKeyLabel)
+        {
+            const int maxItems = 12;
+
+            if (subjectKeys.Count == 0)
+                return $"{subjectKeyLabel} non disponibile";
+
+            var visibleItems = subjectKeys.Take(maxItems).ToList();
+            var suffix = subjectKeys.Count > maxItems
+                ? $" (+{subjectKeys.Count - maxItems})"
+                : string.Empty;
+
+            return $"{string.Join(", ", visibleItems)}{suffix}";
+        }
+
+        private static double CalculateHistogramDensityMax(List<double> values, double min, double max, double binWidth)
+        {
+            if (values.Count == 0 || binWidth <= 0)
+                return 0;
+
+            var binCount = Math.Max(1, (int)Math.Ceiling((max - min) / binWidth));
+            var counts = new int[binCount];
+            foreach (var value in values)
+            {
+                var index = Math.Min(binCount - 1, Math.Max(0, (int)Math.Floor((value - min) / binWidth)));
+                counts[index]++;
+            }
+
+            return counts.Max() / (values.Count * binWidth);
+        }
+
+        private static string ToRgba(string hexColor, double alpha)
+        {
+            var normalized = hexColor.TrimStart('#');
+            if (normalized.Length != 6)
+                return hexColor;
+
+            var red = int.Parse(normalized[..2], NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+            var green = int.Parse(normalized[2..4], NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+            var blue = int.Parse(normalized[4..6], NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+            return FormattableString.Invariant($"rgba({red},{green},{blue},{alpha})");
+        }
+
         private int ResolveDecimalPlaces()
         {
             var configured = configuration.GetValue<int?>("TypePivot:DecimalPlaces");
@@ -847,6 +1191,21 @@ namespace RRDA.Web.Areas.Data.Controllers
             public bool HasSubjectKey { get; init; }
             public string SubjectKeyLabel { get; init; } = "SubjectKey";
             public List<string> PlotXAxisFields { get; init; } = [];
+        }
+
+        private sealed class PdfSample
+        {
+            public int FileId { get; init; }
+            public double Value { get; init; }
+        }
+
+        private sealed class PdfHistogramBin
+        {
+            public double Center { get; init; }
+            public double Density { get; init; }
+            public int Count { get; init; }
+            public string RangeLabel { get; init; } = string.Empty;
+            public string SubjectKeysSummary { get; init; } = string.Empty;
         }
     }
 }

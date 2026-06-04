@@ -89,7 +89,7 @@
 
     .type-pivot-plot-grid {
         display: grid;
-        grid-template-columns: minmax(180px, 240px) minmax(280px, 1fr) auto;
+        grid-template-columns: minmax(160px, 220px) minmax(180px, 240px) minmax(280px, 1fr) auto;
         gap: .75rem;
         align-items: start;
     }
@@ -112,9 +112,42 @@
         color: #f85149;
     }
 
+    .type-pivot-plot-frame {
+        position: relative;
+        min-height: 560px;
+    }
+
     .type-pivot-plot-host {
         min-height: 560px;
         width: 100%;
+    }
+
+    .type-pivot-plot-frame.is-loading .type-pivot-plot-host {
+        visibility: hidden;
+    }
+
+    .type-pivot-plot-loading-overlay {
+        align-items: center;
+        background: #0d1117e6;
+        color: #c9d1d9;
+        display: none;
+        flex-direction: column;
+        gap: .75rem;
+        inset: 0;
+        justify-content: center;
+        position: absolute;
+        text-align: center;
+        z-index: 2;
+    }
+
+    .type-pivot-plot-frame.is-loading .type-pivot-plot-loading-overlay {
+        display: flex;
+    }
+
+    .type-pivot-plot-loading-overlay p {
+        color: #8b949e;
+        font-size: .875rem;
+        margin: 0;
     }
 
     .type-pivot-plot-modal .modal-dialog {
@@ -153,7 +186,7 @@
     </div>
     <div class="collapse" id="typePivotFilters">
         <div class="type-pivot-collapse-body">
-            <form method="get" class="row g-2 align-items-end">
+            <form id="type-pivot-filter-form" method="get" class="row g-2 align-items-end">
                 <input type="hidden" name="reportTypeId" value="@Model.ReportTypeId" />
 
                 <div class="col-md-3">
@@ -220,7 +253,7 @@
     <div class="type-pivot-toolbar">
         <div>
             <p class="type-pivot-toolbar-title">Parametri grafico</p>
-            <div class="type-pivot-toolbar-summary">Asse X, colonne asse Y e righe selezionate dalla tabella</div>
+            <div class="type-pivot-toolbar-summary">Tipo grafico, assi, colonne e righe selezionate dalla tabella</div>
         </div>
         <button class="btn-rrda-primary" type="button" data-bs-toggle="collapse" data-bs-target="#typePivotPlotParameters" aria-expanded="false" aria-controls="typePivotPlotParameters">
             Grafico
@@ -243,6 +276,14 @@
                 <input type="hidden" name="filterTo" value="@Model.FilterTo" />
                 <input type="hidden" name="subjectKeyFrom" value="@Model.SubjectKeyFrom" />
                 <input type="hidden" name="subjectKeyTo" value="@Model.SubjectKeyTo" />
+
+                <div>
+                    <label class="form-label">Tipo grafico</label>
+                    <select class="form-select" name="chartType">
+                        <option value="scatter">Scatter</option>
+                        <option value="pdf">PDF</option>
+                    </select>
+                </div>
 
                 <div>
                     <label class="form-label">Asse X</label>
@@ -273,9 +314,27 @@
                 </div>
 
                 <div class="type-pivot-plot-action">
-                    <button class="btn-rrda-primary" type="submit">Genera scatter</button>
+                    <button class="btn-rrda-primary" type="submit">Genera grafico</button>
                 </div>
             </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="typePivotFilterLoadingModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="typePivotFilterLoadingModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background:#161b22;border:1px solid #30363d;color:#c9d1d9;">
+            <div class="modal-body" style="padding:1.5rem;">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="spinner-border text-primary" role="status" aria-hidden="true"></div>
+                    <div>
+                        <h6 id="typePivotFilterLoadingModalLabel" style="margin:0 0 .35rem 0;color:#c9d1d9;font-weight:600;">Applicazione filtri</h6>
+                        <p style="margin:0;color:#8b949e;font-size:.875rem;">
+                            Elaborazione dei dati in corso. L'operazione puo richiedere qualche istante in base al volume dei record.
+                        </p>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -518,7 +577,13 @@
             </div>
             <div class="modal-body">
                 <div id="typePivotPlotStatus" class="type-pivot-plot-status"></div>
-                <div id="typePivotPlot" class="type-pivot-plot-host"></div>
+                <div id="typePivotPlotFrame" class="type-pivot-plot-frame">
+                    <div id="typePivotPlotLoadingOverlay" class="type-pivot-plot-loading-overlay" aria-live="polite" aria-atomic="true">
+                        <div class="spinner-border text-primary" role="status" aria-hidden="true"></div>
+                        <p>Generazione del grafico in corso...</p>
+                    </div>
+                    <div id="typePivotPlot" class="type-pivot-plot-host"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -528,6 +593,29 @@
     <script src="~/lib/plotly/plotly.min.js"></script>
     <script>
         (() => {
+            const filterForm = document.getElementById('type-pivot-filter-form');
+            const filterLoadingModalElement = document.getElementById('typePivotFilterLoadingModal');
+
+            if (filterForm && filterLoadingModalElement && window.bootstrap) {
+                const filterLoadingModal = new bootstrap.Modal(filterLoadingModalElement, {
+                    backdrop: 'static',
+                    keyboard: false
+                });
+
+                filterForm.addEventListener('submit', event => {
+                    if (event.defaultPrevented) {
+                        return;
+                    }
+
+                    document.body.setAttribute('aria-busy', 'true');
+                    filterForm.querySelectorAll('button[type="submit"]').forEach(button => {
+                        button.setAttribute('aria-disabled', 'true');
+                        button.style.pointerEvents = 'none';
+                    });
+                    filterLoadingModal.show();
+                });
+            }
+
             const selectAll = document.getElementById('plot-select-all');
             if (selectAll) {
                 selectAll.addEventListener('change', () => {
@@ -538,17 +626,36 @@
 
             const form = document.getElementById('plot-data-form');
             const plotModalElement = document.getElementById('typePivotPlotModal');
+            const plotFrame = document.getElementById('typePivotPlotFrame');
             const plotHost = document.getElementById('typePivotPlot');
             const plotStatus = document.getElementById('typePivotPlotStatus');
+            const plotModalTitle = document.getElementById('typePivotPlotModalTitle');
             const plotModal = plotModalElement ? new bootstrap.Modal(plotModalElement) : null;
+            let plotRequestSequence = 0;
+            let activePlotRequest = null;
 
-            if (!form || !plotModalElement || !plotModal || !plotHost || !plotStatus) {
+            if (!form || !plotModalElement || !plotModal || !plotFrame || !plotHost || !plotStatus || !plotModalTitle) {
                 return;
             }
 
             const setStatus = (message, isError = false) => {
                 plotStatus.textContent = message;
                 plotStatus.classList.toggle('is-error', isError);
+            };
+
+            const clearPlot = () => {
+                if (window.Plotly) {
+                    Plotly.purge(plotHost);
+                }
+
+                plotHost.replaceChildren();
+            };
+
+            const setPlotLoading = isLoading => {
+                plotFrame.classList.toggle('is-loading', isLoading);
+                form.querySelectorAll('button, input, select').forEach(control => {
+                    control.disabled = isLoading;
+                });
             };
 
             const getAxisTitleText = axis => {
@@ -564,6 +671,11 @@
             form.addEventListener('submit', async event => {
                 event.preventDefault();
                 plotModal.show();
+                const formData = new FormData(form);
+                const chartType = formData.get('chartType') === 'pdf' ? 'pdf' : 'scatter';
+                const chartLabel = chartType === 'pdf' ? 'PDF' : 'Scatter';
+                const requestId = ++plotRequestSequence;
+                plotModalTitle.textContent = chartLabel;
 
                 if (!window.Plotly) {
                     setStatus('Plotly.js non e disponibile. Installare wwwroot/lib/plotly/plotly.min.js.', true);
@@ -573,20 +685,32 @@
                 const selectedYFields = form.querySelectorAll('select[name="yFields"] option:checked');
                 if (selectedYFields.length === 0) {
                     setStatus('Selezionare almeno una colonna per asse Y.', true);
-                    plotHost.innerHTML = '';
+                    clearPlot();
                     return;
                 }
 
-                setStatus('Generazione scatter in corso...');
+                if (activePlotRequest) {
+                    activePlotRequest.abort();
+                }
+
+                activePlotRequest = new AbortController();
+                clearPlot();
+                setPlotLoading(true);
+                setStatus(`Generazione ${chartLabel} in corso...`);
 
                 try {
-                    const response = await fetch(`${form.action}?${new URLSearchParams(new FormData(form))}`, {
-                        headers: { 'Accept': 'application/json' }
+                    const response = await fetch(`${form.action}?${new URLSearchParams(formData)}`, {
+                        headers: { 'Accept': 'application/json' },
+                        signal: activePlotRequest.signal
                     });
 
                     const payload = await response.json();
                     if (!response.ok) {
                         throw new Error(payload.message || 'Errore durante la generazione del grafico.');
+                    }
+
+                    if (requestId !== plotRequestSequence) {
+                        return;
                     }
 
                     const layout = {
@@ -633,10 +757,19 @@
                         displaylogo: false
                     });
                     Plotly.Plots.resize(plotHost);
-                    setStatus(`Scatter generato su ${payload.rowCount} righe filtrate.`);
+                    setStatus(`${chartLabel} generato su ${payload.rowCount} righe filtrate.`);
                 } catch (error) {
-                    plotHost.innerHTML = '';
+                    if (error.name === 'AbortError') {
+                        return;
+                    }
+
+                    clearPlot();
                     setStatus(error.message || 'Errore durante la generazione del grafico.', true);
+                } finally {
+                    if (requestId === plotRequestSequence) {
+                        setPlotLoading(false);
+                        activePlotRequest = null;
+                    }
                 }
             });
 
