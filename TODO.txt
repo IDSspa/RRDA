@@ -23,3 +23,5 @@
 	15.1) spostare Unit e IsSubjectKey in ReportEntities?
 	15.2) eliminare ridondanza tra valori memorizzati in ReportEntities e campi di ReportEntities stessa
 16) rimozione codice non utilizzato
+17) quando un operazione richiede tempi di elaborazione consistenti mostrare un messaggio di attesa 
+	sovrapposto alla UI per evidenziare il passaggio del tempo ed evitare/bloccare ulteriori operazioni da parte dell'utente.

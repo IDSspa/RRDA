@@ -91,11 +91,48 @@
         display: grid;
         grid-template-columns: minmax(180px, 240px) minmax(280px, 1fr) auto;
         gap: .75rem;
-        align-items: end;
+        align-items: start;
     }
 
     .type-pivot-plot-y-select {
         min-height: 7rem;
+    }
+
+    .type-pivot-plot-action {
+        align-self: end;
+    }
+
+    .type-pivot-plot-status {
+        color: #8b949e;
+        font-size: .84rem;
+        margin-bottom: .75rem;
+    }
+
+    .type-pivot-plot-status.is-error {
+        color: #f85149;
+    }
+
+    .type-pivot-plot-host {
+        min-height: 560px;
+        width: 100%;
+    }
+
+    .type-pivot-plot-modal .modal-dialog {
+        max-width: min(1320px, calc(100vw - 2rem));
+    }
+
+    .type-pivot-plot-modal .modal-content {
+        background: #161b22;
+        border: 1px solid #30363d;
+        color: #c9d1d9;
+    }
+
+    .type-pivot-plot-modal .modal-header {
+        border-bottom: 1px solid #30363d;
+    }
+
+    .type-pivot-plot-modal .modal-body {
+        padding: 1rem;
     }
 </style>
 
@@ -196,7 +233,6 @@
                   asp-controller="Tabular"
                   asp-action="TypePivotPlotData"
                   method="get"
-                  target="_blank"
                   class="type-pivot-plot-grid">
                 <input type="hidden" name="reportTypeId" value="@Model.ReportTypeId" />
                 <input type="hidden" name="batchId" value="@Model.BatchId" />
@@ -213,7 +249,8 @@
                     <select class="form-select" name="xField">
                         @foreach (var field in Model.PlotXAxisFields)
                         {
-                            <option value="@field">@field</option>
+                            var fieldLabel = field == "SubjectKey" ? Model.SubjectKeyLabel : field;
+                            <option value="@field">@fieldLabel</option>
                         }
                     </select>
                 </div>
@@ -235,8 +272,8 @@
                     </select>
                 </div>
 
-                <div>
-                    <button class="btn-rrda-primary" type="submit">JSON grafico</button>
+                <div class="type-pivot-plot-action">
+                    <button class="btn-rrda-primary" type="submit">Genera scatter</button>
                 </div>
             </form>
         </div>
@@ -472,17 +509,141 @@
     </div>
 }
 
+<div class="modal fade type-pivot-plot-modal" id="typePivotPlotModal" tabindex="-1" aria-labelledby="typePivotPlotModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="typePivotPlotModalTitle">Scatter</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Chiudi"></button>
+            </div>
+            <div class="modal-body">
+                <div id="typePivotPlotStatus" class="type-pivot-plot-status"></div>
+                <div id="typePivotPlot" class="type-pivot-plot-host"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
+    <script src="~/lib/plotly/plotly.min.js"></script>
     <script>
         (() => {
             const selectAll = document.getElementById('plot-select-all');
-            if (!selectAll) {
+            if (selectAll) {
+                selectAll.addEventListener('change', () => {
+                    document.querySelectorAll('.plot-row-selector')
+                        .forEach(checkbox => checkbox.checked = selectAll.checked);
+                });
+            }
+
+            const form = document.getElementById('plot-data-form');
+            const plotModalElement = document.getElementById('typePivotPlotModal');
+            const plotHost = document.getElementById('typePivotPlot');
+            const plotStatus = document.getElementById('typePivotPlotStatus');
+            const plotModal = plotModalElement ? new bootstrap.Modal(plotModalElement) : null;
+
+            if (!form || !plotModalElement || !plotModal || !plotHost || !plotStatus) {
                 return;
             }
 
-            selectAll.addEventListener('change', () => {
-                document.querySelectorAll('.plot-row-selector')
-                    .forEach(checkbox => checkbox.checked = selectAll.checked);
+            const setStatus = (message, isError = false) => {
+                plotStatus.textContent = message;
+                plotStatus.classList.toggle('is-error', isError);
+            };
+
+            const getAxisTitleText = axis => {
+                if (!axis || !axis.title) {
+                    return '';
+                }
+
+                return typeof axis.title === 'string'
+                    ? axis.title
+                    : axis.title.text || '';
+            };
+
+            form.addEventListener('submit', async event => {
+                event.preventDefault();
+                plotModal.show();
+
+                if (!window.Plotly) {
+                    setStatus('Plotly.js non e disponibile. Installare wwwroot/lib/plotly/plotly.min.js.', true);
+                    return;
+                }
+
+                const selectedYFields = form.querySelectorAll('select[name="yFields"] option:checked');
+                if (selectedYFields.length === 0) {
+                    setStatus('Selezionare almeno una colonna per asse Y.', true);
+                    plotHost.innerHTML = '';
+                    return;
+                }
+
+                setStatus('Generazione scatter in corso...');
+
+                try {
+                    const response = await fetch(`${form.action}?${new URLSearchParams(new FormData(form))}`, {
+                        headers: { 'Accept': 'application/json' }
+                    });
+
+                    const payload = await response.json();
+                    if (!response.ok) {
+                        throw new Error(payload.message || 'Errore durante la generazione del grafico.');
+                    }
+
+                    const layout = {
+                        ...payload.layout,
+                        paper_bgcolor: '#ffffff',
+                        plot_bgcolor: '#ffffff',
+                        font: { color: '#24292f' },
+                        margin: { l: 96, r: 32, t: 64, b: 96 },
+                        xaxis: {
+                            ...payload.layout.xaxis,
+                            automargin: true,
+                            linecolor: '#57606a',
+                            gridcolor: '#d8dee4',
+                            zerolinecolor: '#d0d7de',
+                            tickfont: { color: '#24292f' },
+                            title: {
+                                text: getAxisTitleText(payload.layout.xaxis),
+                                font: { color: '#24292f', size: 14 },
+                                standoff: 22
+                            }
+                        },
+                        yaxis: {
+                            ...payload.layout.yaxis,
+                            automargin: true,
+                            linecolor: '#57606a',
+                            gridcolor: '#d8dee4',
+                            zerolinecolor: '#d0d7de',
+                            tickfont: { color: '#24292f' },
+                            title: {
+                                text: getAxisTitleText(payload.layout.yaxis),
+                                font: { color: '#24292f', size: 14 },
+                                standoff: 28
+                            }
+                        },
+                        legend: {
+                            orientation: 'h',
+                            y: -0.2,
+                            font: { color: '#24292f' }
+                        }
+                    };
+
+                    await Plotly.react(plotHost, payload.traces, layout, {
+                        responsive: true,
+                        displaylogo: false
+                    });
+                    Plotly.Plots.resize(plotHost);
+                    setStatus(`Scatter generato su ${payload.rowCount} righe filtrate.`);
+                } catch (error) {
+                    plotHost.innerHTML = '';
+                    setStatus(error.message || 'Errore durante la generazione del grafico.', true);
+                }
+            });
+
+            plotModalElement.addEventListener('shown.bs.modal', () => {
+                if (window.Plotly) {
+                    Plotly.Plots.resize(plotHost);
+                }
             });
         })();
     </script>

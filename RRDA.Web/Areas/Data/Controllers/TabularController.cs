@@ -285,6 +285,7 @@ namespace RRDA.Web.Areas.Data.Controllers
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .OrderBy(f => f, StringComparer.OrdinalIgnoreCase)
                 .ToList();
+            var yAxisTitle = GetPlotYAxisTitle(selectedYFields, metadata.HeaderUnits);
 
             if (selectedYFields.Count == 0)
                 return BadRequest(new
@@ -345,11 +346,23 @@ namespace RRDA.Web.Areas.Data.Controllers
 
             var resolvedXField = ResolvePlotXAxisField(xField, metadata.HasSubjectKey);
 
-            var traces = selectedYFields.Select(field =>
+            var markerSymbols = new[]
+            {
+                "circle",
+                "square",
+                "diamond",
+                "cross",
+                "x",
+                "triangle-up",
+                "triangle-down",
+                "star"
+            };
+
+            var traces = selectedYFields.Select((field, index) =>
             {
                 var xValues = new List<object?>();
                 var yValues = new List<double?>();
-                var textValues = new List<string>();
+                var subjectKeyValues = new List<object?>();
 
                 foreach (var file in files)
                 {
@@ -370,7 +383,9 @@ namespace RRDA.Web.Areas.Data.Controllers
                         filterResult.BatchNames,
                         subjectKeysByFileId));
                     yValues.Add(y.Value);
-                    textValues.Add(file.FileName);
+                    subjectKeyValues.Add(subjectKeysByFileId.TryGetValue(file.Id, out var subjectKey)
+                        ? FormatSubjectKeyValue(subjectKey)
+                        : null);
                 }
 
                 return new
@@ -378,9 +393,15 @@ namespace RRDA.Web.Areas.Data.Controllers
                     name = FormatHeaderLabel(field, metadata.HeaderUnits),
                     type = "scatter",
                     mode = "markers",
+                    marker = new
+                    {
+                        symbol = markerSymbols[index % markerSymbols.Length],
+                        size = 8
+                    },
                     x = xValues,
                     y = yValues,
-                    text = textValues
+                    customdata = subjectKeyValues,
+                    hovertemplate = $"{metadata.SubjectKeyLabel}: %{{customdata}}<br>X: %{{x}}<br>Y: %{{y}}<extra>%{{fullData.name}}</extra>"
                 };
             }).ToList();
 
@@ -395,8 +416,8 @@ namespace RRDA.Web.Areas.Data.Controllers
                 layout = new
                 {
                     title = $"Scatter - {filterResult.ReportType.Key}",
-                    xaxis = new { title = GetPlotXAxisTitle(resolvedXField, metadata.SubjectKeyLabel) },
-                    yaxis = new { title = "Valore" },
+                    xaxis = new { title = new { text = GetPlotXAxisTitle(resolvedXField, metadata.SubjectKeyLabel) } },
+                    yaxis = new { title = new { text = yAxisTitle } },
                     hovermode = "closest"
                 },
                 traces
@@ -632,6 +653,24 @@ namespace RRDA.Web.Areas.Data.Controllers
             return headerUnits.TryGetValue(header, out var unit) && !string.IsNullOrWhiteSpace(unit)
                 ? $"{header} [{unit}]"
                 : header;
+        }
+
+        private static string GetPlotYAxisTitle(
+            List<string> selectedYFields,
+            Dictionary<string, string?> headerUnits)
+        {
+            var units = selectedYFields
+                .Select(field => headerUnits.TryGetValue(field, out var unit) ? unit : null)
+                .Where(unit => !string.IsNullOrWhiteSpace(unit))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (selectedYFields.Count == 1)
+                return FormatHeaderLabel(selectedYFields[0], headerUnits);
+
+            return units.Count == 1
+                ? $"Valore [{units[0]}]"
+                : $"Valore [{string.Join(" / ", units)}]";
         }
 
         private int ResolveDecimalPlaces()

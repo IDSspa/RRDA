@@ -1,0 +1,10 @@
+{
+  "version": "3.0",
+  "defaultProvider": "cdnjs",
+  "libraries": [
+    {
+      "library": "plotly.js@3.1.1",
+      "destination": "wwwroot/lib/plotly/"
+    }
+  ]
+}
