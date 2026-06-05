@@ -85,3 +85,42 @@ public sealed class PluginServiceTests
         }
     }
 }
+
+public sealed class PluginCatalogTests
+{
+    [Fact]
+    public void Reload_UpdatesCurrentSnapshot()
+    {
+        using var directory = new TemporaryDirectory();
+        File.Copy(
+            typeof(DummyImporter).Assembly.Location,
+            Path.Combine(directory.Path, "RRDA.Plugins.Dummy.dll"));
+        var catalog = new PluginCatalog(new PluginService());
+
+        var result = catalog.Reload(directory.Path, directory.Path);
+
+        Assert.Same(result, catalog.Current);
+        Assert.Equal(directory.Path, result.Folder);
+        Assert.Equal("Dummy", Assert.Single(result.Plugins).Name);
+        Assert.Empty(result.Errors);
+        Assert.NotEqual(DateTime.MinValue, result.LoadedAtUtc);
+    }
+
+    private sealed class TemporaryDirectory : IDisposable
+    {
+        public TemporaryDirectory()
+        {
+            Path = System.IO.Path.Combine(
+                System.IO.Path.GetTempPath(),
+                $"RRDA.PluginCatalog.Tests.{Guid.NewGuid():N}");
+            Directory.CreateDirectory(Path);
+        }
+
+        public string Path { get; }
+
+        public void Dispose()
+        {
+            Directory.Delete(Path, recursive: true);
+        }
+    }
+}

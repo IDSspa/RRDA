@@ -1,0 +1,115 @@
+@model RRDA.Web.Areas.Plugins.Controllers.PluginCatalogViewModel
+
+@{
+    ViewData["Title"] = "Catalogo plugin";
+}
+
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+        <h4 style="margin:0;color:#c9d1d9;font-weight:600;">Catalogo plugin</h4>
+        <div style="color:#8b949e;font-size:.82rem;margin-top:.25rem;">
+            Cartella: <span style="font-family:monospace;color:#c9d1d9;">@(string.IsNullOrWhiteSpace(Model.Folder) ? "Non caricata" : Model.Folder)</span>
+        </div>
+        @if (Model.LoadedAtUtc != DateTime.MinValue)
+        {
+            <div style="color:#8b949e;font-size:.78rem;margin-top:.15rem;">
+                Ultimo caricamento: @Model.LoadedAtUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")
+            </div>
+        }
+    </div>
+
+    <form asp-action="Reload" method="post">
+        @Html.AntiForgeryToken()
+        <button type="submit" class="btn-rrda-primary">Ricarica e sincronizza</button>
+    </form>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-md-4">
+        <div class="rrda-card" style="border-left:3px solid #1f6feb;">
+            <div style="font-size:1.4rem;font-weight:700;color:#c9d1d9;">@Model.Plugins.Count</div>
+            <div style="font-size:.78rem;color:#8b949e;text-transform:uppercase;">Plugin caricati</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="rrda-card" style="border-left:3px solid @(Model.Errors.Count == 0 ? "#3fb950" : "#f85149");">
+            <div style="font-size:1.4rem;font-weight:700;color:#c9d1d9;">@Model.Errors.Count</div>
+            <div style="font-size:.78rem;color:#8b949e;text-transform:uppercase;">Errori caricamento</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="rrda-card" style="border-left:3px solid @(Model.ReportTypesWithoutPlugin.Count == 0 ? "#3fb950" : "#d29922");">
+            <div style="font-size:1.4rem;font-weight:700;color:#c9d1d9;">@Model.ReportTypesWithoutPlugin.Count</div>
+            <div style="font-size:.78rem;color:#8b949e;text-transform:uppercase;">Tipi senza plugin</div>
+        </div>
+    </div>
+</div>
+
+<div class="alert-rrda alert-rrda-warning mb-3">
+    Per pubblicare una nuova versione, copiare le DLL nella cartella configurata e riavviare il processo Web.
+    Il comando di ricaricamento verifica il catalogo corrente e sincronizza <code>ReportTypes</code>, ma non sostituisce
+    in memoria assembly già caricati.
+</div>
+
+<div class="rrda-card mb-3">
+    <h6 style="margin:0 0 .75rem;color:#c9d1d9;">Plugin disponibili</h6>
+    @if (Model.Plugins.Count == 0)
+    {
+        <p style="color:#8b949e;margin:0;">Nessun plugin caricato.</p>
+    }
+    else
+    {
+        <table class="table table-borderless mb-0">
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>Versione</th>
+                    <th>Soggetto</th>
+                    <th>Assembly</th>
+                    <th>ReportType</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var plugin in Model.Plugins)
+                {
+                    <tr>
+                        <td style="font-family:monospace;color:#58a6ff;">@plugin.Name</td>
+                        <td>@plugin.Version</td>
+                        <td>@plugin.SubjectKind</td>
+                        <td style="font-family:monospace;color:#8b949e;">@plugin.AssemblyFile</td>
+                        <td style="color:@(plugin.IsRegistered ? "#3fb950" : "#f85149");">
+                            @(plugin.IsRegistered ? "Sincronizzato" : "Mancante")
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
+
+@if (Model.Errors.Count > 0)
+{
+    <div class="rrda-card mb-3">
+        <h6 style="margin:0 0 .75rem;color:#f85149;">Errori caricamento</h6>
+        @foreach (var error in Model.Errors)
+        {
+            <div style="margin-bottom:.65rem;">
+                <div style="font-family:monospace;color:#c9d1d9;font-size:.8rem;">@error.Source</div>
+                <div style="color:#f85149;font-size:.82rem;">@error.Message</div>
+            </div>
+        }
+    </div>
+}
+
+@if (Model.ReportTypesWithoutPlugin.Count > 0)
+{
+    <div class="rrda-card">
+        <h6 style="margin:0 0 .75rem;color:#d29922;">ReportTypes senza plugin disponibile</h6>
+        <div style="display:flex;flex-wrap:wrap;gap:.45rem;">
+            @foreach (var key in Model.ReportTypesWithoutPlugin)
+            {
+                <span class="badge-pill" style="background:#d2992211;color:#d29922;border:1px solid #d2992244;">@key</span>
+            }
+        </div>
+    </div>
+}

@@ -290,6 +290,14 @@
             <span class="icon">🔌</span> Tipi di report
         </a>
 
+        @if (isAdmin)
+        {
+            <a class="sidebar-link @ActiveIf("Plugins", "Catalog")"
+               asp-area="Plugins" asp-controller="Catalog" asp-action="Index">
+                <span class="icon">📦</span> Catalogo plugin
+            </a>
+        }
+
         <div class="sidebar-divider"></div>
     }
 

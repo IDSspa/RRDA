@@ -31,15 +31,15 @@ namespace RRDA.RepImp
         private bool _applyForAll = false;
         private DuplicateImportStrategy _duplicateStrategy = DuplicateImportStrategy.NewVersion;
         private readonly ObservableCollection<FileItem> _fileItems = [];
-        private readonly IReportTypeSynchronizer _reportTypeSynchronizer;
+        private readonly IReportTypeCompatibilityChecker _reportTypeCompatibilityChecker;
         private readonly IPluginService _pluginService;
 
         public MainWindow(
-            IReportTypeSynchronizer reportTypeSynchronizer,
+            IReportTypeCompatibilityChecker reportTypeCompatibilityChecker,
             IPluginService pluginService)
         {
-            _reportTypeSynchronizer = reportTypeSynchronizer
-                ?? throw new ArgumentNullException(nameof(reportTypeSynchronizer));
+            _reportTypeCompatibilityChecker = reportTypeCompatibilityChecker
+                ?? throw new ArgumentNullException(nameof(reportTypeCompatibilityChecker));
             _pluginService = pluginService
                 ?? throw new ArgumentNullException(nameof(pluginService));
             InitializeComponent();
@@ -189,8 +189,9 @@ namespace RRDA.RepImp
 
                 Log($"Caricati {_plugins.Count} plugin da '{pluginsFolder}'.");
 
-                // Sync asincrono non bloccante — fire-and-forget con gestione errori interna
-                _ = SyncReportTypesAsync();
+                // Verifica asincrona non bloccante: RRDA.Web e l'unica autorita
+                // autorizzata a sincronizzare la tabella ReportTypes.
+                _ = CheckReportTypesCompatibilityAsync();
             }
             catch (Exception ex)
             {
@@ -207,7 +208,7 @@ namespace RRDA.RepImp
                 AppDomain.CurrentDomain.BaseDirectory);
         }
 
-        private async Task SyncReportTypesAsync()
+        private async Task CheckReportTypesCompatibilityAsync()
         {
             if (_plugins.Count == 0)
                 return;
@@ -230,25 +231,34 @@ namespace RRDA.RepImp
 
                 await using (db)
                 {
-                    var result = await _reportTypeSynchronizer.SyncAsync(db, _plugins);
+                    var result = await _reportTypeCompatibilityChecker.CheckAsync(db, _plugins);
 
-                    if (result.HasChanges)
+                    if (result.IsCompatible)
                     {
-                        if (result.Inserted.Count > 0)
-                            Log($"ReportTypes: aggiunti {result.Inserted.Count} nuovi tipi: {string.Join(", ", result.Inserted)}.");
-                        if (result.Updated.Count > 0)
-                            Log($"ReportTypes: aggiornati {result.Updated.Count} tipi (SubjectKind): {string.Join(", ", result.Updated)}.");
+                        Log("ReportTypes: plugin locali compatibili con il catalogo gestito da RRDA.Web.");
                     }
                     else
                     {
-                        Log("ReportTypes: nessuna variazione rilevata.");
+                        if (result.MissingReportTypes.Count > 0)
+                        {
+                            Log(
+                                $"Avviso ReportTypes: {result.MissingReportTypes.Count} plugin locali non sono registrati nel catalogo gestito da RRDA.Web: " +
+                                $"{string.Join(", ", result.MissingReportTypes)}.");
+                        }
+
+                        foreach (var mismatch in result.SubjectKindMismatches)
+                        {
+                            Log(
+                                $"Avviso ReportTypes: SubjectKind non coerente per '{mismatch.ReportTypeKey}'. " +
+                                $"Database={mismatch.DatabaseSubjectKind}, plugin locale={mismatch.PluginSubjectKind}.");
+                        }
                     }
                 }
             }
             catch (Exception ex)
             {
                 // Non bloccante: se il DB non è raggiungibile, l'import può comunque proseguire
-                Log($"Avviso: impossibile sincronizzare ReportTypes con i plugin caricati: {ex.Message}");
+                Log($"Avviso: impossibile verificare la compatibilita dei plugin con ReportTypes: {ex.Message}");
             }
         }
 

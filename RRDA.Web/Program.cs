@@ -4,7 +4,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using RRDA.Core.Exporting;
 using RRDA.Data;
+using RRDA.Plugins.Common;
 using RRDA.Web.Security;
+using RRDA.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -65,6 +67,11 @@ builder.Services.AddRazorPages();
 // Add services
 builder.Services.AddMemoryCache();
 builder.Services.AddSingleton<IDataExportService, DataExportService>();
+builder.Services.AddSingleton<IPluginService, PluginService>();
+builder.Services.AddSingleton<IPluginCatalog, PluginCatalog>();
+builder.Services.AddScoped<IReportTypeSynchronizer, ReportTypeSynchronizer>();
+builder.Services.AddScoped<IWebPluginManagementService, WebPluginManagementService>();
+builder.Services.AddHostedService<PluginCatalogStartupService>();
 
 var app = builder.Build();
 

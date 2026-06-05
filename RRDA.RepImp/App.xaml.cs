@@ -10,7 +10,8 @@ namespace RRDA.RepImp
     /// </summary>
     public partial class App : Application
     {
-        private readonly IReportTypeSynchronizer _reportTypeSynchronizer = new ReportTypeSynchronizer();
+        private readonly IReportTypeCompatibilityChecker _reportTypeCompatibilityChecker =
+            new ReportTypeCompatibilityChecker();
         private readonly IPluginService _pluginService = new PluginService();
 
         protected override void OnStartup(StartupEventArgs e)
@@ -27,7 +28,7 @@ namespace RRDA.RepImp
             // ripristina la modalità di shutdown normale.
             splash.SplashClosed += (_, _) =>
             {
-                var main = new MainWindow(_reportTypeSynchronizer, _pluginService);
+                var main = new MainWindow(_reportTypeCompatibilityChecker, _pluginService);
                 ShutdownMode = ShutdownMode.OnMainWindowClose;
                 MainWindow = main;
                 main.Show();
