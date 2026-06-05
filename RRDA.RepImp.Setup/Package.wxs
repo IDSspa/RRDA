@@ -1,0 +1,75 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+
+  <Package Name="RRDA RepImp"
+           Manufacturer="IDS"
+           Version="$(var.InstallerVersion)"
+           Scope="perMachine"
+           UpgradeCode="b05e7967-17ea-434c-b1ff-e7dfa749a5f3">
+
+    <MajorUpgrade DowngradeErrorMessage="Una versione piu recente di [ProductName] e gia installata." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <Icon Id="RepImpIcon" SourceFile="..\RRDA.RepImp\Assets\RepImp.ico" />
+    <Property Id="ARPPRODUCTICON" Value="RepImpIcon" />
+
+    <ui:WixUI Id="WixUI_InstallDir" InstallDirectory="INSTALLFOLDER" />
+    <WixVariable Id="WixUILicenseRtf" Value="License.rtf" />
+
+    <Feature Id="MainFeature" Title="RRDA RepImp" Level="1">
+      <ComponentGroupRef Id="PublishedApplicationFiles" />
+      <ComponentGroupRef Id="ApplicationShortcuts" />
+    </Feature>
+
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="IDSFOLDER" Name="IDS">
+        <Directory Id="INSTALLFOLDER" Name="RRDA RepImp" />
+      </Directory>
+    </StandardDirectory>
+
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="ApplicationProgramsFolder" Name="RRDA RepImp" />
+    </StandardDirectory>
+
+    <StandardDirectory Id="DesktopFolder" />
+
+    <ComponentGroup Id="PublishedApplicationFiles" Directory="INSTALLFOLDER">
+      <Files Include="$(var.PublishDir)**" />
+    </ComponentGroup>
+
+    <ComponentGroup Id="ApplicationShortcuts">
+      <Component Id="StartMenuShortcutComponent"
+                 Directory="ApplicationProgramsFolder"
+                 Guid="88d071c0-bf76-43fa-8065-f2125a5bb95f">
+        <Shortcut Id="StartMenuShortcut"
+                  Name="RRDA RepImp"
+                  Description="Avvia RRDA RepImp"
+                  Target="[INSTALLFOLDER]RRDA.RepImp.exe"
+                  WorkingDirectory="INSTALLFOLDER" />
+        <RemoveFolder Id="ApplicationProgramsFolder" On="uninstall" />
+        <RegistryValue Root="HKCU"
+                       Key="Software\IDS\RRDA\RepImp"
+                       Name="StartMenuShortcut"
+                       Type="integer"
+                       Value="1"
+                       KeyPath="yes" />
+      </Component>
+
+      <Component Id="DesktopShortcutComponent"
+                 Directory="DesktopFolder"
+                 Guid="b9b4dbba-cc28-4e6c-b9b5-bd6183a03118">
+        <Shortcut Id="DesktopShortcut"
+                  Name="RRDA RepImp"
+                  Description="Avvia RRDA RepImp"
+                  Target="[INSTALLFOLDER]RRDA.RepImp.exe"
+                  WorkingDirectory="INSTALLFOLDER" />
+        <RegistryValue Root="HKCU"
+                       Key="Software\IDS\RRDA\RepImp"
+                       Name="DesktopShortcut"
+                       Type="integer"
+                       Value="1"
+                       KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+  </Package>
+</Wix>

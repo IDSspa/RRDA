@@ -1,0 +1,27 @@
+<Project Sdk="WixToolset.Sdk/7.0.0">
+
+  <PropertyGroup>
+	<AcceptEula>wix7</AcceptEula>
+    <OutputType>Package</OutputType>
+    <OutputName>RRDA.RepImp.Setup</OutputName>
+    <Configuration Condition="'$(Configuration)' == ''">Release</Configuration>
+    <Platform Condition="'$(Platform)' == ''">x64</Platform>
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">win-x64</RuntimeIdentifier>
+    <SelfContained Condition="'$(SelfContained)' == ''">true</SelfContained>
+    <InstallerVersion Condition="'$(InstallerVersion)' == ''">1.0.0</InstallerVersion>
+    <PublishDir>$(MSBuildThisFileDirectory)..\artifacts\publish\RRDA.RepImp\$(Configuration)\$(RuntimeIdentifier)\</PublishDir>
+    <DefineConstants>PublishDir=$(PublishDir);InstallerVersion=$(InstallerVersion)</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\RRDA.RepImp\RRDA.RepImp.csproj" ReferenceOutputAssembly="false" />
+    <PackageReference Include="WixToolset.UI.wixext" Version="7.0.0" />
+  </ItemGroup>
+
+  <Target Name="PublishRepImp" BeforeTargets="BeforeBuild">
+    <MSBuild Projects="..\RRDA.RepImp\RRDA.RepImp.csproj"
+             Targets="Restore;Publish"
+             Properties="Configuration=$(Configuration);RuntimeIdentifier=$(RuntimeIdentifier);SelfContained=$(SelfContained);PublishSingleFile=false;EnableWindowsTargeting=true;PublishDir=$(PublishDir)" />
+  </Target>
+
+</Project>
