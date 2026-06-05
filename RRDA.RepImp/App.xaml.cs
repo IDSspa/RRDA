@@ -1,5 +1,7 @@
 ﻿using System.Windows;
 
+using RRDA.Data;
+
 namespace RRDA.RepImp
 {
     /// <summary>
@@ -7,6 +9,8 @@ namespace RRDA.RepImp
     /// </summary>
     public partial class App : Application
     {
+        private readonly IReportTypeSynchronizer _reportTypeSynchronizer = new ReportTypeSynchronizer();
+
         protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
@@ -21,7 +25,7 @@ namespace RRDA.RepImp
             // ripristina la modalità di shutdown normale.
             splash.SplashClosed += (_, _) =>
             {
-                var main = new MainWindow();
+                var main = new MainWindow(_reportTypeSynchronizer);
                 ShutdownMode = ShutdownMode.OnMainWindowClose;
                 MainWindow = main;
                 main.Show();

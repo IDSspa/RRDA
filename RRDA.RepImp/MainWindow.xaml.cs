@@ -31,9 +31,12 @@ namespace RRDA.RepImp
         private bool _applyForAll = false;
         private DuplicateImportStrategy _duplicateStrategy = DuplicateImportStrategy.NewVersion;
         private readonly ObservableCollection<FileItem> _fileItems = [];
+        private readonly IReportTypeSynchronizer _reportTypeSynchronizer;
 
-        public MainWindow()
+        public MainWindow(IReportTypeSynchronizer reportTypeSynchronizer)
         {
+            _reportTypeSynchronizer = reportTypeSynchronizer
+                ?? throw new ArgumentNullException(nameof(reportTypeSynchronizer));
             InitializeComponent();
 
             FilesListView.ItemsSource = _fileItems;
@@ -243,46 +246,14 @@ namespace RRDA.RepImp
 
                 await using (db)
                 {
-                    var existingTypes = await db.ReportTypes
-                        .ToDictionaryAsync(t => t.Key, StringComparer.OrdinalIgnoreCase);
+                    var result = await _reportTypeSynchronizer.SyncAsync(db, _plugins);
 
-                    var inserted = new List<string>();
-                    var updated = new List<string>();
-
-                    foreach (var plugin in _plugins)
+                    if (result.HasChanges)
                     {
-                        if (existingTypes.TryGetValue(plugin.Name, out var existing))
-                        {
-                            // Aggiorna solo se SubjectKind è cambiato
-                            if (existing.SubjectKind != plugin.SubjectKind)
-                            {
-                                existing.SubjectKind = plugin.SubjectKind;
-                                updated.Add(plugin.Name);
-                            }
-                        }
-                        else
-                        {
-                            db.ReportTypes.Add(new ReportType
-                            {
-                                Key = plugin.Name,
-                                Name = plugin.Name,          // l'utente può affinare da web
-                                Description = string.Empty,
-                                SubjectKind = plugin.SubjectKind,
-                                Files = [],
-                                TabularSessions = []
-                            });
-                            inserted.Add(plugin.Name);
-                        }
-                    }
-
-                    if (inserted.Count > 0 || updated.Count > 0)
-                    {
-                        await db.SaveChangesAsync();
-
-                        if (inserted.Count > 0)
-                            Log($"ReportTypes: aggiunti {inserted.Count} nuovi tipi: {string.Join(", ", inserted)}.");
-                        if (updated.Count > 0)
-                            Log($"ReportTypes: aggiornati {updated.Count} tipi (SubjectKind): {string.Join(", ", updated)}.");
+                        if (result.Inserted.Count > 0)
+                            Log($"ReportTypes: aggiunti {result.Inserted.Count} nuovi tipi: {string.Join(", ", result.Inserted)}.");
+                        if (result.Updated.Count > 0)
+                            Log($"ReportTypes: aggiornati {result.Updated.Count} tipi (SubjectKind): {string.Join(", ", result.Updated)}.");
                     }
                     else
                     {

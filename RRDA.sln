@@ -55,6 +55,8 @@ Project("{B7DD6F7E-DEF8-4E67-B5B7-07EF123DB6F0}") = "RRDA.RepImp.Setup", "RRDA.R
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RRDA.Web", "RRDA.Web\RRDA.Web.csproj", "{8F167BD0-FFC8-4A45-9080-DD64372EBF92}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RRDA.Data.Tests", "RRDA.Data.Tests\RRDA.Data.Tests.csproj", "{DC78869E-5A2E-4110-801F-0F97F13F11D4}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -341,6 +343,18 @@ Global
 		{8F167BD0-FFC8-4A45-9080-DD64372EBF92}.Release|x64.Build.0 = Release|Any CPU
 		{8F167BD0-FFC8-4A45-9080-DD64372EBF92}.Release|x86.ActiveCfg = Release|Any CPU
 		{8F167BD0-FFC8-4A45-9080-DD64372EBF92}.Release|x86.Build.0 = Release|Any CPU
+		{DC78869E-5A2E-4110-801F-0F97F13F11D4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DC78869E-5A2E-4110-801F-0F97F13F11D4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DC78869E-5A2E-4110-801F-0F97F13F11D4}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{DC78869E-5A2E-4110-801F-0F97F13F11D4}.Debug|x64.Build.0 = Debug|Any CPU
+		{DC78869E-5A2E-4110-801F-0F97F13F11D4}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{DC78869E-5A2E-4110-801F-0F97F13F11D4}.Debug|x86.Build.0 = Debug|Any CPU
+		{DC78869E-5A2E-4110-801F-0F97F13F11D4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DC78869E-5A2E-4110-801F-0F97F13F11D4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DC78869E-5A2E-4110-801F-0F97F13F11D4}.Release|x64.ActiveCfg = Release|Any CPU
+		{DC78869E-5A2E-4110-801F-0F97F13F11D4}.Release|x64.Build.0 = Release|Any CPU
+		{DC78869E-5A2E-4110-801F-0F97F13F11D4}.Release|x86.ActiveCfg = Release|Any CPU
+		{DC78869E-5A2E-4110-801F-0F97F13F11D4}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
