@@ -25,7 +25,7 @@ namespace RRDA.RepImp.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("C:\\Users\\m.santucci\\source\\repos\\RRDA\\artifacts\\plugins\\Debug\\net8.0")]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
         public string PluginsFolder {
             get {
                 return ((string)(this["PluginsFolder"]));

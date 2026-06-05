@@ -171,14 +171,7 @@ namespace RRDA.RepImp
         {
             try
             {
-                // Impostazione specificata dall'utente
-                var pluginsFolder = Properties.Settings.Default.PluginsFolder;
-                if (string.IsNullOrWhiteSpace(pluginsFolder))
-                {
-                    // fallback: cartella "plugins" accanto all'eseguibile
-                    pluginsFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "plugins");
-                    Log("Impostazione 'PluginsFolder' vuota; uso cartella di default 'plugins'.");
-                }
+                var pluginsFolder = GetPluginsFolder();
 
                 if (!Directory.Exists(pluginsFolder))
                 {
@@ -201,6 +194,30 @@ namespace RRDA.RepImp
                 PluginsListBox.ItemsSource = null;
                 Log($"Errore caricamento plugin: {ex.Message}");
             }
+        }
+
+        private static string GetPluginsFolder()
+        {
+            var configuredFolder = Properties.Settings.Default.PluginsFolder;
+            if (!string.IsNullOrWhiteSpace(configuredFolder))
+            {
+                return Path.GetFullPath(configuredFolder, AppDomain.CurrentDomain.BaseDirectory);
+            }
+
+#if DEBUG
+            for (var current = new DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory);
+                 current != null;
+                 current = current.Parent)
+            {
+                var developmentFolder = Path.Combine(current.FullName, "artifacts", "plugins", "Debug", "net8.0");
+                if (Directory.Exists(developmentFolder))
+                {
+                    return developmentFolder;
+                }
+            }
+#endif
+
+            return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "plugins");
         }
 
         private async Task SyncReportTypesAsync()
@@ -324,10 +341,7 @@ namespace RRDA.RepImp
                 fileStream = File.OpenRead(fi.FullPath);
 
                 // Tentiamo di trovare un file di configurazione XML per il plugin nella cartella dei plugin
-                var pluginsFolder = Properties.Settings.Default.PluginsFolder;
-
-                if (string.IsNullOrWhiteSpace(pluginsFolder))
-                    pluginsFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "plugins");
+                var pluginsFolder = GetPluginsFolder();
 
                 string? possibleConfigPath = null;
 
@@ -993,9 +1007,7 @@ namespace RRDA.RepImp
 
             if (string.IsNullOrWhiteSpace(pluginFolder))
             {
-                pluginFolder = Properties.Settings.Default.PluginsFolder;
-                if (string.IsNullOrWhiteSpace(pluginFolder))
-                    pluginFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "plugins");
+                pluginFolder = GetPluginsFolder();
             }
 
             if (!Directory.Exists(pluginFolder))

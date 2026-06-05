@@ -10,7 +10,8 @@
     <SelfContained Condition="'$(SelfContained)' == ''">true</SelfContained>
     <InstallerVersion Condition="'$(InstallerVersion)' == ''">1.0.0</InstallerVersion>
     <PublishDir>$(MSBuildThisFileDirectory)..\artifacts\publish\RRDA.RepImp\$(Configuration)\$(RuntimeIdentifier)\</PublishDir>
-    <DefineConstants>PublishDir=$(PublishDir);InstallerVersion=$(InstallerVersion)</DefineConstants>
+    <PluginsDir>$(MSBuildThisFileDirectory)..\artifacts\plugins\$(Configuration)\net8.0\</PluginsDir>
+    <DefineConstants>PublishDir=$(PublishDir);PluginsDir=$(PluginsDir);InstallerVersion=$(InstallerVersion)</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
@@ -18,10 +19,36 @@
     <PackageReference Include="WixToolset.UI.wixext" Version="7.0.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PluginProject Include="..\Plugins.MAN_CIR\RRDA.Plugins.MAN_CIR.csproj" />
+    <PluginProject Include="..\RRDA.Plugins.ALI\RRDA.Plugins.ALI.csproj" />
+    <PluginProject Include="..\RRDA.Plugins.ALI_CIR\RRDA.Plugins.ALI_CIR.csproj" />
+    <PluginProject Include="..\RRDA.Plugins.DAS_054_3LIV\RRDA.Plugins.DAS_054_3LIV.csproj" />
+    <PluginProject Include="..\RRDA.Plugins.DAS_054_3LIV_ACC\RRDA.Plugins.DAS_054_3LIV_ACC.csproj" />
+    <PluginProject Include="..\RRDA.Plugins.DCDC_24TO12\RRDA.Plugins.DCDC_24TO12.csproj" />
+    <PluginProject Include="..\RRDA.Plugins.DIG\RRDA.Plugins.DIG_5.0.csproj" />
+    <PluginProject Include="..\RRDA.Plugins.DIG_3.1\RRDA.Plugins.DIG_3.1.csproj" />
+    <PluginProject Include="..\RRDA.Plugins.DIG_PM\RRDA.Plugins.DIG_PM.csproj" />
+    <PluginProject Include="..\RRDA.Plugins.DRS_UDX_MAN\RRDA.Plugins.DRS_UDX_MAN.csproj" />
+    <PluginProject Include="..\RRDA.Plugins.DRX\RRDA.Plugins.DRX.csproj" />
+    <PluginProject Include="..\RRDA.Plugins.MAN_2LIV\RRDA.Plugins.MAN_2LIV.csproj" />
+    <PluginProject Include="..\RRDA.Plugins.RCB\RRDA.Plugins.RCB.csproj" />
+    <PluginProject Include="..\RRDA.Plugins.SBS\RRDA.Plugins.SBS.csproj" />
+    <PluginProject Include="..\RRDA.Plugins.SBX\RRDA.Plugins.SBX.csproj" />
+    <PluginProject Include="..\RRDA.Plugins.UDX\RRDA.Plugins.UDX.csproj" />
+  </ItemGroup>
+
   <Target Name="PublishRepImp" BeforeTargets="BeforeBuild">
     <MSBuild Projects="..\RRDA.RepImp\RRDA.RepImp.csproj"
              Targets="Restore;Publish"
              Properties="Configuration=$(Configuration);RuntimeIdentifier=$(RuntimeIdentifier);SelfContained=$(SelfContained);PublishSingleFile=false;EnableWindowsTargeting=true;PublishDir=$(PublishDir)" />
+  </Target>
+
+  <Target Name="BuildPlugins" BeforeTargets="BeforeBuild">
+    <MSBuild Projects="@(PluginProject)"
+             Targets="Restore;Build"
+             BuildInParallel="false"
+             Properties="Configuration=$(Configuration);Platform=AnyCPU;SolutionDir=$(MSBuildThisFileDirectory)..\" />
   </Target>
 
 </Project>

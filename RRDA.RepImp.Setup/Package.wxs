@@ -18,12 +18,15 @@
 
     <Feature Id="MainFeature" Title="RRDA RepImp" Level="1">
       <ComponentGroupRef Id="PublishedApplicationFiles" />
+      <ComponentGroupRef Id="PublishedPluginFiles" />
       <ComponentGroupRef Id="ApplicationShortcuts" />
     </Feature>
 
     <StandardDirectory Id="ProgramFiles64Folder">
       <Directory Id="IDSFOLDER" Name="IDS">
-        <Directory Id="INSTALLFOLDER" Name="RRDA RepImp" />
+        <Directory Id="INSTALLFOLDER" Name="RRDA RepImp">
+          <Directory Id="PLUGINSFOLDER" Name="plugins" />
+        </Directory>
       </Directory>
     </StandardDirectory>
 
@@ -35,6 +38,10 @@
 
     <ComponentGroup Id="PublishedApplicationFiles" Directory="INSTALLFOLDER">
       <Files Include="$(var.PublishDir)**" />
+    </ComponentGroup>
+
+    <ComponentGroup Id="PublishedPluginFiles" Directory="PLUGINSFOLDER">
+      <Files Include="$(var.PluginsDir)RRDA.Plugins.*.dll" />
     </ComponentGroup>
 
     <ComponentGroup Id="ApplicationShortcuts">

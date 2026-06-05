@@ -15,7 +15,7 @@ Progetto setup MSI per l'applicazione desktop `RRDA.RepImp`, basato su WiX Tools
 3. Impostare configurazione `Release` e piattaforma `x64`.
 4. Compilare il progetto `RRDA.RepImp.Setup`.
 
-Il progetto setup pubblica automaticamente `RRDA.RepImp` come applicazione self-contained `win-x64` e include tutti i file pubblicati nel pacchetto MSI.
+Il progetto setup pubblica automaticamente `RRDA.RepImp` come applicazione self-contained `win-x64`, compila i plugin distribuibili e include entrambi nel pacchetto MSI.
 
 ## Build da riga di comando
 
@@ -32,5 +32,6 @@ msbuild RRDA.RepImp.Setup\RRDA.RepImp.Setup.wixproj /p:Configuration=Release /p:
 ## Note
 
 - L'installer è per-machine e installa l'applicazione in `Program Files\IDS\RRDA RepImp`.
+- I plugin vengono installati nella sottocartella `Program Files\IDS\RRDA RepImp\plugins`.
 - Vengono creati collegamenti nel menu Start e sul desktop.
 - Il runtime .NET Desktop è incluso perché la pubblicazione predefinita è self-contained (`SelfContained=true`).

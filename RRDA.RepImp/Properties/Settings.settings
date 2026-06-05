@@ -3,7 +3,7 @@
   <Profiles />
   <Settings>
     <Setting Name="PluginsFolder" Type="System.String" Scope="User">
-      <Value Profile="(Default)">C:\Users\m.santucci\source\repos\RRDA\artifacts\plugins\Debug\net8.0</Value>
+      <Value Profile="(Default)" />
     </Setting>
     <Setting Name="ReportsFolder" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
