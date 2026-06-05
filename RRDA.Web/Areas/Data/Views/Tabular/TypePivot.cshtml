@@ -69,6 +69,20 @@
         gap: 1rem;
     }
 
+    .type-pivot-toolbar-actions,
+    .type-pivot-form-actions {
+        align-items: center;
+        display: flex;
+        flex-wrap: wrap;
+        gap: .5rem;
+    }
+
+    .type-pivot-action-link {
+        border-radius: 6px;
+        padding: .4rem .75rem;
+        text-decoration: none;
+    }
+
     .type-pivot-toolbar-title {
         color: #c9d1d9;
         font-weight: 600;
@@ -79,6 +93,45 @@
         color: #8b949e;
         font-size: .82rem;
         margin-top: .15rem;
+    }
+
+    .type-pivot-collapse-toggle {
+        align-items: center;
+        background: transparent;
+        border: 1px solid #30363d;
+        border-radius: 50%;
+        display: inline-flex;
+        height: 2rem;
+        justify-content: center;
+        padding: 0;
+        width: 2rem;
+    }
+
+    .type-pivot-collapse-toggle::after {
+        border-bottom: 2px solid #8b949e;
+        border-right: 2px solid #8b949e;
+        content: "";
+        height: .55rem;
+        margin-top: -.25rem;
+        transform: rotate(45deg);
+        transition: transform .2s ease, margin-top .2s ease;
+        width: .55rem;
+    }
+
+    .type-pivot-collapse-toggle[aria-expanded="true"]::after {
+        margin-top: .25rem;
+        transform: rotate(225deg);
+    }
+
+    .type-pivot-collapse-toggle:hover,
+    .type-pivot-collapse-toggle:focus {
+        border-color: #58a6ff;
+        box-shadow: none;
+    }
+
+    .type-pivot-collapse-toggle:hover::after,
+    .type-pivot-collapse-toggle:focus::after {
+        border-color: #58a6ff;
     }
 
     .type-pivot-collapse-body {
@@ -171,7 +224,37 @@
 
 <div class="d-flex align-items-center justify-content-between mb-3">
     <h4 style="margin:0;color:#c9d1d9;font-weight:600;">Vista orizzontale per tipo report: @Model.ReportTypeKey</h4>
-    <div style="color:#8b949e;font-size:.85rem;">File totali: @Model.TotalFiles</div>
+    <div class="type-pivot-toolbar-actions">
+        <span style="color:#8b949e;font-size:.85rem;">File filtrati: @Model.TotalFiles</span>
+        <a asp-area="Data"
+           asp-controller="Tabular"
+           asp-action="TypePivotExport"
+           asp-route-reportTypeId="@Model.ReportTypeId"
+           asp-route-batchId="@Model.BatchId"
+           asp-route-lastModifiedFrom="@(Model.LastModifiedFrom?.ToString("yyyy-MM-dd"))"
+           asp-route-lastModifiedTo="@(Model.LastModifiedTo?.ToString("yyyy-MM-dd"))"
+           asp-route-filterField="@Model.FilterField"
+           asp-route-filterFrom="@Model.FilterFrom"
+           asp-route-filterTo="@Model.FilterTo"
+           asp-route-subjectKeyFrom="@Model.SubjectKeyFrom"
+           asp-route-subjectKeyTo="@Model.SubjectKeyTo"
+           asp-route-format="csv"
+           class="btn-rrda-primary type-pivot-action-link">Esporta CSV</a>
+        <a asp-area="Data"
+           asp-controller="Tabular"
+           asp-action="TypePivotExport"
+           asp-route-reportTypeId="@Model.ReportTypeId"
+           asp-route-batchId="@Model.BatchId"
+           asp-route-lastModifiedFrom="@(Model.LastModifiedFrom?.ToString("yyyy-MM-dd"))"
+           asp-route-lastModifiedTo="@(Model.LastModifiedTo?.ToString("yyyy-MM-dd"))"
+           asp-route-filterField="@Model.FilterField"
+           asp-route-filterFrom="@Model.FilterFrom"
+           asp-route-filterTo="@Model.FilterTo"
+           asp-route-subjectKeyFrom="@Model.SubjectKeyFrom"
+           asp-route-subjectKeyTo="@Model.SubjectKeyTo"
+           asp-route-format="excel"
+           class="btn-rrda-primary type-pivot-action-link">Esporta Excel</a>
+    </div>
 </div>
 
 <div class="rrda-card mb-2">
@@ -180,9 +263,13 @@
             <p class="type-pivot-toolbar-title">Filtri dati</p>
             <div class="type-pivot-toolbar-summary">Batch, data modifica, campo misura e @Model.SubjectKeyLabel</div>
         </div>
-        <button class="btn-rrda-primary" type="button" data-bs-toggle="collapse" data-bs-target="#typePivotFilters" aria-expanded="false" aria-controls="typePivotFilters">
-            Filtri
-        </button>
+        <button class="type-pivot-collapse-toggle"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#typePivotFilters"
+                aria-expanded="false"
+                aria-controls="typePivotFilters"
+                aria-label="Espandi o comprimi filtri"></button>
     </div>
     <div class="collapse" id="typePivotFilters">
         <div class="type-pivot-collapse-body">
@@ -241,8 +328,11 @@
                     <input class="form-control" name="subjectKeyTo" value="@Model.SubjectKeyTo" />
                 </div>
 
-                <div class="col-md-1">
+                <div class="col-md-auto type-pivot-form-actions">
                     <button class="btn-rrda-primary" type="submit">Applica</button>
+                    <a asp-action="TypePivot"
+                       asp-route-reportTypeId="@Model.ReportTypeId"
+                       class="btn-rrda-danger type-pivot-action-link">Azzera filtri</a>
                 </div>
             </form>
         </div>
@@ -255,9 +345,13 @@
             <p class="type-pivot-toolbar-title">Parametri grafico</p>
             <div class="type-pivot-toolbar-summary">Tipo grafico, assi, colonne e righe selezionate dalla tabella</div>
         </div>
-        <button class="btn-rrda-primary" type="button" data-bs-toggle="collapse" data-bs-target="#typePivotPlotParameters" aria-expanded="false" aria-controls="typePivotPlotParameters">
-            Grafico
-        </button>
+        <button class="type-pivot-collapse-toggle"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#typePivotPlotParameters"
+                aria-expanded="false"
+                aria-controls="typePivotPlotParameters"
+                aria-label="Espandi o comprimi parametri grafico"></button>
     </div>
     <div class="collapse" id="typePivotPlotParameters">
         <div class="type-pivot-collapse-body">
@@ -286,8 +380,8 @@
                 </div>
 
                 <div>
-                    <label class="form-label">Asse X</label>
-                    <select class="form-select" name="xField">
+                    <label class="form-label" id="plot-x-field-label" for="plot-x-field">Asse X</label>
+                    <select class="form-select" id="plot-x-field" name="xField">
                         @foreach (var field in Model.PlotXAxisFields)
                         {
                             var fieldLabel = field == "SubjectKey" ? Model.SubjectKeyLabel : field;
@@ -297,8 +391,8 @@
                 </div>
 
                 <div>
-                    <label class="form-label">Colonne asse Y</label>
-                    <select class="form-select type-pivot-plot-y-select" name="yFields" multiple size="5">
+                    <label class="form-label" id="plot-series-fields-label" for="plot-series-fields">Colonne asse Y</label>
+                    <select class="form-select type-pivot-plot-y-select" id="plot-series-fields" name="seriesFields" multiple size="5">
                         @foreach (var field in Model.PlotYAxisFields)
                         {
                             var label = field;
@@ -314,7 +408,10 @@
                 </div>
 
                 <div class="type-pivot-plot-action">
-                    <button class="btn-rrda-primary" type="submit">Genera grafico</button>
+                    <div class="type-pivot-form-actions">
+                        <button class="btn-rrda-primary" type="submit">Genera grafico</button>
+                        <button class="btn-rrda-danger" id="reset-plot-button" type="button">Reset grafico</button>
+                    </div>
                 </div>
             </form>
         </div>
@@ -326,7 +423,7 @@
         <div class="modal-content" style="background:#161b22;border:1px solid #30363d;color:#c9d1d9;">
             <div class="modal-body" style="padding:1.5rem;">
                 <div class="d-flex align-items-center gap-3">
-                    <div class="spinner-border text-primary" role="status" aria-hidden="true"></div>
+                    <div class="spinner-border text-primary rrda-loading-spinner" role="status" aria-hidden="true"></div>
                     <div>
                         <h6 id="typePivotFilterLoadingModalLabel" style="margin:0 0 .35rem 0;color:#c9d1d9;font-weight:600;">Applicazione filtri</h6>
                         <p style="margin:0;color:#8b949e;font-size:.875rem;">
@@ -630,11 +727,18 @@
             const plotHost = document.getElementById('typePivotPlot');
             const plotStatus = document.getElementById('typePivotPlotStatus');
             const plotModalTitle = document.getElementById('typePivotPlotModalTitle');
+            const resetPlotButton = document.getElementById('reset-plot-button');
+            const chartTypeSelect = form?.querySelector('select[name="chartType"]');
+            const xFieldSelect = document.getElementById('plot-x-field');
+            const xFieldLabel = document.getElementById('plot-x-field-label');
+            const seriesFieldsLabel = document.getElementById('plot-series-fields-label');
             const plotModal = plotModalElement ? new bootstrap.Modal(plotModalElement) : null;
             let plotRequestSequence = 0;
             let activePlotRequest = null;
+            let scatterXField = xFieldSelect?.value;
 
-            if (!form || !plotModalElement || !plotModal || !plotFrame || !plotHost || !plotStatus || !plotModalTitle) {
+            if (!form || !plotModalElement || !plotModal || !plotFrame || !plotHost || !plotStatus
+                || !plotModalTitle || !chartTypeSelect || !xFieldSelect || !xFieldLabel || !seriesFieldsLabel) {
                 return;
             }
 
@@ -651,11 +755,68 @@
                 plotHost.replaceChildren();
             };
 
+            const syncChartControls = () => {
+                const isPdf = chartTypeSelect?.value === 'pdf';
+                xFieldLabel.textContent = isPdf ? 'Riferimento tooltip' : 'Asse X';
+                seriesFieldsLabel.textContent = isPdf ? 'Grandezze da analizzare' : 'Colonne asse Y';
+
+                if (isPdf) {
+                    if (!xFieldSelect.disabled) {
+                        scatterXField = xFieldSelect.value;
+                    }
+
+                    const subjectKeyOption = Array.from(xFieldSelect.options)
+                        .find(option => option.value === 'SubjectKey');
+                    if (subjectKeyOption) {
+                        xFieldSelect.value = subjectKeyOption.value;
+                    }
+
+                    xFieldSelect.disabled = true;
+                } else {
+                    xFieldSelect.disabled = false;
+                    if (scatterXField && Array.from(xFieldSelect.options)
+                        .some(option => option.value === scatterXField)) {
+                        xFieldSelect.value = scatterXField;
+                    }
+                }
+            };
+
+            chartTypeSelect.addEventListener('change', syncChartControls);
+            syncChartControls();
+
+            if (resetPlotButton) {
+                resetPlotButton.addEventListener('click', () => {
+                    if (activePlotRequest) {
+                        activePlotRequest.abort();
+                        activePlotRequest = null;
+                    }
+
+                    plotRequestSequence++;
+                    form.reset();
+                    scatterXField = xFieldSelect.value;
+                    syncChartControls();
+                    document.querySelectorAll('.plot-row-selector')
+                        .forEach(checkbox => checkbox.checked = false);
+                    if (selectAll) {
+                        selectAll.checked = false;
+                    }
+
+                    clearPlot();
+                    setStatus('');
+                    setPlotLoading(false);
+                    plotModalTitle.textContent = 'Scatter';
+                    plotModal.hide();
+                });
+            }
+
             const setPlotLoading = isLoading => {
                 plotFrame.classList.toggle('is-loading', isLoading);
                 form.querySelectorAll('button, input, select').forEach(control => {
                     control.disabled = isLoading;
                 });
+                if (!isLoading) {
+                    syncChartControls();
+                }
             };
 
             const getAxisTitleText = axis => {
@@ -682,9 +843,9 @@
                     return;
                 }
 
-                const selectedYFields = form.querySelectorAll('select[name="yFields"] option:checked');
-                if (selectedYFields.length === 0) {
-                    setStatus('Selezionare almeno una colonna per asse Y.', true);
+                const selectedSeriesFields = form.querySelectorAll('select[name="seriesFields"] option:checked');
+                if (selectedSeriesFields.length === 0) {
+                    setStatus('Selezionare almeno una grandezza da analizzare.', true);
                     clearPlot();
                     return;
                 }

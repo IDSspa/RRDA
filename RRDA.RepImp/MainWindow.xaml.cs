@@ -32,11 +32,16 @@ namespace RRDA.RepImp
         private DuplicateImportStrategy _duplicateStrategy = DuplicateImportStrategy.NewVersion;
         private readonly ObservableCollection<FileItem> _fileItems = [];
         private readonly IReportTypeSynchronizer _reportTypeSynchronizer;
+        private readonly IPluginService _pluginService;
 
-        public MainWindow(IReportTypeSynchronizer reportTypeSynchronizer)
+        public MainWindow(
+            IReportTypeSynchronizer reportTypeSynchronizer,
+            IPluginService pluginService)
         {
             _reportTypeSynchronizer = reportTypeSynchronizer
                 ?? throw new ArgumentNullException(nameof(reportTypeSynchronizer));
+            _pluginService = pluginService
+                ?? throw new ArgumentNullException(nameof(pluginService));
             InitializeComponent();
 
             FilesListView.ItemsSource = _fileItems;
@@ -174,19 +179,15 @@ namespace RRDA.RepImp
         {
             try
             {
-                var pluginsFolder = GetPluginsFolder();
-
-                if (!Directory.Exists(pluginsFolder))
-                {
-                    Log($"Cartella plugins non trovata: {pluginsFolder}");
-                    PluginsListBox.ItemsSource = null;
-                    return;
-                }
-
-                var loaded = PluginLoader.LoadPlugins(pluginsFolder)?.ToList() ?? [];
-                _plugins = loaded;
+                var pluginsFolder = ResolvePluginsFolder();
+                var result = _pluginService.LoadPlugins(pluginsFolder);
+                _plugins = [.. result.Plugins];
                 PluginsListBox.ItemsSource = _plugins;
-                Log($"Caricati {loaded.Count} plugin da '{pluginsFolder}'.");
+
+                foreach (var error in result.Errors)
+                    Log($"Plugin non caricato da '{error.Source}': {error.Message}");
+
+                Log($"Caricati {_plugins.Count} plugin da '{pluginsFolder}'.");
 
                 // Sync asincrono non bloccante — fire-and-forget con gestione errori interna
                 _ = SyncReportTypesAsync();
@@ -199,28 +200,11 @@ namespace RRDA.RepImp
             }
         }
 
-        private static string GetPluginsFolder()
+        private string ResolvePluginsFolder()
         {
-            var configuredFolder = Properties.Settings.Default.PluginsFolder;
-            if (!string.IsNullOrWhiteSpace(configuredFolder))
-            {
-                return Path.GetFullPath(configuredFolder, AppDomain.CurrentDomain.BaseDirectory);
-            }
-
-#if DEBUG
-            for (var current = new DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory);
-                 current != null;
-                 current = current.Parent)
-            {
-                var developmentFolder = Path.Combine(current.FullName, "artifacts", "plugins", "Debug", "net8.0");
-                if (Directory.Exists(developmentFolder))
-                {
-                    return developmentFolder;
-                }
-            }
-#endif
-
-            return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "plugins");
+            return _pluginService.ResolvePluginsFolder(
+                Properties.Settings.Default.PluginsFolder,
+                AppDomain.CurrentDomain.BaseDirectory);
         }
 
         private async Task SyncReportTypesAsync()
@@ -312,7 +296,7 @@ namespace RRDA.RepImp
                 fileStream = File.OpenRead(fi.FullPath);
 
                 // Tentiamo di trovare un file di configurazione XML per il plugin nella cartella dei plugin
-                var pluginsFolder = GetPluginsFolder();
+                var pluginsFolder = ResolvePluginsFolder();
 
                 string? possibleConfigPath = null;
 
@@ -978,7 +962,7 @@ namespace RRDA.RepImp
 
             if (string.IsNullOrWhiteSpace(pluginFolder))
             {
-                pluginFolder = GetPluginsFolder();
+                pluginFolder = ResolvePluginsFolder();
             }
 
             if (!Directory.Exists(pluginFolder))

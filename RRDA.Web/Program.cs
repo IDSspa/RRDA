@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Negotiate;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
+using RRDA.Core.Exporting;
 using RRDA.Data;
 using RRDA.Web.Security;
 
@@ -63,6 +64,7 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
 // Add services
 builder.Services.AddMemoryCache();
+builder.Services.AddSingleton<IDataExportService, DataExportService>();
 
 var app = builder.Build();
 

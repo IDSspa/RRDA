@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using RRDA.Core.Exporting;
 using RRDA.Data;
 using RRDA.Web.Security;
 using System.Globalization;
@@ -12,8 +13,11 @@ namespace RRDA.Web.Areas.Data.Controllers
 {
     [Area("Data")]
     [Authorize(Policy = Policies.AtLeastSupervisor)]
-    public class TabularController(RRDADbContext db, IConfiguration configuration,
-        IMemoryCache cache) : Controller
+    public class TabularController(
+        RRDADbContext db,
+        IConfiguration configuration,
+        IMemoryCache cache,
+        IDataExportService exportService) : Controller
     {
         private const string DecimalPlacesCookieName = "RRDA_TypePivot_DecimalPlaces";
         private const int DefaultDecimalPlaces = 4;
@@ -250,6 +254,120 @@ namespace RRDA.Web.Areas.Data.Controllers
             });
         }
 
+        public async Task<IActionResult> TypePivotExport(
+            int reportTypeId,
+            int? batchId,
+            DateTime? lastModifiedFrom,
+            DateTime? lastModifiedTo,
+            string? filterField,
+            string? filterFrom,
+            string? filterTo,
+            string? subjectKeyFrom,
+            string? subjectKeyTo,
+            string? format)
+        {
+            var filterResult = await GetTypePivotFilterResultAsync(
+                reportTypeId,
+                batchId,
+                lastModifiedFrom,
+                lastModifiedTo,
+                filterField,
+                filterFrom,
+                filterTo,
+                subjectKeyFrom,
+                subjectKeyTo);
+
+            if (filterResult is null)
+                return NotFound();
+
+            var fileIds = filterResult.AllFilteredFileIds;
+            var metadata = await GetTypePivotMetadataAsync(fileIds);
+            var files = fileIds.Count == 0 ? [] : await db.ReportFiles
+                .AsNoTracking()
+                .Where(file => fileIds.Contains(file.Id))
+                .Select(file => new
+                {
+                    file.Id,
+                    file.FileName,
+                    file.FileLastModify,
+                    file.ReportBatchId
+                })
+                .ToListAsync();
+
+            var pairs = fileIds.Count == 0 ? [] : await db.ReportEntities
+                .AsNoTracking()
+                .Where(entity => fileIds.Contains(entity.ReportFileId))
+                .SelectMany(entity => entity.Properties
+                    .Where(property => property.Name == "value")
+                    .Select(property => new PivotPair
+                    {
+                        FileId = entity.ReportFileId,
+                        Key = entity.Key,
+                        Value = property.Value,
+                        IsSubjectKey = property.IsSubjectKey,
+                        DataType = property.DataType,
+                        Unit = property.Unit
+                    }))
+                .ToListAsync();
+
+            var pairsByFileId = pairs
+                .GroupBy(pair => pair.FileId)
+                .ToDictionary(group => group.Key, group => group.ToList());
+            var fileOrder = fileIds
+                .Select((id, index) => new { id, index })
+                .ToDictionary(item => item.id, item => item.index);
+
+            var columns = new List<DataExportColumn>
+            {
+                new("Batch", "Batch"),
+                new("FileName", "Nome file"),
+                new("LastModified", "Ultima modifica")
+            };
+
+            if (metadata.HasSubjectKey)
+                columns.Insert(0, new DataExportColumn("SubjectKey", metadata.SubjectKeyLabel));
+
+            columns.AddRange(metadata.VisibleHeaders.Select(header =>
+                new DataExportColumn(header, FormatHeaderLabel(header, metadata.HeaderUnits))));
+
+            var rows = files
+                .OrderBy(file => fileOrder[file.Id])
+                .Select(file =>
+                {
+                    var row = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
+                    {
+                        ["Batch"] = file.ReportBatchId.HasValue
+                            && filterResult.BatchNames.TryGetValue(file.ReportBatchId.Value, out var batchName)
+                                ? batchName
+                                : null,
+                        ["FileName"] = file.FileName,
+                        ["LastModified"] = file.FileLastModify
+                    };
+
+                    if (pairsByFileId.TryGetValue(file.Id, out var filePairs))
+                    {
+                        foreach (var pair in filePairs)
+                        {
+                            if (pair.IsSubjectKey)
+                                row["SubjectKey"] = pair.Value;
+                            else if (metadata.VisibleHeaders.Contains(pair.Key, StringComparer.OrdinalIgnoreCase))
+                                row[pair.Key] = pair.Value;
+                        }
+                    }
+
+                    return (IReadOnlyDictionary<string, object?>)row;
+                })
+                .ToList();
+
+            var exportFormat = string.Equals(format, "excel", StringComparison.OrdinalIgnoreCase)
+                ? DataExportFormat.Excel
+                : DataExportFormat.Csv;
+            var document = exportService.Export(new DataExportTable(columns, rows), exportFormat);
+            var fileName = $"RRDA_{filterResult.ReportType.Key}_{DateTime.Now:yyyyMMdd_HHmmss}{document.FileExtension}";
+
+            return File(document.Content, document.ContentType, fileName);
+        }
+
         public async Task<IActionResult> TypePivotPlotData(
             int reportTypeId,
             int? batchId,
@@ -262,7 +380,7 @@ namespace RRDA.Web.Areas.Data.Controllers
             string? subjectKeyTo,
             string? chartType,
             string? xField,
-            [FromQuery] string[] yFields,
+            [FromQuery] string[] seriesFields,
             [FromQuery] int[] selectedFileIds)
         {
             var filterResult = await GetTypePivotFilterResultAsync(
@@ -280,19 +398,19 @@ namespace RRDA.Web.Areas.Data.Controllers
                 return NotFound();
 
             var metadata = await GetTypePivotMetadataAsync(filterResult.AllFilteredFileIds);
-            var allowedYFields = metadata.VisibleHeaders.ToHashSet(StringComparer.OrdinalIgnoreCase);
-            var selectedYFields = yFields
-                .Where(f => !string.IsNullOrWhiteSpace(f) && allowedYFields.Contains(f))
+            var allowedSeriesFields = metadata.VisibleHeaders.ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var selectedSeriesFields = seriesFields
+                .Where(f => !string.IsNullOrWhiteSpace(f) && allowedSeriesFields.Contains(f))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .OrderBy(f => f, StringComparer.OrdinalIgnoreCase)
                 .ToList();
-            var yAxisTitle = GetPlotYAxisTitle(selectedYFields, metadata.HeaderUnits);
+            var yAxisTitle = GetPlotYAxisTitle(selectedSeriesFields, metadata.HeaderUnits);
 
-            if (selectedYFields.Count == 0)
+            if (selectedSeriesFields.Count == 0)
                 return BadRequest(new
                 {
-                    message = "Selezionare almeno una colonna numerica valida per l'asse Y.",
-                    availableYFields = metadata.VisibleHeaders
+                    message = "Selezionare almeno una grandezza numerica valida.",
+                    availableSeriesFields = metadata.VisibleHeaders
                 });
 
             var normalizedChartType = string.Equals(chartType, "pdf", StringComparison.OrdinalIgnoreCase)
@@ -304,7 +422,7 @@ namespace RRDA.Web.Areas.Data.Controllers
                 return await BuildTypePivotPdfPlotDataAsync(
                     filterResult,
                     metadata,
-                    selectedYFields,
+                    selectedSeriesFields,
                     selectedFileIds);
             }
 
@@ -330,7 +448,7 @@ namespace RRDA.Web.Areas.Data.Controllers
                 .AsNoTracking()
                 .Where(e => fileIds.Contains(e.ReportFileId))
                 .SelectMany(e => e.Properties
-                    .Where(p => p.Name == "value" && (p.IsSubjectKey || selectedYFields.Contains(e.Key)))
+                    .Where(p => p.Name == "value" && (p.IsSubjectKey || selectedSeriesFields.Contains(e.Key)))
                     .Select(p => new PivotPair
                     {
                         FileId = e.ReportFileId,
@@ -372,7 +490,7 @@ namespace RRDA.Web.Areas.Data.Controllers
                 "star"
             };
 
-            var traces = selectedYFields.Select((field, index) =>
+            var traces = selectedSeriesFields.Select((field, index) =>
             {
                 var xValues = new List<object?>();
                 var yValues = new List<double?>();
@@ -426,7 +544,7 @@ namespace RRDA.Web.Areas.Data.Controllers
                 rowCount = files.Count,
                 selectedFileIds = fileIds,
                 availableXFields = metadata.PlotXAxisFields,
-                availableYFields = metadata.VisibleHeaders,
+                availableSeriesFields = metadata.VisibleHeaders,
                 layout = new
                 {
                     title = $"Scatter - {filterResult.ReportType.Key}",
@@ -441,7 +559,7 @@ namespace RRDA.Web.Areas.Data.Controllers
         private async Task<IActionResult> BuildTypePivotPdfPlotDataAsync(
             TypePivotFilterResult filterResult,
             TypePivotMetadata metadata,
-            List<string> selectedYFields,
+            List<string> selectedSeriesFields,
             int[] selectedFileIds)
         {
             var fileIds = filterResult.AllFilteredFileIds;
@@ -449,7 +567,7 @@ namespace RRDA.Web.Areas.Data.Controllers
                 .AsNoTracking()
                 .Where(e => fileIds.Contains(e.ReportFileId))
                 .SelectMany(e => e.Properties
-                    .Where(p => p.Name == "value" && (p.IsSubjectKey || selectedYFields.Contains(e.Key)))
+                    .Where(p => p.Name == "value" && (p.IsSubjectKey || selectedSeriesFields.Contains(e.Key)))
                     .Select(p => new PivotPair
                     {
                         FileId = e.ReportFileId,
@@ -482,9 +600,9 @@ namespace RRDA.Web.Areas.Data.Controllers
             var skippedFields = new List<string>();
             var maxDensity = 0d;
 
-            foreach (var field in selectedYFields)
+            foreach (var field in selectedSeriesFields)
             {
-                var seriesIndex = selectedYFields.IndexOf(field);
+                var seriesIndex = selectedSeriesFields.IndexOf(field);
                 var color = colors[seriesIndex % colors.Length];
                 var valuesByFileId = pairs
                     .Where(p => !p.IsSubjectKey && string.Equals(p.Key, field, StringComparison.OrdinalIgnoreCase))
@@ -647,7 +765,7 @@ namespace RRDA.Web.Areas.Data.Controllers
                     skippedFields
                 });
 
-            var xAxisTitle = GetPlotYAxisTitle(selectedYFields, metadata.HeaderUnits);
+            var xAxisTitle = GetPlotYAxisTitle(selectedSeriesFields, metadata.HeaderUnits);
 
             return Json(new
             {
@@ -900,17 +1018,17 @@ namespace RRDA.Web.Areas.Data.Controllers
         }
 
         private static string GetPlotYAxisTitle(
-            List<string> selectedYFields,
+            List<string> selectedSeriesFields,
             Dictionary<string, string?> headerUnits)
         {
-            var units = selectedYFields
+            var units = selectedSeriesFields
                 .Select(field => headerUnits.TryGetValue(field, out var unit) ? unit : null)
                 .Where(unit => !string.IsNullOrWhiteSpace(unit))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
-            if (selectedYFields.Count == 1)
-                return FormatHeaderLabel(selectedYFields[0], headerUnits);
+            if (selectedSeriesFields.Count == 1)
+                return FormatHeaderLabel(selectedSeriesFields[0], headerUnits);
 
             return units.Count == 1
                 ? $"Valore [{units[0]}]"

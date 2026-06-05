@@ -51,9 +51,11 @@
   <Folder Name="/RRDA.Plugins/UDX/">
     <Project Path="RRDA.Plugins.UDX/RRDA.Plugins.UDX.csproj" />
   </Folder>
+  <Project Path="RRDA.Core.Tests/RRDA.Core.Tests.csproj" />
   <Project Path="RRDA.Core/RRDA.Core.csproj" />
   <Project Path="RRDA.Data.Tests/RRDA.Data.Tests.csproj" />
   <Project Path="RRDA.Data/RRDA.Data.csproj" />
+  <Project Path="RRDA.Plugins.Common.Tests/RRDA.Plugins.Common.Tests.csproj" />
   <Project Path="RRDA.RepImp/RRDA.RepImp.csproj" Id="d0da7b7f-4ff2-42ed-b582-3b6268cee7f5" />
   <Folder Name="/Setup/">
     <Project Path="RRDA.RepImp.Setup/RRDA.RepImp.Setup.wixproj" Id="41fd7e2a-79d2-427c-8671-abed99ea5aa2">
