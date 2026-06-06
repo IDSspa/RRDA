@@ -25,5 +25,5 @@
     - spostare Unit e IsSubjectKey in ReportEntities?
     - eliminare ridondanza tra valori memorizzati in ReportProperties  e campi di ReportProperties stessa
 16. rimozione codice non utilizzato
-~~17. quando un operazione richiede tempi di elaborazione consistenti mostrare un messaggio di attesa~~  
-~~sovrapposto alla UI per evidenziare il passaggio del tempo ed evitare/bloccare ulteriori operazioni da parte dell'utente.~~
+17. ~~quando un operazione richiede tempi di elaborazione consistenti mostrare un messaggio di attesa~~  
+    ~~sovrapposto alla UI per evidenziare il passaggio del tempo ed evitare/bloccare ulteriori operazioni da parte dell'utente.~~
