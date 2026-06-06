@@ -1,7 +1,7 @@
 ~~1. implementazione grafici statistici~~
 
 ~~2. gestione esportazione dati filtrati vista tablellare (csv, xls)~~  
-3. gestione/visualizzazione valori 'ranged'
+3. gestione/visualizzazione valori 'ranged'  
 4. gestione collegamenti/navigazione:
    - RADAR/COMPONENTE,
    - RADAR/SOTTOASSIEME ?
