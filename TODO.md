@@ -10,7 +10,7 @@
    - importazione carta di identità radar
 7. ~~importazione singolo report applicazione web~~
 8. cancellazione massiva report tramite applicazione web (per batch, per tipo?):
-   - logging applicazione web su registro di sistema (login, operazioni critiche)
+   - ~~logging applicazione web su registro di sistema (login, operazioni critiche)~~
 9. gestione paginazione tabella:
    - implementazione ordinamento vista tabellare -> default SubjectKey (pulsanti asc/desc)
    - ottimizzazione query statistiche

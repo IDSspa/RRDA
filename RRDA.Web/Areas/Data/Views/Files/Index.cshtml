@@ -17,6 +17,10 @@
         <span style="color:#8b949e;font-size:.82rem;">@total risultati</span>
         @if (isSupervisor)
         {
+            <button type="submit" form="bulk-delete-form" id="delete-selected"
+                    class="btn-rrda-danger" disabled>
+                Elimina selezionati
+            </button>
             <a asp-action="Import" class="btn-rrda-primary" style="text-decoration:none;">
                 Importa report
             </a>
@@ -27,9 +31,15 @@
 <!-- ── Filtri ── -->
 <div class="rrda-card mb-3">
     <form method="get" class="row g-2 align-items-end">
-        <div class="col-md-3">
+        <div class="col-md-2">
             <label class="form-label">Tipo di report</label>
             <select name="reportTypeId" class="form-select" asp-items="ViewBag.ReportTypes">
+                <option value="">— Tutti —</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Batch</label>
+            <select name="batchId" class="form-select" asp-items="ViewBag.Batches">
                 <option value="">— Tutti —</option>
             </select>
         </div>
@@ -38,17 +48,17 @@
             <input type="text" name="importedBy" class="form-control"
                    value="@filters?.importedBy" placeholder="username..." />
         </div>
-        <div class="col-md-2">
+        <div class="col-md-auto">
             <label class="form-label">Dal</label>
-            <input type="date" name="from" class="form-control"
+            <input type="date" name="from" class="form-control" style="width:10.5rem;color-scheme:dark;"
                    value="@filters?.from" />
         </div>
-        <div class="col-md-2">
+        <div class="col-md-auto">
             <label class="form-label">Al</label>
-            <input type="date" name="to" class="form-control"
+            <input type="date" name="to" class="form-control" style="width:10.5rem;color-scheme:dark;"
                    value="@filters?.to" />
         </div>
-        <div class="col-md-3 d-flex gap-2">
+        <div class="col-md-auto d-flex gap-2">
             <button type="submit" class="btn-rrda-primary">Filtra</button>
             <a asp-action="Index" style="color:#8b949e;text-decoration:none;
                padding:.35rem .85rem;font-size:.85rem;">Reset</a>
@@ -64,11 +74,21 @@
     }
     else
     {
+        <form id="bulk-delete-form" asp-action="DeleteSelected" method="post"
+              onsubmit="return event.submitter?.id !== 'delete-selected' || confirm('Eliminare tutti i file selezionati e i relativi dati?')">
+            @Html.AntiForgeryToken()
         <table class="table table-borderless mb-0">
             <thead>
                 <tr>
+                    @if (isSupervisor)
+                    {
+                        <th style="width:2rem;">
+                            <input type="checkbox" id="select-all" aria-label="Seleziona tutti i file della pagina" />
+                        </th>
+                    }
                     <th>Nome file</th>
                     <th>Tipo</th>
+                    <th>Batch</th>
                     <th>Importato da</th>
                     <th>Data importazione</th>
                     <th>Ultima modifica file</th>
@@ -79,6 +99,13 @@
                 @foreach (var f in Model)
                 {
                     <tr>
+                        @if (isSupervisor)
+                        {
+                            <td>
+                                <input type="checkbox" class="row-selector" name="selectedIds"
+                                       value="@f.Id" aria-label="Seleziona @f.FileName" />
+                            </td>
+                        }
                         <td style="font-family:monospace;font-size:.82rem;">
                             <a asp-action="Details" asp-route-id="@f.Id"
                                style="color:#c9d1d9;text-decoration:none;">
@@ -90,6 +117,9 @@
                                   style="background:#1f6feb22;color:#58a6ff;border:1px solid #1f6feb44;">
                                 @f.ReportType?.Key
                             </span>
+                        </td>
+                        <td style="color:#8b949e;font-size:.82rem;">
+                            @(f.ReportBatch?.Name ?? "—")
                         </td>
                         <td style="color:#8b949e;font-size:.85rem;">
                             @(f.ImportedBy ?? "—")
@@ -113,21 +143,19 @@
                             </a>
                             @if (isSupervisor)
                             {
-                                <form asp-action="Delete" asp-route-id="@f.Id"
-                                      method="post" style="display:inline;"
-                                      onsubmit="return confirm('Eliminare il file \'@f.FileName\' e tutti i dati associati?')">
-                                    @Html.AntiForgeryToken()
-                                    <button type="submit"
-                                            style="background:none;border:none;color:#f85149;font-size:.82rem;cursor:pointer;padding:0;">
+                                    <button type="submit" asp-action="Delete" asp-route-id="@f.Id"
+                                            formnovalidate
+                                            onclick="return confirm('Eliminare il file \'@f.FileName\' e tutti i dati associati?')"
+                                        style="background:none;border:none;color:#f85149;font-size:.82rem;cursor:pointer;padding:0;">
                                         Elimina
                                     </button>
-                                </form>
                             }
                         </td>
                     </tr>
                 }
             </tbody>
         </table>
+        </form>
 
         <!-- ── Paginazione ── -->
         @if (totPages > 1)
@@ -139,6 +167,7 @@
                     <a asp-action="Index"
                        asp-route-page="@p"
                        asp-route-reportTypeId="@filters?.reportTypeId"
+                       asp-route-batchId="@filters?.batchId"
                        asp-route-importedBy="@filters?.importedBy"
                        asp-route-from="@filters?.from"
                        asp-route-to="@filters?.to"
@@ -154,3 +183,33 @@
         }
     }
 </div>
+
+@if (isSupervisor)
+{
+    <script>
+        (() => {
+            const selectAll = document.getElementById('select-all');
+            const selectors = Array.from(document.querySelectorAll('.row-selector'));
+            const deleteButton = document.getElementById('delete-selected');
+
+            if (!selectAll || !deleteButton) {
+                return;
+            }
+
+            const updateState = () => {
+                const selectedCount = selectors.filter(selector => selector.checked).length;
+                deleteButton.disabled = selectedCount === 0;
+                selectAll.checked = selectedCount > 0 && selectedCount === selectors.length;
+                selectAll.indeterminate = selectedCount > 0 && selectedCount < selectors.length;
+            };
+
+            selectAll.addEventListener('change', () => {
+                selectors.forEach(selector => selector.checked = selectAll.checked);
+                updateState();
+            });
+
+            selectors.forEach(selector => selector.addEventListener('change', updateState));
+            updateState();
+        })();
+    </script>
+}

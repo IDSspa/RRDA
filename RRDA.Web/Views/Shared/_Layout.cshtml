@@ -21,9 +21,6 @@
            string.Equals(currentController, controller, StringComparison.OrdinalIgnoreCase)
            ? "active" : "";
 
-    string ActiveArea(string area)
-        => string.Equals(currentArea, area, StringComparison.OrdinalIgnoreCase)
-           ? "active" : "";
 }
 <!DOCTYPE html>
 <html lang="it">
@@ -274,6 +271,10 @@
         <a class="sidebar-link @ActiveIf("Admin", "Settings")"
            asp-area="Admin" asp-controller="Settings" asp-action="Index">
             <span class="icon">⚙</span> Impostazioni
+        </a>
+        <a class="sidebar-link @ActiveIf("Admin", "Audit")"
+           asp-area="Admin" asp-controller="Audit" asp-action="Index">
+            <span class="icon">≡</span> Audit log
         </a>
 
         <div class="sidebar-divider"></div>

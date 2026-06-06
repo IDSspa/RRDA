@@ -21,16 +21,20 @@ namespace RRDA.Web.Areas.Data.Controllers
     {
         // ── GET /Data/Files ───────────────────────────────────────────────
         public async Task<IActionResult> Index(
-            int? reportTypeId, string? importedBy,
+            int? reportTypeId, int? batchId, string? importedBy,
             DateTime? from, DateTime? to,
             int page = 1, int pageSize = 25)
         {
             var query = db.ReportFiles
                 .Include(f => f.ReportType)
+                .Include(f => f.ReportBatch)
                 .AsQueryable();
 
             if (reportTypeId.HasValue)
                 query = query.Where(f => f.ReportTypeId == reportTypeId.Value);
+
+            if (batchId.HasValue)
+                query = query.Where(f => f.ReportBatchId == batchId.Value);
 
             if (!string.IsNullOrWhiteSpace(importedBy))
                 query = query.Where(f => f.ImportedBy != null &&
@@ -40,7 +44,7 @@ namespace RRDA.Web.Areas.Data.Controllers
                 query = query.Where(f => f.UploadedAt >= from.Value);
 
             if (to.HasValue)
-                query = query.Where(f => f.UploadedAt <= to.Value.AddDays(1));
+                query = query.Where(f => f.UploadedAt < to.Value.AddDays(1));
 
             var total = await query.CountAsync();
 
@@ -55,9 +59,13 @@ namespace RRDA.Web.Areas.Data.Controllers
                 await db.ReportTypes.OrderBy(t => t.Key).ToListAsync(),
                 "Id", "Key", reportTypeId);
 
+            ViewBag.Batches = new SelectList(
+                await db.ReportBatches.AsNoTracking().OrderByDescending(b => b.Id).ToListAsync(),
+                "Id", "Name", batchId);
+
             ViewBag.Filters = new
             {
-                reportTypeId, importedBy,
+                reportTypeId, batchId, importedBy,
                 from = from?.ToString("yyyy-MM-dd"),
                 to   = to?.ToString("yyyy-MM-dd"),
                 page, pageSize
@@ -374,6 +382,49 @@ namespace RRDA.Web.Areas.Data.Controllers
                 details: new { FileName = fileName });
 
             TempData["Success"] = $"File '{fileName}' eliminato.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost, ValidateAntiForgeryToken]
+        [Authorize(Policy = Policies.AtLeastSupervisor)]
+        public async Task<IActionResult> DeleteSelected(List<int>? selectedIds)
+        {
+            var ids = selectedIds?.Distinct().ToList() ?? [];
+            if (ids.Count == 0)
+            {
+                TempData["Warning"] = "Selezionare almeno un file da eliminare.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var files = await db.ReportFiles
+                .Where(file => ids.Contains(file.Id))
+                .ToListAsync();
+
+            if (files.Count == 0)
+            {
+                TempData["Warning"] = "Nessuno dei file selezionati è stato trovato.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var deletedFiles = files
+                .Select(file => new { file.Id, file.FileName })
+                .ToArray();
+
+            db.ReportFiles.RemoveRange(files);
+            await db.SaveChangesAsync();
+
+            await auditService.WriteAsync(
+                "Report.BulkDeleted",
+                "Success",
+                entityType: "ReportFile",
+                description: $"Eliminati {files.Count} file importati.",
+                details: new
+                {
+                    Count = files.Count,
+                    Files = deletedFiles
+                });
+
+            TempData["Success"] = $"Eliminati {files.Count} file importati.";
             return RedirectToAction(nameof(Index));
         }
 
