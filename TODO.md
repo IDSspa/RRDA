@@ -1,8 +1,8 @@
 # TODO
 
-~~1. implementazione grafici statistici~~
+1. ~~implementazione grafici statistici~~
 
-~~2. gestione esportazione dati filtrati vista tablellare (csv, xls)~~  
+2. ~~gestione esportazione dati filtrati vista tablellare (csv, xls)~~  
 3. gestione/visualizzazione valori 'ranged'  
 4. gestione collegamenti/navigazione:
    - RADAR/COMPONENTE,
@@ -21,11 +21,11 @@
 9. revisione UI WEB:
    - accesso 'veloce' alla vista tabellare per ogni tipologia di report da sidebar/dashboard
 
-~~10. importazione plugin applicazione web~~
+10. ~~importazione plugin applicazione web~~
 
-~~11. verificare aggiornamento tabella ReportTypes tramite RepImp (inserimento/aggiornamento plugins)~~  
+11. ~~verificare aggiornamento tabella ReportTypes tramite RepImp (inserimento/aggiornamento plugins)~~  
 
-~~12. creare installer per RepImp~~  
+12. ~~creare installer per RepImp~~  
 
 14. footer header vista tabellare fissi righe dati scrollabili
 
