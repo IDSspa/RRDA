@@ -6,8 +6,7 @@
    - RADAR/COMPONENTE,
    - RADAR/SOTTOASSIEME ?
    - SOTTOASSIEME/COMPONENTE
-   - importazione carta di identità radar
-
+   - importazione carta di identità radar  
 5. importazione singolo report applicazione web
 6. cancellazione massiva report tramite applicazione web (per batch, per tipo?):
    - logging applicazione web su registro di sistema (login, operazioni critiche)
