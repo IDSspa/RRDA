@@ -17,36 +17,73 @@
         padding: .25rem .5rem;
     }
 
-    .type-pivot-header-btn {
-        color: #c9d1d9;
+    .type-pivot-filter-card {
+        position: sticky;
+        top: calc(var(--topbar-height) + .75rem);
+        z-index: 1010;
+    }
+
+    .type-pivot-table-scroll {
+        max-height: calc(100vh - 1rem);
+        overflow: auto;
+        padding: 0;
+        position: relative;
+        scrollbar-color: #484f58 #161b22;
+        scrollbar-width: thin;
+    }
+
+    .type-pivot-table-scroll::-webkit-scrollbar {
+        height: 11px;
+        width: 11px;
+    }
+
+    .type-pivot-table-scroll::-webkit-scrollbar-track {
         background: #161b22;
-        border: 1px solid #30363d;
-        font-family: monospace;
-        font-size: .74rem;
-        white-space: nowrap;
     }
 
-    .type-pivot-header-btn:hover,
-    .type-pivot-header-btn:focus,
-    .type-pivot-header-btn.show {
-        color: #f0f6fc;
-        background: #21262d;
-        border-color: #58a6ff;
-        box-shadow: none;
-        }
-
-    .sort-indicator {
-        display: inline-block;
-        margin-left: 0.25rem;
-        font-size: 0.75rem;
+    .type-pivot-table-scroll::-webkit-scrollbar-thumb {
+        background: #484f58;
+        border: 2px solid #161b22;
+        border-radius: 8px;
     }
 
-    .sort-asc::after {
-        content: " ▲";
+    .type-pivot-table-scroll::-webkit-scrollbar-thumb:hover {
+        background: #6e7681;
     }
 
-    .sort-desc::after {
-        content: " ▼";
+    .type-pivot-table-scroll::-webkit-scrollbar-corner {
+        background: #161b22;
+    }
+
+    .type-pivot-table {
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .type-pivot-table thead {
+        position: sticky;
+        top: 0;
+        z-index: 5;
+    }
+
+    .type-pivot-table thead th {
+        background: #0d1117;
+        box-shadow: inset 0 -1px #30363d;
+    }
+
+    .type-pivot-table tfoot {
+        bottom: 0;
+        position: sticky;
+        z-index: 4;
+    }
+
+    .type-pivot-table tfoot th,
+    .type-pivot-table tfoot td {
+        background: #161b22;
+    }
+
+    .type-pivot-table tfoot tr:first-child > * {
+        box-shadow: inset 0 1px #30363d;
     }
 
     /* Zebra stripe styling for improved readability */
@@ -66,7 +103,11 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 1rem;
+        gap: .75rem;
+    }
+
+    .type-pivot-compact-card {
+        padding: .75rem 1rem;
     }
 
     .type-pivot-toolbar-actions,
@@ -136,23 +177,28 @@
 
     .type-pivot-collapse-body {
         border-top: 1px solid #30363d;
-        margin-top: .75rem;
-        padding-top: .75rem;
+        margin-top: .5rem;
+        padding-top: .5rem;
     }
 
     .type-pivot-plot-grid {
         display: grid;
         grid-template-columns: minmax(160px, 220px) minmax(180px, 240px) minmax(280px, 1fr) auto;
-        gap: .75rem;
+        gap: .5rem;
         align-items: start;
     }
 
     .type-pivot-plot-y-select {
-        min-height: 7rem;
+        min-height: 5.5rem;
     }
 
     .type-pivot-plot-action {
-        align-self: end;
+        align-self: start;
+        padding-top: calc(1.275rem + .3rem);
+    }
+
+    .type-pivot-plot-action .type-pivot-form-actions {
+        flex-wrap: nowrap;
     }
 
     .type-pivot-plot-status {
@@ -257,7 +303,7 @@
     </div>
 </div>
 
-<div class="rrda-card mb-2">
+<div class="rrda-card mb-2 type-pivot-filter-card type-pivot-compact-card">
     <div class="type-pivot-toolbar">
         <div>
             <p class="type-pivot-toolbar-title">Filtri dati</p>
@@ -339,7 +385,7 @@
     </div>
 </div>
 
-<div class="rrda-card mb-2">
+<div class="rrda-card mb-2 type-pivot-compact-card">
     <div class="type-pivot-toolbar">
         <div>
             <p class="type-pivot-toolbar-title">Parametri grafico</p>
@@ -436,7 +482,7 @@
     </div>
 </div>
 
-<div class="rrda-card mt-3" style="overflow:auto;">
+<div class="rrda-card mt-3 type-pivot-table-scroll">
     @if (!Model.Rows.Any())
     {
         <p style="color:#8b949e;margin:0;">Nessun file disponibile per questo report type.</p>
@@ -449,36 +495,18 @@
                     <th style="font-size:.78rem;white-space:nowrap;">
                         <input class="form-check-input" type="checkbox" id="plot-select-all" title="Seleziona tutte le righe della pagina" />
                     </th>
-                    @* ── SubjectKey: prima colonna, header semplice senza popup ── *@
+                    @* ── SubjectKey: prima colonna ── *@
                     @if (Model.HasSubjectKey)
                     {
                         <th style="font-family:monospace;font-size:.78rem;white-space:nowrap;">
-                            <div class="dropdown">
-                                <button class="btn btn-sm dropdown-toggle type-pivot-header-btn" type="button"
-                                        data-bs-toggle="dropdown" aria-expanded="false">
-                                    @Model.SubjectKeyLabel
-                                    <span class="sort-indicator sort-asc"></span>
-                                </button>
-                                <ul class="dropdown-menu">
-                                    <li>
-                                        <a class="dropdown-item" href="#">
-                                            Ordinamento crescente ▲
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="dropdown-item" href="#">
-                                            Ordinamento decrescente ▼
-                                        </a>
-                                    </li>
-                                </ul>
-                            </div>
+                            @Model.SubjectKeyLabel
                         </th>
                     }
                     @* ── Colonne statiche file ── *@
                     <th>Batch</th>
                     <th>Nome file</th>
                     <th>Ultima modifica</th>
-                    @* ── Colonne di misura con popup statistico ── *@
+                    @* ── Colonne di misura ── *@
                     @foreach (var header in Model.Headers)
                     {
                         var headerLabel = header;
@@ -488,32 +516,8 @@
                             headerLabel = $"{header} [{unit}]";
                         }
 
-                        <th style="font-family:monospace;font-size:.78rem;">
-                            <div class="dropdown">
-                                <button class="btn btn-sm dropdown-toggle type-pivot-header-btn" type="button"
-                                        data-bs-toggle="dropdown" aria-expanded="false">@headerLabel</button>
-                                <ul class="dropdown-menu">
-                                    <li>
-                                        <a class="dropdown-item"
-                                           asp-area="Data"
-                                           asp-controller="Statistics"
-                                           asp-action="Distribution"
-                                           asp-route-reportTypeId="@Model.ReportTypeId"
-                                           asp-route-field="@header"
-                                           asp-route-batchId="@Model.BatchId"
-                                           asp-route-uploadedFrom="@(Model.LastModifiedFrom?.ToString("yyyy-MM-dd"))"
-                                           asp-route-uploadedTo="@(Model.LastModifiedTo?.ToString("yyyy-MM-dd"))">
-                                            Distribuzione
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="dropdown-item" href="#"
-                                           onclick="alert('Diagramma di dispersione: vista in implementazione'); return false;">
-                                            Diagramma di dispersione
-                                        </a>
-                                    </li>
-                                </ul>
-                            </div>
+                        <th style="font-family:monospace;font-size:.78rem;white-space:nowrap;">
+                            @headerLabel
                         </th>
                     }
                 </tr>
@@ -692,6 +696,29 @@
         (() => {
             const filterForm = document.getElementById('type-pivot-filter-form');
             const filterLoadingModalElement = document.getElementById('typePivotFilterLoadingModal');
+            const tableScroll = document.querySelector('.type-pivot-table-scroll');
+
+            const resizeTableScroll = () => {
+                if (!tableScroll) {
+                    return;
+                }
+
+                const viewportBottomMargin = 16;
+                const minimumTableHeight = 180;
+                const availableHeight = window.innerHeight
+                    - tableScroll.getBoundingClientRect().top
+                    - viewportBottomMargin;
+
+                tableScroll.style.maxHeight = `${Math.max(minimumTableHeight, availableHeight)}px`;
+            };
+
+            resizeTableScroll();
+            window.addEventListener('resize', resizeTableScroll);
+            document.querySelectorAll('#typePivotFilters, #typePivotPlotParameters')
+                .forEach(panel => {
+                    panel.addEventListener('shown.bs.collapse', resizeTableScroll);
+                    panel.addEventListener('hidden.bs.collapse', resizeTableScroll);
+                });
 
             if (filterForm && filterLoadingModalElement && window.bootstrap) {
                 const filterLoadingModal = new bootstrap.Modal(filterLoadingModalElement, {

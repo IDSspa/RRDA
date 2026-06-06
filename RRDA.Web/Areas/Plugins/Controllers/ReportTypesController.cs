@@ -8,7 +8,7 @@ using RRDA.Web.Security;
 namespace RRDA.Web.Areas.Plugins.Controllers
 {
     [Area("Plugins")]
-    [Authorize(Policy = Policies.AtLeastSupervisor)]
+    [Authorize(Policy = Policies.AdminOnly)]
     public class ReportTypesController(RRDADbContext db) : Controller
     {
         // ── GET /Plugins/ReportTypes ──────────────────────────────────────
@@ -46,7 +46,6 @@ namespace RRDA.Web.Areas.Plugins.Controllers
         }
 
         // ── GET /Plugins/ReportTypes/Create ───────────────────────────────
-        [Authorize(Policy = Policies.AdminOnly)]
         public IActionResult Create() => View(new ReportType
         {
             Key   = string.Empty,
@@ -58,7 +57,6 @@ namespace RRDA.Web.Areas.Plugins.Controllers
 
         // ── POST /Plugins/ReportTypes/Create ──────────────────────────────
         [HttpPost, ValidateAntiForgeryToken]
-        [Authorize(Policy = Policies.AdminOnly)]
         public async Task<IActionResult> Create(ReportType model)
         {
             if (!ModelState.IsValid) return View(model);
@@ -84,7 +82,6 @@ namespace RRDA.Web.Areas.Plugins.Controllers
         }
 
         // ── GET /Plugins/ReportTypes/Edit/{id} ────────────────────────────
-        [Authorize(Policy = Policies.AdminOnly)]
         public async Task<IActionResult> Edit(int id)
         {
             var type = await db.ReportTypes.FindAsync(id);
@@ -94,7 +91,6 @@ namespace RRDA.Web.Areas.Plugins.Controllers
 
         // ── POST /Plugins/ReportTypes/Edit/{id} ───────────────────────────
         [HttpPost, ValidateAntiForgeryToken]
-        [Authorize(Policy = Policies.AdminOnly)]
         public async Task<IActionResult> Edit(int id, ReportType model)
         {
             if (id != model.Id) return BadRequest();
@@ -127,7 +123,6 @@ namespace RRDA.Web.Areas.Plugins.Controllers
 
         // ── POST /Plugins/ReportTypes/Delete/{id} ─────────────────────────
         [HttpPost, ValidateAntiForgeryToken]
-        [Authorize(Policy = Policies.AdminOnly)]
         public async Task<IActionResult> Delete(int id)
         {
             var type = await db.ReportTypes

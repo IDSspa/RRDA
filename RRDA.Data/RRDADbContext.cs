@@ -12,8 +12,30 @@ namespace RRDA.Data
         public DbSet<AppUser> AppUsers { get; set; } = null!;
         public DbSet<TabularSession> TabularSessions { get; set; } = null!;
         public DbSet<TabularSessionRow> TabularSessionRows { get; set; } = null!;
+        public DbSet<AuditEvent> AuditEvents { get; set; } = null!;
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<AuditEvent>(b =>
+            {
+                b.ToTable("AuditEvents");
+                b.HasKey(x => x.Id);
+                b.Property(x => x.OccurredAtUtc).HasColumnType("datetime2").IsRequired();
+                b.Property(x => x.Application).HasMaxLength(100).IsRequired();
+                b.Property(x => x.MachineName).HasMaxLength(256).IsRequired();
+                b.Property(x => x.UserName).HasMaxLength(256);
+                b.Property(x => x.Operation).HasMaxLength(200).IsRequired();
+                b.Property(x => x.Result).HasMaxLength(50).IsRequired();
+                b.Property(x => x.EntityType).HasMaxLength(100);
+                b.Property(x => x.EntityId).HasMaxLength(256);
+                b.Property(x => x.Description).HasMaxLength(2000);
+                b.Property(x => x.DetailsJson).HasColumnType("nvarchar(max)");
+                b.Property(x => x.CorrelationId).HasMaxLength(100);
+                b.Property(x => x.ClientIp).HasMaxLength(64);
+                b.HasIndex(x => x.OccurredAtUtc);
+                b.HasIndex(x => new { x.Operation, x.OccurredAtUtc });
+                b.HasIndex(x => new { x.EntityType, x.EntityId });
+            });
+
             modelBuilder.Entity<ReportFile>(b =>
             {
                 b.ToTable("ReportFiles");

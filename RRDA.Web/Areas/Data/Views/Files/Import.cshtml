@@ -1,0 +1,57 @@
+@model RRDA.Web.Areas.Data.Controllers.SingleReportImportViewModel
+@using RRDA.Data
+
+@{
+    ViewData["Title"] = "Importa report";
+}
+
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+        <h4 style="margin:0;color:#c9d1d9;font-weight:600;">Importa report</h4>
+        <div style="color:#8b949e;font-size:.82rem;margin-top:.25rem;">
+            Il plugin viene assegnato automaticamente in base al file selezionato.
+        </div>
+    </div>
+    <a asp-action="Index" style="color:#8b949e;text-decoration:none;font-size:.85rem;">
+        Torna ai file importati
+    </a>
+</div>
+
+<div class="rrda-card" style="max-width:720px;">
+    <form asp-action="Import" method="post" enctype="multipart/form-data">
+        @Html.AntiForgeryToken()
+
+        <div asp-validation-summary="ModelOnly" class="alert-rrda alert-rrda-danger mb-3"></div>
+
+        <div class="mb-3">
+            <label asp-for="File" class="form-label">File di report</label>
+            <input asp-for="File" type="file" class="form-control" accept=".xlsx" />
+            <span asp-validation-for="File" style="color:#f85149;font-size:.8rem;"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="BatchId" class="form-label">Batch</label>
+            <select asp-for="BatchId" asp-items="ViewBag.Batches" class="form-select">
+                <option value="">Nessun batch</option>
+            </select>
+            <span asp-validation-for="BatchId" style="color:#f85149;font-size:.8rem;"></span>
+        </div>
+
+        <div class="mb-4">
+            <label asp-for="DuplicateStrategy" class="form-label">Se il file e gia stato importato</label>
+            <select asp-for="DuplicateStrategy" class="form-select">
+                <option value="@DuplicateImportStrategy.Block">Blocca l'importazione</option>
+                <option value="@DuplicateImportStrategy.NewVersion">Conserva e aggiungi una nuova versione</option>
+                <option value="@DuplicateImportStrategy.Replace">Sostituisci gli import precedenti</option>
+            </select>
+            <span asp-validation-for="DuplicateStrategy" style="color:#f85149;font-size:.8rem;"></span>
+        </div>
+
+        <div class="d-flex align-items-center gap-3">
+            <button type="submit" class="btn-rrda-primary">Importa</button>
+            <span style="color:#8b949e;font-size:.8rem;">
+                L'operazione puo richiedere alcuni minuti.
+            </span>
+        </div>
+    </form>
+</div>

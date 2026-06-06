@@ -13,7 +13,15 @@
 
 <div class="d-flex align-items-center justify-content-between mb-3">
     <h4 style="margin:0;color:#c9d1d9;font-weight:600;">File importati</h4>
-    <span style="color:#8b949e;font-size:.82rem;">@total risultati</span>
+    <div class="d-flex align-items-center gap-3">
+        <span style="color:#8b949e;font-size:.82rem;">@total risultati</span>
+        @if (isSupervisor)
+        {
+            <a asp-action="Import" class="btn-rrda-primary" style="text-decoration:none;">
+                Importa report
+            </a>
+        }
+    </div>
 </div>
 
 <!-- ── Filtri ── -->

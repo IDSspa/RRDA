@@ -33,15 +33,19 @@ namespace RRDA.RepImp
         private readonly ObservableCollection<FileItem> _fileItems = [];
         private readonly IReportTypeCompatibilityChecker _reportTypeCompatibilityChecker;
         private readonly IPluginService _pluginService;
+        private readonly IAuditService _auditService;
 
         public MainWindow(
             IReportTypeCompatibilityChecker reportTypeCompatibilityChecker,
-            IPluginService pluginService)
+            IPluginService pluginService,
+            IAuditService auditService)
         {
             _reportTypeCompatibilityChecker = reportTypeCompatibilityChecker
                 ?? throw new ArgumentNullException(nameof(reportTypeCompatibilityChecker));
             _pluginService = pluginService
                 ?? throw new ArgumentNullException(nameof(pluginService));
+            _auditService = auditService
+                ?? throw new ArgumentNullException(nameof(auditService));
             InitializeComponent();
 
             FilesListView.ItemsSource = _fileItems;
@@ -252,6 +256,17 @@ namespace RRDA.RepImp
                                 $"Avviso ReportTypes: SubjectKind non coerente per '{mismatch.ReportTypeKey}'. " +
                                 $"Database={mismatch.DatabaseSubjectKind}, plugin locale={mismatch.PluginSubjectKind}.");
                         }
+
+                        await WriteAuditAsync(
+                            "Plugins.CompatibilityMismatch",
+                            "Warning",
+                            entityType: "ReportType",
+                            description: "I plugin locali non sono compatibili con il catalogo ReportTypes gestito da RRDA.Web.",
+                            details: new
+                            {
+                                result.MissingReportTypes,
+                                result.SubjectKindMismatches
+                            });
                     }
                 }
             }
@@ -273,6 +288,54 @@ namespace RRDA.RepImp
                 LogTextBox.AppendText(line);
                 LogTextBox.ScrollToEnd();
             }, DispatcherPriority.Background);
+        }
+
+        private async Task WriteAuditAsync(
+            string operation,
+            string result,
+            string? entityType = null,
+            string? entityId = null,
+            string? description = null,
+            object? details = null)
+        {
+            try
+            {
+                var connStr = Properties.Settings.Default.ConnectionString;
+                RRDADbContext db;
+
+                if (!string.IsNullOrWhiteSpace(connStr))
+                {
+                    var optionsBuilder = new DbContextOptionsBuilder<RRDADbContext>();
+                    optionsBuilder.UseSqlServer(connStr);
+                    db = new RRDADbContext(optionsBuilder.Options);
+                }
+                else
+                {
+                    db = new RRDAContextFactory().CreateDbContext([]);
+                }
+
+                await using (db)
+                {
+                    var userName = System.Security.Principal.WindowsIdentity.GetCurrent()?.Name
+                        ?? Environment.UserName;
+
+                    await _auditService.WriteAsync(
+                        db,
+                        new AuditEventRequest(
+                            "RRDA.RepImp",
+                            operation,
+                            result,
+                            UserName: userName,
+                            EntityType: entityType,
+                            EntityId: entityId,
+                            Description: description,
+                            Details: details));
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"Avviso: impossibile scrivere l'audit '{operation}': {ex.Message}");
+            }
         }
 
         private async Task<bool> ImportReport(FileItem fi,
@@ -373,12 +436,26 @@ namespace RRDA.RepImp
                     Log($"Eccezione durante ImportAsync per '{fi.Name}' con plugin '{plugin.Name}': {ex.Message}");
                     if (ex.InnerException != null)
                         Log($"InnerException: {ex.InnerException.Message}");
+                    await WriteAuditAsync(
+                        "Report.ImportFailed",
+                        "Failure",
+                        "ReportFile",
+                        fi.Name,
+                        ex.Message,
+                        new { FilePath = fi.FullPath, Plugin = plugin.Name });
                     return false;
                 }
 
                 if (resultObj == null)
                 {
                     Log($"ImportAsync ha restituito null per file '{fi.Name}'.");
+                    await WriteAuditAsync(
+                        "Report.ImportFailed",
+                        "Failure",
+                        "ReportFile",
+                        fi.Name,
+                        "Il plugin ha restituito un risultato nullo.",
+                        new { FilePath = fi.FullPath, Plugin = plugin.Name });
                     return false;
                 }
 
@@ -426,6 +503,19 @@ namespace RRDA.RepImp
                 {
                     var firstError = checkedImportResult.Errors.FirstOrDefault();
                     Log($"Import fallito per '{fi.Name}'{(string.IsNullOrWhiteSpace(firstError) ? "." : $": {firstError}")}");
+                    await WriteAuditAsync(
+                        "Report.ImportFailed",
+                        "Failure",
+                        "ReportFile",
+                        fi.Name,
+                        firstError ?? "Il plugin ha restituito un esito negativo.",
+                        new
+                        {
+                            FilePath = fi.FullPath,
+                            Plugin = plugin.Name,
+                            checkedImportResult.ReportTypeKey,
+                            checkedImportResult.Errors
+                        });
                     return false;
                 }
                 // ====================================================
@@ -481,6 +571,13 @@ namespace RRDA.RepImp
                                         // L'utente ha chiuso o annullato il dialog:
                                         // saltiamo la persistenza per questo file.
                                         Log($"Persistenza annullata dall'utente per '{fi.Name}'.");
+                                        await WriteAuditAsync(
+                                            "Report.ImportCancelled",
+                                            "Cancelled",
+                                            "ReportFile",
+                                            fi.Name,
+                                            "Persistenza annullata dall'utente dopo il rilevamento di un duplicato.",
+                                            new { FilePath = fi.FullPath, Plugin = plugin.Name, ExistingReports = existing });
                                         return true; // l'import è riuscito, solo la save è stata saltata
                                     }
 
@@ -509,11 +606,37 @@ namespace RRDA.RepImp
                                     Log($"Persistenza completata: ReportFileId={reportFileId}, " +
                                         $"Entities={entitiesSaved}, Properties={propertiesSaved}" +
                                         (batchId.HasValue ? $", BatchId={batchId.Value}." : "."));
+
+                                    await WriteAuditAsync(
+                                        "Report.ImportSucceeded",
+                                        "Success",
+                                        "ReportFile",
+                                        reportFileId.ToString(),
+                                        $"Importato '{fi.Name}' usando il plugin '{plugin.Name}'.",
+                                        new
+                                        {
+                                            FileName = fi.Name,
+                                            FilePath = fi.FullPath,
+                                            Plugin = plugin.Name,
+                                            plugin.Version,
+                                            importResult.ReportTypeKey,
+                                            BatchId = batchId,
+                                            DuplicateStrategy = _duplicateStrategy.ToString(),
+                                            EntitiesSaved = entitiesSaved,
+                                            PropertiesSaved = propertiesSaved
+                                        });
                                 }
                                 catch (DuplicateImportException die)
                                 {
                                     // Caso Block: non è un errore tecnico, è una scelta dell'utente.
                                     Log($"Import bloccato per '{fi.Name}': {die.Message}");
+                                    await WriteAuditAsync(
+                                        "Report.ImportBlocked",
+                                        "Blocked",
+                                        "ReportFile",
+                                        fi.Name,
+                                        die.Message,
+                                        new { FilePath = fi.FullPath, Plugin = plugin.Name });
                                 }
                             }
                         }
@@ -522,6 +645,13 @@ namespace RRDA.RepImp
                             Log($"Errore persistenza DB: {ex.Message}");
                             if (ex.InnerException != null)
                                 Log($"Inner exception: {ex.InnerException.Message}");
+                            await WriteAuditAsync(
+                                "Report.ImportFailed",
+                                "Failure",
+                                "ReportFile",
+                                fi.Name,
+                                ex.Message,
+                                new { FilePath = fi.FullPath, Plugin = plugin.Name, Phase = "Persistence" });
                         }
                     }
                     else
@@ -532,11 +662,25 @@ namespace RRDA.RepImp
                 catch (Exception ex)
                 {
                     Log($"Errore persistenza DB: {ex.Message}");
+                    await WriteAuditAsync(
+                        "Report.ImportFailed",
+                        "Failure",
+                        "ReportFile",
+                        fi.Name,
+                        ex.Message,
+                        new { FilePath = fi.FullPath, Plugin = plugin.Name, Phase = "Persistence" });
                 }
             }
             catch (Exception ex)
             {
                 Log($"Errore durante importazione file '{fi.Name}': {ex.Message}");
+                await WriteAuditAsync(
+                    "Report.ImportFailed",
+                    "Failure",
+                    "ReportFile",
+                    fi.Name,
+                    ex.Message,
+                    new { FilePath = fi.FullPath, Plugin = plugin.Name });
                 MessageBox.Show(this, $"Errore durante importazione:{Environment.NewLine}{ex.Message}", "Errore import", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally

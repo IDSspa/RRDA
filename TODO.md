@@ -8,19 +8,19 @@
    - RADAR/SOTTOASSIEME ?
    - SOTTOASSIEME/COMPONENTE
    - importazione carta di identità radar
-7. importazione singolo report applicazione web
+7. ~~importazione singolo report applicazione web~~
 8. cancellazione massiva report tramite applicazione web (per batch, per tipo?):
    - logging applicazione web su registro di sistema (login, operazioni critiche)
 9. gestione paginazione tabella:
    - implementazione ordinamento vista tabellare -> default SubjectKey (pulsanti asc/desc)
    - ottimizzazione query statistiche
-10. revisione criticità strutturali intera soluzione (implementazione "per services")
+10. ~~revisione criticità strutturali intera soluzione (implementazione "per services")~~
 11. revisione UI WEB:
     - accesso 'veloce' alla vista tabellare per ogni tipologia di report da sidebar/dashboard
 11. ~~importazione plugin applicazione web~~
 12. ~~verificare aggiornamento tabella ReportTypes tramite RepImp (inserimento/aggiornamento plugins)~~
 13. ~~creare installer per RepImp~~
-14. footer header vista tabellare fissi righe dati scrollabili
+14. ~~footer header vista tabellare fissi righe dati scrollabili~~
 15. semplificazione struttura database (es. ReportProperties?):
     - spostare Unit e IsSubjectKey in ReportEntities?
     - eliminare ridondanza tra valori memorizzati in ReportProperties  e campi di ReportProperties stessa

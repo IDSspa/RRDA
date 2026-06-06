@@ -7,6 +7,7 @@ using RRDA.Data;
 using RRDA.Plugins.Common;
 using RRDA.Web.Security;
 using RRDA.Web.Services;
+using System.Runtime.Versioning;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,6 +15,10 @@ var isDevelopment = builder.Environment.IsDevelopment();
 var skipWindowsAuth = isDevelopment &&
     builder.Configuration.GetValue<bool>("DevSettings:SkipWindowsAuth");
 
+if (OperatingSystem.IsWindows() && !isDevelopment)
+{
+    AddWindowsEventLog(builder.Logging);
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Database
@@ -66,11 +71,14 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
 // Add services
 builder.Services.AddMemoryCache();
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddSingleton<IDataExportService, DataExportService>();
+builder.Services.AddSingleton<IAuditService, AuditService>();
 builder.Services.AddSingleton<IPluginService, PluginService>();
 builder.Services.AddSingleton<IPluginCatalog, PluginCatalog>();
 builder.Services.AddScoped<IReportTypeSynchronizer, ReportTypeSynchronizer>();
 builder.Services.AddScoped<IWebPluginManagementService, WebPluginManagementService>();
+builder.Services.AddScoped<IWebAuditService, WebAuditService>();
 builder.Services.AddHostedService<PluginCatalogStartupService>();
 
 var app = builder.Build();
@@ -131,3 +139,16 @@ app.MapControllerRoute(
     pattern: "{controller=Dashboard}/{action=Index}/{id?}");
 
 app.Run();
+
+[SupportedOSPlatform("windows")]
+static void AddWindowsEventLog(ILoggingBuilder logging)
+{
+#pragma warning disable CA1416 // Chiamato esclusivamente dopo OperatingSystem.IsWindows().
+    logging.AddEventLog(settings =>
+    {
+        settings.LogName = "Application";
+        settings.SourceName = "RRDA.Web";
+        settings.Filter = (_, level) => level >= LogLevel.Warning;
+    });
+#pragma warning restore CA1416
+}

@@ -218,7 +218,7 @@ namespace RRDA.Core.Validator
             if (cell.DataType?.Value == CellValues.Boolean)
                 return "bool";
 
-            var raw = cell.CellValue?.InnerText ?? string.Empty;
+            var raw = ReadCellText(cell, sharedStrings);
 
             // 2. DateTime (stile cella)
             var styleIdx = (int)(cell.StyleIndex?.Value ?? 0);
@@ -227,12 +227,9 @@ namespace RRDA.Core.Validator
                                    CultureInfo.InvariantCulture, out _))
                 return "datetime";
 
-            // SharedString → testo puro, non può essere numerico
-            if (cell.DataType?.Value == CellValues.SharedString)
-                return "string";
-
             // 3. Int
-            if (long.TryParse(raw, out _))
+            if (long.TryParse(raw, NumberStyles.Integer,
+                              CultureInfo.InvariantCulture, out _))
                 return "int";
 
             // 4. Double
@@ -242,6 +239,26 @@ namespace RRDA.Core.Validator
 
             // 5. Fallback
             return "string";
+        }
+        private static string ReadCellText(Cell cell, SharedStringTable? sharedStrings)
+        {
+            if (cell.DataType?.Value == CellValues.SharedString
+                && int.TryParse(
+                    cell.CellValue?.InnerText,
+                    NumberStyles.Integer,
+                    CultureInfo.InvariantCulture,
+                    out var sharedStringIndex))
+            {
+                return sharedStrings?
+                    .Elements<SharedStringItem>()
+                    .ElementAtOrDefault(sharedStringIndex)?
+                    .InnerText ?? string.Empty;
+            }
+
+            if (cell.DataType?.Value == CellValues.InlineString)
+                return cell.InlineString?.InnerText ?? string.Empty;
+
+            return cell.CellValue?.InnerText ?? string.Empty;
         }
         private static Cell? ResolveCellForDefinedName(DefinedName dn, Dictionary<string, WorksheetPart> sheetIndex)
         {
