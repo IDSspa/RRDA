@@ -2,10 +2,10 @@
 ~~2. gestione esportazione dati filtrati vista tablellare (csv, xls)~~  
 3. gestione/visualizzazione valori 'ranged'  
 4. gestione collegamenti/navigazione:  
-   4.1. RADAR/COMPONENTE,  
-   4.2. RADAR/SOTTOASSIEME ?  
-   4.3. SOTTOASSIEME/COMPONENTE  
-   4.4. importazione carta di identità radar
+   1. RADAR/COMPONENTE,  
+   2. RADAR/SOTTOASSIEME ?  
+   3. SOTTOASSIEME/COMPONENTE  
+   4. importazione carta di identità radar
 
 5. importazione singolo report applicazione web  
 6. cancellazione massiva report tramite applicazione web (per batch, per tipo?)  
