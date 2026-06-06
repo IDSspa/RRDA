@@ -71,6 +71,24 @@
         box-shadow: inset 0 -1px #30363d;
     }
 
+    .type-pivot-sort-link {
+        align-items: center;
+        color: #c9d1d9;
+        display: inline-flex;
+        gap: .35rem;
+        text-decoration: none;
+    }
+
+    .type-pivot-sort-link:hover,
+    .type-pivot-sort-link:focus {
+        color: #58a6ff;
+    }
+
+    .type-pivot-sort-indicator {
+        color: #58a6ff;
+        font-size: .7rem;
+    }
+
     .type-pivot-table tfoot {
         bottom: 0;
         position: sticky;
@@ -321,6 +339,8 @@
         <div class="type-pivot-collapse-body">
             <form id="type-pivot-filter-form" method="get" class="row g-2 align-items-end">
                 <input type="hidden" name="reportTypeId" value="@Model.ReportTypeId" />
+                <input type="hidden" name="sortField" value="@Model.SortField" />
+                <input type="hidden" name="sortDirection" value="@Model.SortDirection" />
 
                 <div class="col-md-3">
                     <label class="form-label">Batch</label>
@@ -499,7 +519,26 @@
                     @if (Model.HasSubjectKey)
                     {
                         <th style="font-family:monospace;font-size:.78rem;white-space:nowrap;">
-                            @Model.SubjectKeyLabel
+                            <a class="type-pivot-sort-link"
+                               asp-action="TypePivot"
+                               asp-route-reportTypeId="@Model.ReportTypeId"
+                               asp-route-page="1"
+                               asp-route-pageSize="@Model.PageSize"
+                               asp-route-batchId="@Model.BatchId"
+                               asp-route-lastModifiedFrom="@(Model.LastModifiedFrom?.ToString("yyyy-MM-dd"))"
+                               asp-route-lastModifiedTo="@(Model.LastModifiedTo?.ToString("yyyy-MM-dd"))"
+                               asp-route-filterField="@Model.FilterField"
+                               asp-route-filterFrom="@Model.FilterFrom"
+                               asp-route-filterTo="@Model.FilterTo"
+                               asp-route-subjectKeyFrom="@Model.SubjectKeyFrom"
+                               asp-route-subjectKeyTo="@Model.SubjectKeyTo"
+                               asp-route-sortField="SubjectKey"
+                               asp-route-sortDirection="@(Model.SortField == "SubjectKey" && Model.SortDirection == "asc" ? "desc" : "asc")">
+                                @Model.SubjectKeyLabel
+                                <span class="type-pivot-sort-indicator">
+                                    @(Model.SortField == "SubjectKey" ? (Model.SortDirection == "desc" ? "▼" : "▲") : "⇅")
+                                </span>
+                            </a>
                         </th>
                     }
                     @* ── Colonne statiche file ── *@
@@ -662,6 +701,8 @@
                asp-route-filterTo="@Model.FilterTo"
                asp-route-subjectKeyFrom="@Model.SubjectKeyFrom"
                asp-route-subjectKeyTo="@Model.SubjectKeyTo"
+               asp-route-sortField="@Model.SortField"
+               asp-route-sortDirection="@Model.SortDirection"
                style="padding:.2rem .55rem;border:1px solid #30363d;border-radius:5px; text-decoration:none;color:
                     @(p == Model.CurrentPage ? "#58a6ff" : "#8b949e");">@p
             </a>

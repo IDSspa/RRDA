@@ -9,10 +9,10 @@
    - SOTTOASSIEME/COMPONENTE
    - importazione carta di identità radar
 7. ~~importazione singolo report applicazione web~~
-8. cancellazione massiva report tramite applicazione web (per batch, per tipo?):
+8. cancellazione massiva report SOLO tramite applicazione web (per batch, per tipo?):
    - ~~logging applicazione web su registro di sistema (login, operazioni critiche)~~
 9. gestione paginazione tabella:
-   - implementazione ordinamento vista tabellare -> default SubjectKey (pulsanti asc/desc)
+   - ~~implementazione ordinamento vista tabellare -> default SubjectKey (pulsanti asc/desc)~~
    - ottimizzazione query statistiche
 10. ~~revisione criticità strutturali intera soluzione (implementazione "per services")~~
 11. revisione UI WEB:
@@ -27,3 +27,4 @@
 16. rimozione codice non utilizzato
 17. ~~quando un operazione richiede tempi di elaborazione consistenti mostrare un messaggio di attesa~~  
     ~~sovrapposto alla UI per evidenziare il passaggio del tempo ed evitare/bloccare ulteriori operazioni da parte dell'utente.~~
+18. implementare plugin mancanti (TC...)

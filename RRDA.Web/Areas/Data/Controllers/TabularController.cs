@@ -97,6 +97,8 @@ namespace RRDA.Web.Areas.Data.Controllers
             string? filterTo,
             string? subjectKeyFrom,
             string? subjectKeyTo,
+            string? sortField,
+            string? sortDirection,
             int page = 1,
             int pageSize = 50)
         {
@@ -125,6 +127,15 @@ namespace RRDA.Web.Areas.Data.Controllers
             var allFilteredFileIds = filterResult.AllFilteredFileIds;
             var metadata = await GetTypePivotMetadataAsync(allFilteredFileIds);
             var totalFiles = allFilteredFileIds.Count;
+            var normalizedSortField = string.Equals(sortField, "SubjectKey", StringComparison.OrdinalIgnoreCase)
+                ? "SubjectKey"
+                : null;
+            var normalizedSortDirection = string.Equals(sortDirection, "desc", StringComparison.OrdinalIgnoreCase)
+                ? "desc"
+                : "asc";
+
+            if (normalizedSortField == "SubjectKey")
+                allFilteredFileIds = await OrderFileIdsBySubjectKeyAsync(allFilteredFileIds, normalizedSortDirection);
 
             var filesPage = allFilteredFileIds
                 .Skip((page - 1) * pageSize)
@@ -150,6 +161,8 @@ namespace RRDA.Web.Areas.Data.Controllers
                     FilterTo = filterTo,
                     SubjectKeyFrom = subjectKeyFrom,
                     SubjectKeyTo = subjectKeyTo,
+                    SortField = normalizedSortField,
+                    SortDirection = normalizedSortDirection,
                     BatchOptions = filterResult.BatchOptions,
                     DynamicFilterFields = metadata.AllMeasureHeaders,
                     Headers = metadata.VisibleHeaders,
@@ -240,8 +253,10 @@ namespace RRDA.Web.Areas.Data.Controllers
                 FilterTo = filterTo,
                 SubjectKeyFrom = subjectKeyFrom,
                 SubjectKeyTo = subjectKeyTo,
+                SortField = normalizedSortField,
+                SortDirection = normalizedSortDirection,
                 BatchOptions = filterResult.BatchOptions,
-                Rows = [.. rows.Values.OrderByDescending(r => r.LastModified)],
+                Rows = [.. filesPage.Where(rows.ContainsKey).Select(id => rows[id])],
                 TotalFiles = totalFiles,
                 CurrentPage = page,
                 PageSize = pageSize,
@@ -1212,6 +1227,54 @@ namespace RRDA.Web.Areas.Data.Controllers
                 return currentValue;
 
             return null;
+        }
+
+        private async Task<List<int>> OrderFileIdsBySubjectKeyAsync(
+            List<int> fileIds,
+            string sortDirection)
+        {
+            if (fileIds.Count == 0)
+                return [];
+
+            var subjectKeys = await db.ReportEntities
+                .AsNoTracking()
+                .Where(entity => fileIds.Contains(entity.ReportFileId))
+                .SelectMany(entity => entity.Properties
+                    .Where(property => property.Name == "value" && property.IsSubjectKey)
+                    .Select(property => new { entity.ReportFileId, property.Value }))
+                .ToListAsync();
+
+            var subjectKeysByFileId = subjectKeys
+                .GroupBy(item => item.ReportFileId)
+                .ToDictionary(group => group.Key, group => group.First().Value);
+            var direction = sortDirection == "desc" ? -1 : 1;
+            var comparer = Comparer<int>.Create((leftId, rightId) =>
+            {
+                subjectKeysByFileId.TryGetValue(leftId, out var left);
+                subjectKeysByFileId.TryGetValue(rightId, out var right);
+
+                var comparison = CompareSubjectKeys(left, right, direction);
+                return comparison != 0 ? comparison : leftId.CompareTo(rightId);
+            });
+
+            return [.. fileIds.OrderBy(id => id, comparer)];
+        }
+
+        private static int CompareSubjectKeys(string? left, string? right, int direction)
+        {
+            var leftMissing = string.IsNullOrWhiteSpace(left);
+            var rightMissing = string.IsNullOrWhiteSpace(right);
+
+            if (leftMissing || rightMissing)
+                return leftMissing == rightMissing ? 0 : leftMissing ? 1 : -1;
+
+            var leftNumber = TryParseDouble(left);
+            var rightNumber = TryParseDouble(right);
+            var comparison = leftNumber.HasValue && rightNumber.HasValue
+                ? leftNumber.Value.CompareTo(rightNumber.Value)
+                : StringComparer.OrdinalIgnoreCase.Compare(left, right);
+
+            return comparison * direction;
         }
 
         /// <summary>

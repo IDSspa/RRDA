@@ -15,6 +15,8 @@
         public string? FilterTo { get; set; }
         public string? SubjectKeyFrom { get; set; }
         public string? SubjectKeyTo { get; set; }
+        public string? SortField { get; set; }
+        public string? SortDirection { get; set; }
         public List<TypePivotBatchOption> BatchOptions { get; set; } = [];
         public int TotalFiles { get; set; }
         public int CurrentPage { get; set; }

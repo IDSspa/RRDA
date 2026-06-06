@@ -12,6 +12,7 @@ namespace RRDA.Web.Controllers
         public async Task<IActionResult> Index()
         {
             ViewBag.TotalFiles      = await db.ReportFiles.CountAsync();
+            ViewBag.TotalBatches    = await db.ReportBatches.CountAsync();
             ViewBag.TotalEntities   = await db.ReportEntities.CountAsync();
             ViewBag.TotalReportTypes= await db.ReportTypes.CountAsync();
             ViewBag.TotalUsers      = await db.AppUsers.CountAsync(u => u.IsEnabled);

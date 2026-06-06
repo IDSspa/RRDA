@@ -14,11 +14,11 @@
 </div>
 
 <!-- ── Tile contatori ── -->
-<div class="row g-3 mb-4">
+<div class="row row-cols-2 row-cols-xl-5 g-3 mb-4">
     @{
         void Tile(string label, int value, string icon, string color)
         {
-            <div class="col-6 col-xl-3">
+            <div class="col">
                 <div class="rrda-card d-flex align-items-center gap-3" style="border-left:3px solid @color;">
                     <span style="font-size:1.6rem;">@icon</span>
                     <div>
@@ -30,6 +30,7 @@
         }
     }
     @{ Tile("File importati",   (int)ViewBag.TotalFiles,       "📄", "#1f6feb"); }
+    @{ Tile("Batch",            (int)ViewBag.TotalBatches,     "▤", "#a371f7"); }
     @{ Tile("Entità",           (int)ViewBag.TotalEntities,    "🗃", "#3fb950"); }
     @{ Tile("Tipi di report",   (int)ViewBag.TotalReportTypes, "🔌", "#d29922"); }
     @{ Tile("Utenti attivi",    (int)ViewBag.TotalUsers,       "👤", "#58a6ff"); }
