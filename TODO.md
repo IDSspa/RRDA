@@ -1,3 +1,4 @@
+#TODO
 ~~1. implementazione grafici statistici~~
 
 ~~2. gestione esportazione dati filtrati vista tablellare (csv, xls)~~  
