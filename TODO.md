@@ -2,10 +2,10 @@
 ~~2. gestione esportazione dati filtrati vista tablellare (csv, xls)~~  
 3. gestione/visualizzazione valori 'ranged'  
 4. gestione collegamenti/navigazione:  
-   1. RADAR/COMPONENTE,  
-   2. RADAR/SOTTOASSIEME ?  
-   3. SOTTOASSIEME/COMPONENTE  
-   4. importazione carta di identità radar
+   - RADAR/COMPONENTE,  
+   - RADAR/SOTTOASSIEME ?  
+   - SOTTOASSIEME/COMPONENTE  
+   - importazione carta di identità radar
 
 5. importazione singolo report applicazione web  
 6. cancellazione massiva report tramite applicazione web (per batch, per tipo?)  
@@ -25,7 +25,7 @@
 14. footer header vista tabellare fissi righe dati scrollabili  
 15. semplificazione struttura database (es. ReportProperties?)  
     - spostare Unit e IsSubjectKey in ReportEntities?  
-    - eliminare ridondanza tra valori memorizzati in ReportProperties  e campi di ReportProperties stessa  
+    - eliminare ridondanza tra valori memorizzati in ReportProperties  e campi di ReportProperties stessa
 
 16. rimozione codice non utilizzato  
 ~~17. quando un operazione richiede tempi di elaborazione consistenti mostrare un messaggio di attesa~~  
