@@ -16,7 +16,7 @@
    - ottimizzazione query statistiche
 10. revisione criticità strutturali intera soluzione (implementazione "per services")
 11. revisione UI WEB:
-   - accesso 'veloce' alla vista tabellare per ogni tipologia di report da sidebar/dashboard
+    - accesso 'veloce' alla vista tabellare per ogni tipologia di report da sidebar/dashboard
 11. ~~importazione plugin applicazione web~~
 12. ~~verificare aggiornamento tabella ReportTypes tramite RepImp (inserimento/aggiornamento plugins)~~
 13. ~~creare installer per RepImp~~
