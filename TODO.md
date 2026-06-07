@@ -20,3 +20,4 @@
 	oppure rimuovere l'intera infrastruttura TabularSession se non è pianificata a breve.
 12. Sostituire i ViewBag con dynamic nelle view con ViewModel tipizzati.
 13. Estendere la suite di test con almeno un test di integrazione per la pipeline import e uno per TabularController.TypePivot.
+14. Inferire l'unità di misura dal contesto i.e. nome del campo/definedName durante l'importazione (definire mapping tra unità di misura e parole chiave fallback nessuna unità di misura).

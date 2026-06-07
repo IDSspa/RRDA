@@ -7,6 +7,7 @@ using RRDA.Data;
 using RRDA.Plugins.Common;
 using RRDA.Web.Security;
 using RRDA.Web.Services;
+using RRDA.Web.Services.TypePivot;
 using System.Runtime.Versioning;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -81,6 +82,8 @@ builder.Services.AddSingleton<IPluginCatalog, PluginCatalog>();
 builder.Services.AddScoped<IReportTypeSynchronizer, ReportTypeSynchronizer>();
 builder.Services.AddScoped<IWebPluginManagementService, WebPluginManagementService>();
 builder.Services.AddScoped<IWebAuditService, WebAuditService>();
+builder.Services.AddScoped<ITypePivotDatasetService, TypePivotDatasetService>();
+builder.Services.AddScoped<ITypePivotPlotService, TypePivotPlotService>();
 builder.Services.AddHostedService<AdminBootstrapStartupService>();
 builder.Services.AddHostedService<PluginCatalogStartupService>();
 
