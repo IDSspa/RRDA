@@ -1,7 +1,6 @@
 ﻿using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Spreadsheet;
 using System.Globalization;
-using System.Text.RegularExpressions;
 using System.Xml.Linq;
 
 namespace RRDA.Core.Validator
@@ -41,33 +40,19 @@ namespace RRDA.Core.Validator
             };
 
         /// <summary>
-        /// Mapping conservativo tra unità di misura e parole chiave presenti nei
-        /// DefinedName. Le parole chiave vengono confrontate come token completi,
-        /// così abbreviazioni come "F" non corrispondono a parti di altre parole.
-        /// </summary>
-        private static readonly (string Unit, string[] Keywords)[] UnitMappings =
-        [
-            ("Hz", ["frequency", "freq", "frequenza", "f"]),
-            ("°C", ["temperature", "temperatura", "temp"]),
-            ("V", ["voltage", "volt", "tensione"]),
-            ("A", ["current", "corrente", "ampere", "curr"]),
-            ("W", ["power", "pwr", "potenza", "pow"]),
-            ("dB", ["gain", "guadagno", "attenuation", "attenuazione", "db", "flat", "att"]),
-            ("s", ["time", "tempo", "duration", "durata"])
-        ];
-
-        /// <summary>
         /// Crea il file di validazione su disco.
         /// </summary>
         /// <param name="xlsxPath">Percorso file .xlsx di input.</param>
         /// <param name="outputXmlPath">Percorso file XML di output (sovrascritto).</param>
         /// <param name="subjectKeyDefinedName">DefinedName SubjectKey dichiarato dal plugin.</param>
+        /// <param name="unitMappingsPath">Percorso opzionale del file XML con i mapping delle unità di misura.</param>
         /// <param name="failOnError">Valore dell'attributo failOnError nel root (default: true).</param>
         /// <param name="culture">Valore dell'attributo culture (default: CultureInfo.CurrentCulture.DefinedName).</param>
         public static void CreateFromFile(
             string xlsxPath,
             string outputXmlPath,
             string subjectKeyDefinedName,
+            string? unitMappingsPath = null,
             bool failOnError = true,
             string? culture = null)
         {
@@ -76,7 +61,7 @@ namespace RRDA.Core.Validator
 
             using var inFs = File.OpenRead(xlsxPath);
             using var outFs = File.Create(outputXmlPath);
-            CreateFromStream(inFs, outFs, subjectKeyDefinedName, failOnError, culture);
+            CreateFromStream(inFs, outFs, subjectKeyDefinedName, unitMappingsPath, failOnError, culture);
         }
         /// <summary>
         /// Crea il file di validazione scrivendo l'XML su uno stream di output.
@@ -85,18 +70,21 @@ namespace RRDA.Core.Validator
         /// <param name="xlsxStream">Stream di input .xlsx (non chiuso dalla routine).</param>
         /// <param name="outputXmlStream">Stream di output per l'XML (non chiuso dalla routine).</param>
         /// <param name="subjectKeyDefinedName">DefinedName SubjectKey dichiarato dal plugin.</param>
+        /// <param name="unitMappingsPath">Percorso opzionale del file XML con i mapping delle unità di misura.</param>
         /// <param name="failOnError">Valore dell'attributo failOnError nel root (default: true).</param>
         /// <param name="culture">Valore dell'attributo culture (default: CultureInfo.CurrentCulture.DefinedName).</param>
         public static void CreateFromStream(
             Stream xlsxStream,
             Stream outputXmlStream,
             string subjectKeyDefinedName,
+            string? unitMappingsPath = null,
             bool failOnError = true,
             string? culture = null)
         {
             ArgumentNullException.ThrowIfNull(xlsxStream);
             ArgumentNullException.ThrowIfNull(outputXmlStream);
             ArgumentException.ThrowIfNullOrWhiteSpace(subjectKeyDefinedName);
+            var unitMappings = UnitMappingResolver.Load(unitMappingsPath);
 
             // SpreadsheetDocument richiede uno stream seekable: copiamo se necessario
             Stream input = xlsxStream;
@@ -192,7 +180,7 @@ namespace RRDA.Core.Validator
                         new XAttribute("required", "false"),
                         new XAttribute("type", inferredType)
                     );
-                    var inferredUnit = InferUnitForDefinedName(dnName);
+                    var inferredUnit = unitMappings.InferUnit(dnName);
                     if (inferredUnit is not null)
                         fieldEl.SetAttributeValue("unit", inferredUnit);
 
@@ -268,28 +256,6 @@ namespace RRDA.Core.Validator
 
             // 5. Fallback
             return "string";
-        }
-        private static string? InferUnitForDefinedName(string definedName)
-        {
-            if (string.IsNullOrWhiteSpace(definedName))
-                return null;
-
-            var tokenizedName = Regex.Replace(
-                definedName,
-                "([a-z0-9])([A-Z])",
-                "$1_$2",
-                RegexOptions.CultureInvariant);
-            var tokens = Regex.Split(tokenizedName, "[^A-Za-z0-9]+")
-                .Where(token => !string.IsNullOrWhiteSpace(token))
-                .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-            foreach (var (unit, keywords) in UnitMappings)
-            {
-                if (keywords.Any(tokens.Contains))
-                    return unit;
-            }
-
-            return null;
         }
         private static string ReadCellText(Cell cell, SharedStringTable? sharedStrings)
         {

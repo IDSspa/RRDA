@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UnitMappings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xsi:noNamespaceSchemaLocation="UnitMappings.xsd"
+              version="1"
+              matchMode="glob"
+              caseSensitive="false"
+              resolution="highestPriorityThenDocumentOrder">
+  <!--
+    I pattern sono confrontati con l'intero DefinedName.
+    "*" corrisponde a zero o piu caratteri.
+
+    Pattern rimossi durante la riduzione:
+    - Ripple_Rail_*: gia coperto da Ripple_* con la stessa unita.
+    - MAN*_RL_*: gia coperto da *_RL_* con la stessa unita.
+    - Meas_P_TXgate: gia coperto da Meas_P_* con la stessa unita.
+    - PWR_*: richiedeva esclusioni testuali e collideva con campi di corrente.
+    - N_*: troppo generico per un'inferenza automatica affidabile.
+  -->
+
+  <!-- Regole specifiche che devono prevalere su pattern piu generali. -->
+  <Rule unit="mV" priority="300">
+    <Pattern>RIPPLE_V_*</Pattern>
+  </Rule>
+
+  <Rule unit="dB" priority="300">
+    <Pattern>MAN*_PWR_PA_FLAT</Pattern>
+  </Rule>
+
+  <Rule unit="A" priority="300">
+    <Pattern>PWR_3_3</Pattern>
+    <Pattern>PWR_p12</Pattern>
+    <Pattern>PWR_m12</Pattern>
+  </Rule>
+
+  <Rule unit="V" priority="100">
+    <Pattern>Meas_V_VCO</Pattern>
+    <Pattern>PROT_V_*OVERVOLTAGE</Pattern>
+    <Pattern>RAIL_IN_TH_MIN_*</Pattern>
+    <Pattern>ACDC_VOLT</Pattern>
+    <Pattern>V_*</Pattern>
+    <Pattern>Rail_*</Pattern>
+    <Pattern>Vin_*</Pattern>
+    <Pattern>Vout_*</Pattern>
+    <Pattern>PRE_*V</Pattern>
+    <Pattern>POST_*V</Pattern>
+    <Pattern>*_TCK_A</Pattern>
+    <Pattern>*_TMS_A</Pattern>
+    <Pattern>LVTTL_A</Pattern>
+    <Pattern>VCC_VCO</Pattern>
+    <Pattern>VG_PA</Pattern>
+    <Pattern>VG_LO_*</Pattern>
+    <Pattern>VD_PA</Pattern>
+    <Pattern>VD_LO_*</Pattern>
+    <Pattern>RF_*V</Pattern>
+    <Pattern>DIG_3.3V</Pattern>
+    <Pattern>VIDEO_*V</Pattern>
+    <Pattern>PIU_*_DIG</Pattern>
+    <Pattern>NEG_*_DIG</Pattern>
+    <Pattern>MEN_*V_DIG</Pattern>
+    <Pattern>Tens_*</Pattern>
+  </Rule>
+
+  <Rule unit="Vpp" priority="100">
+    <Pattern>DIG*_I_A</Pattern>
+    <Pattern>DIG*_Q_A</Pattern>
+  </Rule>
+
+  <Rule unit="mVpp" priority="100">
+    <Pattern>Ripple_*</Pattern>
+    <Pattern>PRE_*V_N</Pattern>
+    <Pattern>POST_*V_N</Pattern>
+  </Rule>
+
+  <Rule unit="W" priority="100">
+    <Pattern>ALI_PWR_*</Pattern>
+    <Pattern>PWR_IN</Pattern>
+    <Pattern>PWR_OUT</Pattern>
+  </Rule>
+
+  <Rule unit="A" priority="100">
+    <Pattern>ACDC_AMP</Pattern>
+    <Pattern>Iin_*</Pattern>
+    <Pattern>PRE_*_CURR</Pattern>
+    <Pattern>POST_*_CURR</Pattern>
+    <Pattern>CURR_*</Pattern>
+    <Pattern>m12V_CURR</Pattern>
+    <Pattern>p6.6V_CURR</Pattern>
+    <Pattern>Corr_*</Pattern>
+  </Rule>
+
+  <Rule unit="%" priority="100">
+    <Pattern>ALI_EFF</Pattern>
+    <Pattern>EFF_*</Pattern>
+  </Rule>
+
+  <Rule unit="s" priority="100">
+    <Pattern>BLACKOUT_TIME</Pattern>
+  </Rule>
+
+  <Rule unit="ms" priority="100">
+    <Pattern>TIME_TO_RESET</Pattern>
+    <Pattern>TIME_CHECK</Pattern>
+  </Rule>
+
+  <Rule unit="ns" priority="100">
+    <Pattern>MAN*_DELAY_*</Pattern>
+    <Pattern>MAN*_LNA_DELAY</Pattern>
+    <Pattern>*_DEL_*</Pattern>
+    <Pattern>*_DELTA_DEL_MAX</Pattern>
+  </Rule>
+
+  <Rule unit="&#x03A9;" priority="100">
+    <Pattern>Rload</Pattern>
+  </Rule>
+
+  <Rule unit="kHz" priority="100">
+    <Pattern>BW_*</Pattern>
+  </Rule>
+
+  <Rule unit="MHz" priority="100">
+    <Pattern>Meas_F_*</Pattern>
+    <Pattern>IF_FREQ*</Pattern>
+  </Rule>
+
+  <Rule unit="Hz" priority="100">
+    <Pattern>DIG*_I_F</Pattern>
+    <Pattern>DIG*_Q_F</Pattern>
+    <Pattern>*_TCK_F</Pattern>
+    <Pattern>*_TMS_F</Pattern>
+    <Pattern>LVTTL_F</Pattern>
+  </Rule>
+
+  <Rule unit="dB" priority="100">
+    <Pattern>GAIN_UNBALANCE</Pattern>
+    <Pattern>MAGNITUDE_*</Pattern>
+    <Pattern>BORESIGHT_*</Pattern>
+    <Pattern>RL_*</Pattern>
+    <Pattern>*_MAX_RL</Pattern>
+    <Pattern>*_RL_*</Pattern>
+    <Pattern>*_ATT_*</Pattern>
+    <Pattern>*_LOSS_*</Pattern>
+    <Pattern>Global_Mean_Loss</Pattern>
+    <Pattern>Coupling_*</Pattern>
+    <Pattern>MAX_PROFILE*</Pattern>
+    <Pattern>IF_RANGE*</Pattern>
+    <Pattern>*_FLAT_*</Pattern>
+    <Pattern>Flatness_*</Pattern>
+    <Pattern>MAN*_CALG_FLAT</Pattern>
+    <Pattern>DYN_PEAK_A_*</Pattern>
+    <Pattern>PEAK_AMPLITUDE</Pattern>
+    <Pattern>*_PEAK_AMPLITUDE</Pattern>
+    <Pattern>GAIN_diff_*</Pattern>
+    <Pattern>GAIN_BS_*</Pattern>
+    <Pattern>RO_GAIN_NORM</Pattern>
+    <Pattern>S11_GAIN_*</Pattern>
+    <Pattern>S12_*</Pattern>
+    <Pattern>S22_*</Pattern>
+  </Rule>
+
+  <Rule unit="dBm" priority="100">
+    <Pattern>MAN*_PWR_*</Pattern>
+    <Pattern>MAN*_LNA_AMP</Pattern>
+    <Pattern>MAN*_AMP_*</Pattern>
+    <Pattern>LEAKAGE_*</Pattern>
+    <Pattern>Meas_P_*</Pattern>
+    <Pattern>FLAT_DW</Pattern>
+    <Pattern>FLAT_UP</Pattern>
+    <Pattern>GAIN_DW</Pattern>
+    <Pattern>POW_UP</Pattern>
+  </Rule>
+
+  <Rule unit="dBFS" priority="100">
+    <Pattern>OFFSET_*_MEAN</Pattern>
+    <Pattern>RX_*_I</Pattern>
+    <Pattern>RX_*_Q</Pattern>
+    <Pattern>GAIN_*_AMPLITUDE</Pattern>
+  </Rule>
+
+  <Rule unit="dBc" priority="100">
+    <Pattern>SFDR_*</Pattern>
+    <Pattern>DYN_SFDR_*</Pattern>
+  </Rule>
+</UnitMappings>

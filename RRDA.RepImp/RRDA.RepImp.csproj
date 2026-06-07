@@ -44,6 +44,10 @@
   <ItemGroup>
     <None Include="Assets\RepImp.ico" Pack="false" />
     <None Include="Assets\RepImp.svg" Pack="false" />
+    <Content Include="..\RRDA.Core\Validator\UnitMappings.xml" Link="UnitMappings.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
   </ItemGroup>
 
 </Project>

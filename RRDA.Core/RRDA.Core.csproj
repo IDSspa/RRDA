@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Validator\ValidationConfig.xsd" />
+    <EmbeddedResource Include="Validator\UnitMappings.xsd" />
   </ItemGroup>
 
 </Project>

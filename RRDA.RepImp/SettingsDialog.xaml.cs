@@ -1,4 +1,5 @@
 using Microsoft.Win32;
+using RRDA.Core.Validator;
 using System.IO;
 using System.Windows;
 
@@ -16,6 +17,7 @@ namespace RRDA.RepImp
         {
             ReportsFolderTextBox.Text = Properties.Settings.Default.ReportsFolder ?? string.Empty;
             PluginsFolderTextBox.Text = Properties.Settings.Default.PluginsFolder ?? string.Empty;
+            UnitMappingsTextBox.Text = Properties.Settings.Default.UnitMappings ?? string.Empty;
             ConnectionStringTextBox.Text = Properties.Settings.Default.ConnectionString ?? string.Empty;
 
             // Carica RecurseDepth (valore intero). Se non presente o non impostato, mostra 0.
@@ -71,6 +73,29 @@ namespace RRDA.RepImp
             }
         }
 
+        private void BrowseUnitMappingsButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var dlg = new OpenFileDialog
+                {
+                    FileName = UnitMappingsTextBox.Text,
+                    Title = "Seleziona mapping unità di misura",
+                    Filter = "File XML (*.xml)|*.xml|Tutti i file (*.*)|*.*",
+                    CheckFileExists = true
+                };
+
+                if (dlg.ShowDialog() == true)
+                {
+                    UnitMappingsTextBox.Text = dlg.FileName;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, $"Impossibile selezionare il file:{Environment.NewLine}{ex.Message}", "Errore", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
         private void SaveButton_Click(object sender, RoutedEventArgs e)
         {
             // Validazione minima: accetta cartelle vuote ma verifica esistenza se valorizzate
@@ -86,13 +111,32 @@ namespace RRDA.RepImp
                 if (res != MessageBoxResult.Yes) return;
             }
 
+            if (!string.IsNullOrWhiteSpace(UnitMappingsTextBox.Text))
+            {
+                try
+                {
+                    UnitMappingResolver.Load(ConfiguredPathResolver.ResolveFile(UnitMappingsTextBox.Text));
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(
+                        this,
+                        $"Il file dei mapping delle unità di misura non è valido:{Environment.NewLine}{ex.Message}",
+                        "Mapping unità non valido",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                    UnitMappingsTextBox.Focus();
+                    return;
+                }
+            }
+
             // Validazione RecurseDepth: intero >= 0
             int depth = 0;
             if (!string.IsNullOrWhiteSpace(RecurseDepthTextBox.Text))
             {
                 if (!int.TryParse(RecurseDepthTextBox.Text, out depth) || depth < 0)
                 {
-                    MessageBox.Show(this, "La profondit� di ricorsione deve essere un intero maggiore o uguale a 0.", "Valore non valido", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show(this, "La profondità di ricorsione deve essere un intero maggiore o uguale a 0.", "Valore non valido", MessageBoxButton.OK, MessageBoxImage.Warning);
                     RecurseDepthTextBox.Focus();
                     return;
                 }
@@ -100,6 +144,7 @@ namespace RRDA.RepImp
 
             Properties.Settings.Default.ReportsFolder = string.IsNullOrWhiteSpace(ReportsFolderTextBox.Text) ? null : ReportsFolderTextBox.Text;
             Properties.Settings.Default.PluginsFolder = string.IsNullOrWhiteSpace(PluginsFolderTextBox.Text) ? null : PluginsFolderTextBox.Text;
+            Properties.Settings.Default.UnitMappings = string.IsNullOrWhiteSpace(UnitMappingsTextBox.Text) ? null : UnitMappingsTextBox.Text;
             Properties.Settings.Default.ConnectionString = string.IsNullOrWhiteSpace(ConnectionStringTextBox.Text) ? null : ConnectionStringTextBox.Text;
             Properties.Settings.Default.RecurseDepth = depth;
             Properties.Settings.Default.Save();

@@ -21,4 +21,10 @@
     <ProjectReference Include="..\RRDA.Core\RRDA.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="..\RRDA.Core\Validator\UnitMappings.xml" Link="UnitMappings.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
 </Project>

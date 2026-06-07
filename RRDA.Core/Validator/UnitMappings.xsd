@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:element name="UnitMappings">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="Rule" minOccurs="1" maxOccurs="unbounded">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="Pattern" type="xs:string" minOccurs="1" maxOccurs="unbounded" />
+            </xs:sequence>
+            <xs:attribute name="unit" type="xs:string" use="required" />
+            <xs:attribute name="priority" type="xs:nonNegativeInteger" use="required" />
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+      <xs:attribute name="version" type="xs:positiveInteger" use="required" />
+      <xs:attribute name="matchMode" use="required" fixed="glob" />
+      <xs:attribute name="caseSensitive" type="xs:boolean" use="required" />
+      <xs:attribute name="resolution" use="required" fixed="highestPriorityThenDocumentOrder" />
+    </xs:complexType>
+  </xs:element>
+</xs:schema>
