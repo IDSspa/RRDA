@@ -8,6 +8,19 @@ namespace RRDA.Data.Tests;
 public sealed class ImportResultRepositoryTests
 {
     [Fact]
+    public void ReportProperty_IsNotSubjectKeyByDefault()
+    {
+        var property = new ReportProperty
+        {
+            ReportEntity = null!,
+            Name = "value",
+            DataType = "string"
+        };
+
+        Assert.False(property.IsSubjectKey);
+    }
+
+    [Fact]
     public async Task CountExistingAsync_UsesFileNameAndReportTypeAcrossDifferentPaths()
     {
         await using var db = CreateDbContext();

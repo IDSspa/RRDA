@@ -6,6 +6,7 @@ using RRDA.Core;
 using RRDA.Core.Validator;
 using RRDA.Data;
 using RRDA.Plugins.Common;
+using RRDA.Web.Areas.Data.Models;
 using RRDA.Web.Security;
 using RRDA.Web.Services;
 
@@ -299,25 +300,33 @@ namespace RRDA.Web.Areas.Data.Controllers
         }
 
         // ── GET /Data/Files/Details/{id} ──────────────────────────────────
-        public async Task<IActionResult> Details(int id)
+        public async Task<IActionResult> Details(int id, CancellationToken cancellationToken)
         {
             var file = await db.ReportFiles
+                .AsNoTracking()
                 .Include(f => f.ReportType)
-                .FirstOrDefaultAsync(f => f.Id == id);
+                .FirstOrDefaultAsync(f => f.Id == id, cancellationToken);
 
             if (file is null) return NotFound();
 
-            ViewBag.EntityCount = await db.ReportEntities
-                .CountAsync(e => e.ReportFileId == id);
-
-            // Entità distinte per ReportSheet
-            ViewBag.ReportSheets = await db.ReportEntities
+            var entityKinds = await db.ReportEntities
+                .AsNoTracking()
                 .Where(e => e.ReportFileId == id)
                 .GroupBy(e => e.ReportSheet)
-                .Select(g => new { Kind = g.Key, Count = g.Count() })
-                .ToListAsync();
+                .Select(g => new FileEntityKindViewModel
+                {
+                    Kind = g.Key,
+                    Count = g.Count()
+                })
+                .OrderBy(item => item.Kind)
+                .ToListAsync(cancellationToken);
 
-            return View(file);
+            return View(new FileDetailsViewModel
+            {
+                File = file,
+                EntityKinds = entityKinds,
+                EntityCount = entityKinds.Sum(item => item.Count)
+            });
         }
 
         // ── GET /Data/Files/Entities/{fileId} ─────────────────────────────
