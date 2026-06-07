@@ -1,20 +1,16 @@
-@model List<RRDA.Data.ReportFile>
+@model RRDA.Web.Areas.Data.Models.FilesIndexViewModel
 @using RRDA.Web.Security
 
 @{
     ViewData["Title"] = "File importati";
     var isSupervisor = User.HasClaim(c => c.Type == AppUserClaimsTransformation.AppRoleClaimType
         && (c.Value == "Supervisor" || c.Value == "Admin"));
-    var filters  = ViewBag.Filters;
-    int total    = ViewBag.TotalCount;
-    int totPages = ViewBag.TotalPages;
-    int curPage  = ViewBag.CurrentPage;
 }
 
 <div class="d-flex align-items-center justify-content-between mb-3">
     <h4 style="margin:0;color:#c9d1d9;font-weight:600;">File importati</h4>
     <div class="d-flex align-items-center gap-3">
-        <span style="color:#8b949e;font-size:.82rem;">@total risultati</span>
+        <span style="color:#8b949e;font-size:.82rem;">@Model.TotalCount risultati</span>
         @if (isSupervisor)
         {
             <button type="submit" form="bulk-delete-form" id="delete-selected"
@@ -33,30 +29,30 @@
     <form method="get" class="row g-2 align-items-end">
         <div class="col-md-2">
             <label class="form-label">Tipo di report</label>
-            <select name="reportTypeId" class="form-select" asp-items="ViewBag.ReportTypes">
+            <select name="reportTypeId" class="form-select" asp-items="Model.ReportTypeOptions">
                 <option value="">— Tutti —</option>
             </select>
         </div>
         <div class="col-md-2">
             <label class="form-label">Batch</label>
-            <select name="batchId" class="form-select" asp-items="ViewBag.Batches">
+            <select name="batchId" class="form-select" asp-items="Model.BatchOptions">
                 <option value="">— Tutti —</option>
             </select>
         </div>
         <div class="col-md-2">
             <label class="form-label">Importato da</label>
             <input type="text" name="importedBy" class="form-control"
-                   value="@filters?.importedBy" placeholder="username..." />
+                   value="@Model.Filters.ImportedBy" placeholder="username..." />
         </div>
         <div class="col-md-auto">
             <label class="form-label">Dal</label>
             <input type="date" name="from" class="form-control" style="width:10.5rem;color-scheme:dark;"
-                   value="@filters?.from" />
+                   value="@Model.Filters.From" />
         </div>
         <div class="col-md-auto">
             <label class="form-label">Al</label>
             <input type="date" name="to" class="form-control" style="width:10.5rem;color-scheme:dark;"
-                   value="@filters?.to" />
+                   value="@Model.Filters.To" />
         </div>
         <div class="col-md-auto d-flex gap-2">
             <button type="submit" class="btn-rrda-primary">Filtra</button>
@@ -68,7 +64,7 @@
 
 <!-- ── Tabella ── -->
 <div class="rrda-card">
-    @if (!Model.Any())
+    @if (!Model.Files.Any())
     {
         <p style="color:#484f58;font-size:.875rem;margin:0;">Nessun file trovato.</p>
     }
@@ -96,7 +92,7 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach (var f in Model)
+                @foreach (var f in Model.Files)
                 {
                     <tr>
                         @if (isSupervisor)
@@ -158,19 +154,20 @@
         </form>
 
         <!-- ── Paginazione ── -->
-        @if (totPages > 1)
+        @if (Model.TotalPages > 1)
         {
             <div class="d-flex justify-content-center gap-1 mt-3">
-                @for (int p = 1; p <= totPages; p++)
+                @for (int p = 1; p <= Model.TotalPages; p++)
                 {
-                    var isActive = p == curPage;
+                    var isActive = p == Model.CurrentPage;
                     <a asp-action="Index"
                        asp-route-page="@p"
-                       asp-route-reportTypeId="@filters?.reportTypeId"
-                       asp-route-batchId="@filters?.batchId"
-                       asp-route-importedBy="@filters?.importedBy"
-                       asp-route-from="@filters?.from"
-                       asp-route-to="@filters?.to"
+                       asp-route-reportTypeId="@Model.Filters.ReportTypeId"
+                       asp-route-batchId="@Model.Filters.BatchId"
+                       asp-route-importedBy="@Model.Filters.ImportedBy"
+                       asp-route-from="@Model.Filters.From"
+                       asp-route-to="@Model.Filters.To"
+                       asp-route-pageSize="@Model.Filters.PageSize"
                        style="padding:.25rem .6rem;border-radius:4px;font-size:.82rem;
                               text-decoration:none;
                               background:@(isActive ? "#1f6feb" : "transparent");

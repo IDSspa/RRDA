@@ -31,7 +31,7 @@
 
         <div class="mb-3">
             <label asp-for="BatchId" class="form-label">Batch</label>
-            <select asp-for="BatchId" asp-items="ViewBag.Batches" class="form-select">
+            <select asp-for="BatchId" asp-items="Model.BatchOptions" class="form-select">
                 <option value="">Nessun batch</option>
             </select>
             <span asp-validation-for="BatchId" style="color:#f85149;font-size:.8rem;"></span>

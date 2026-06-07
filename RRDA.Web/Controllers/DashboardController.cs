@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RRDA.Data;
 using RRDA.Web.Security;
+using RRDA.Web.Models;
 
 namespace RRDA.Web.Controllers
 {
@@ -11,20 +12,21 @@ namespace RRDA.Web.Controllers
     {
         public async Task<IActionResult> Index()
         {
-            ViewBag.TotalFiles      = await db.ReportFiles.CountAsync();
-            ViewBag.TotalBatches    = await db.ReportBatches.CountAsync();
-            ViewBag.TotalEntities   = await db.ReportEntities.CountAsync();
-            ViewBag.TotalReportTypes= await db.ReportTypes.CountAsync();
-            ViewBag.TotalUsers      = await db.AppUsers.CountAsync(u => u.IsEnabled);
-
-            // Ultimi 5 file importati
-            ViewBag.RecentFiles = await db.ReportFiles
+            var recentFiles = await db.ReportFiles
                 .Include(f => f.ReportType)
                 .OrderByDescending(f => f.UploadedAt)
                 .Take(5)
                 .ToListAsync();
 
-            return View();
+            return View(new DashboardViewModel
+            {
+                TotalFiles = await db.ReportFiles.CountAsync(),
+                TotalBatches = await db.ReportBatches.CountAsync(),
+                TotalEntities = await db.ReportEntities.CountAsync(),
+                TotalReportTypes = await db.ReportTypes.CountAsync(),
+                TotalUsers = await db.AppUsers.CountAsync(u => u.IsEnabled),
+                RecentFiles = recentFiles
+            });
         }
     }
 }

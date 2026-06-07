@@ -1,17 +1,10 @@
-@model List<RRDA.Data.ReportEntity>
-@using RRDA.Data
+@model RRDA.Web.Areas.Data.Models.FileEntitiesViewModel
 
 @{
-    var file       = ViewBag.File as ReportFile;
-    ViewData["Title"] = $"Entità — {file?.FileName}";
-    int total      = ViewBag.TotalCount;
-    int totPages   = ViewBag.TotalPages;
-    int curPage    = ViewBag.CurrentPage;
-    string? kind   = ViewBag.KindFilter;
-    var kinds      = ViewBag.Kinds as List<string> ?? [];
+    ViewData["Title"] = $"Entità — {Model.File.FileName}";
 
     // Raccoglie tutte le property keys presenti nelle entità caricate
-    var propKeys   = Model
+    var propKeys   = Model.Entities
         .SelectMany(e => e.Properties.Select(p => p.Name))
         .Distinct()
         .OrderBy(k => k)
@@ -19,34 +12,34 @@
 }
 
 <div class="d-flex align-items-center gap-3 mb-4">
-    <a asp-action="Details" asp-route-id="@file?.Id"
+    <a asp-action="Details" asp-route-id="@Model.File.Id"
        style="color:#8b949e;text-decoration:none;font-size:.85rem;">
-        ← @file?.FileName
+        ← @Model.File.FileName
     </a>
     <h4 style="margin:0;color:#c9d1d9;font-weight:600;">Entità</h4>
-    <span style="color:#8b949e;font-size:.82rem;">@total risultati</span>
+    <span style="color:#8b949e;font-size:.82rem;">@Model.TotalCount risultati</span>
 </div>
 
 <!-- ── Filtro per EntityKind ── -->
-@if (kinds.Count > 1)
+@if (Model.Kinds.Count > 1)
 {
     <div class="d-flex gap-2 mb-3 flex-wrap">
-        <a asp-action="Entities" asp-route-fileId="@file?.Id"
+        <a asp-action="Entities" asp-route-fileId="@Model.File.Id"
            style="padding:.25rem .75rem;border-radius:20px;font-size:.82rem;
                   text-decoration:none;
-                  background:@(string.IsNullOrEmpty(kind) ? "#1f6feb" : "transparent");
-                  color:@(string.IsNullOrEmpty(kind) ? "#fff" : "#8b949e");
-                  border:1px solid @(string.IsNullOrEmpty(kind) ? "#1f6feb" : "#30363d");">
+                  background:@(string.IsNullOrEmpty(Model.KindFilter) ? "#1f6feb" : "transparent");
+                  color:@(string.IsNullOrEmpty(Model.KindFilter) ? "#fff" : "#8b949e");
+                  border:1px solid @(string.IsNullOrEmpty(Model.KindFilter) ? "#1f6feb" : "#30363d");">
             Tutti
         </a>
-        @foreach (var k in kinds)
+        @foreach (var k in Model.Kinds)
         {
-            <a asp-action="Entities" asp-route-fileId="@file?.Id" asp-route-kind="@k"
+            <a asp-action="Entities" asp-route-fileId="@Model.File.Id" asp-route-kind="@k"
                style="padding:.25rem .75rem;border-radius:20px;font-size:.82rem;
                       text-decoration:none;
-                      background:@(kind == k ? "#1f6feb" : "transparent");
-                      color:@(kind == k ? "#fff" : "#8b949e");
-                      border:1px solid @(kind == k ? "#1f6feb" : "#30363d");">
+                      background:@(Model.KindFilter == k ? "#1f6feb" : "transparent");
+                      color:@(Model.KindFilter == k ? "#fff" : "#8b949e");
+                      border:1px solid @(Model.KindFilter == k ? "#1f6feb" : "#30363d");">
                 @k
             </a>
         }
@@ -55,7 +48,7 @@
 
 <!-- ── Tabella entità ── -->
 <div class="rrda-card" style="overflow-x:auto;">
-    @if (!Model.Any())
+    @if (!Model.Entities.Any())
     {
         <p style="color:#484f58;font-size:.875rem;margin:0;">Nessuna entità trovata.</p>
     }
@@ -73,7 +66,7 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach (var e in Model)
+                @foreach (var e in Model.Entities)
                 {
                     var propDict = e.Properties
                         .ToDictionary(p => p.Name, p => p.Value ?? "");
@@ -94,15 +87,15 @@
         </table>
 
         <!-- ── Paginazione ── -->
-        @if (totPages > 1)
+        @if (Model.TotalPages > 1)
         {
             <div class="d-flex justify-content-center gap-1 mt-3">
-                @for (int p = 1; p <= totPages; p++)
+                @for (int p = 1; p <= Model.TotalPages; p++)
                 {
-                    var isActive = p == curPage;
+                    var isActive = p == Model.CurrentPage;
                     <a asp-action="Entities"
-                       asp-route-fileId="@file?.Id"
-                       asp-route-kind="@kind"
+                       asp-route-fileId="@Model.File.Id"
+                       asp-route-kind="@Model.KindFilter"
                        asp-route-page="@p"
                        style="padding:.25rem .6rem;border-radius:4px;font-size:.82rem;
                               text-decoration:none;

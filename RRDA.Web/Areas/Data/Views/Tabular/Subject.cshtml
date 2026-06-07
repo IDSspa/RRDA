@@ -1,10 +1,9 @@
-﻿@model List<RRDA.Web.Areas.Data.Controllers.TabularPreviewRow>
+@model RRDA.Web.Areas.Data.Models.TabularSubjectViewModel
 @{
-    var reportType = (RRDA.Data.ReportType)ViewBag.ReportType;
-    ViewData["Title"] = $"Vista tabellare - {reportType.Key}";
+    ViewData["Title"] = $"Vista tabellare - {Model.ReportType.Key}";
 }
 
-<h4>Vista tabellare soggetto: @reportType.SubjectKind (@reportType.Key)</h4>
+<h4>Vista tabellare soggetto: @Model.ReportType.SubjectKind (@Model.ReportType.Key)</h4>
 <p style="color:#8b949e">Anteprima prime 200 entità importate per il tipo report selezionato.</p>
 
 <table class="table table-borderless">
@@ -17,7 +16,7 @@
         </tr>
     </thead>
     <tbody>
-        @foreach (var row in Model)
+        @foreach (var row in Model.Rows)
         {
             <tr>
                 <td>@row.EntityId</td>

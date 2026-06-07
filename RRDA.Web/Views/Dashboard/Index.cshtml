@@ -1,9 +1,7 @@
-@using RRDA.Data
-@model object
+@model RRDA.Web.Models.DashboardViewModel
 
 @{
     ViewData["Title"] = "Dashboard";
-    var recentFiles = ViewBag.RecentFiles as List<ReportFile> ?? [];
 }
 
 <div class="d-flex align-items-center mb-4" style="gap:.75rem;">
@@ -29,11 +27,11 @@
             </div>
         }
     }
-    @{ Tile("File importati",   (int)ViewBag.TotalFiles,       "📄", "#1f6feb"); }
-    @{ Tile("Batch",            (int)ViewBag.TotalBatches,     "▤", "#a371f7"); }
-    @{ Tile("Entità",           (int)ViewBag.TotalEntities,    "🗃", "#3fb950"); }
-    @{ Tile("Tipi di report",   (int)ViewBag.TotalReportTypes, "🔌", "#d29922"); }
-    @{ Tile("Utenti attivi",    (int)ViewBag.TotalUsers,       "👤", "#58a6ff"); }
+    @{ Tile("File importati", Model.TotalFiles, "📄", "#1f6feb"); }
+    @{ Tile("Batch", Model.TotalBatches, "▤", "#a371f7"); }
+    @{ Tile("Entità", Model.TotalEntities, "🗃", "#3fb950"); }
+    @{ Tile("Tipi di report", Model.TotalReportTypes, "🔌", "#d29922"); }
+    @{ Tile("Utenti attivi", Model.TotalUsers, "👤", "#58a6ff"); }
 </div>
 
 <!-- ── File recenti ── -->
@@ -46,7 +44,7 @@
         </a>
     </div>
 
-    @if (!recentFiles.Any())
+    @if (!Model.RecentFiles.Any())
     {
         <p style="color:#484f58;font-size:.875rem;margin:0;">Nessun file ancora importato.</p>
     }
@@ -62,7 +60,7 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach (var f in recentFiles)
+                @foreach (var f in Model.RecentFiles)
                 {
                     <tr>
                         <td style="font-family:monospace;font-size:.82rem;">

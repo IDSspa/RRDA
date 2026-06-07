@@ -86,7 +86,6 @@ builder.Services.AddAuthorizationBuilder()
 // MVC
 // ─────────────────────────────────────────────────────────────────────────────
 builder.Services.AddControllersWithViews();
-builder.Services.AddRazorPages();
 // Add services
 builder.Services.AddMemoryCache();
 builder.Services.AddHttpContextAccessor();

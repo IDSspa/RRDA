@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using RRDA.Web.Models;
 
 namespace RRDA.Web.Controllers
 {
@@ -13,9 +14,10 @@ namespace RRDA.Web.Controllers
         [Route("/AccessDenied")]
         public IActionResult Index()
         {
-            // Passiamo alla view il nome utente Windows per mostrare un messaggio utile
-            ViewBag.WindowsUser = User.Identity?.Name ?? "Utente sconosciuto";
-            return View();
+            return View(new AccessDeniedViewModel
+            {
+                WindowsUser = User.Identity?.Name ?? "Utente sconosciuto"
+            });
         }
     }
 }

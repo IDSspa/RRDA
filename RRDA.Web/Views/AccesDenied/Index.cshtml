@@ -1,3 +1,4 @@
+@model RRDA.Web.Models.AccessDeniedViewModel
 @{
     ViewData["Title"] = "Accesso negato";
     Layout = null; // pagina standalone, nessuna sidebar
@@ -44,7 +45,7 @@
         <div class="icon">🔒</div>
         <h1>Accesso non autorizzato</h1>
         <p>
-            L'account <span class="username">@ViewBag.WindowsUser</span>
+            L'account <span class="username">@Model.WindowsUser</span>
             non è registrato in RRDA oppure è stato disabilitato.
         </p>
         <p>Contattare un amministratore per richiedere l'accesso.</p>

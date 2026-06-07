@@ -56,36 +56,39 @@ namespace RRDA.Web.Areas.Data.Controllers
                 .Take(pageSize)
                 .ToListAsync();
 
-            // Popolamento filtri
-            ViewBag.ReportTypes = new SelectList(
+            var reportTypeOptions = new SelectList(
                 await db.ReportTypes.OrderBy(t => t.Key).ToListAsync(),
-                "Id", "Key", reportTypeId);
+                "Id", "Key", reportTypeId).ToList();
 
-            ViewBag.Batches = new SelectList(
+            var batchOptions = new SelectList(
                 await db.ReportBatches.AsNoTracking().OrderByDescending(b => b.Id).ToListAsync(),
-                "Id", "Name", batchId);
+                "Id", "Name", batchId).ToList();
 
-            ViewBag.Filters = new
+            return View(new FilesIndexViewModel
             {
-                reportTypeId, batchId, importedBy,
-                from = from?.ToString("yyyy-MM-dd"),
-                to   = to?.ToString("yyyy-MM-dd"),
-                page, pageSize
-            };
-
-            ViewBag.TotalCount  = total;
-            ViewBag.TotalPages  = (int)Math.Ceiling(total / (double)pageSize);
-            ViewBag.CurrentPage = page;
-
-            return View(files);
+                Files = files,
+                ReportTypeOptions = reportTypeOptions,
+                BatchOptions = batchOptions,
+                Filters = new FilesIndexFilters
+                {
+                    ReportTypeId = reportTypeId,
+                    BatchId = batchId,
+                    ImportedBy = importedBy,
+                    From = from?.ToString("yyyy-MM-dd"),
+                    To = to?.ToString("yyyy-MM-dd"),
+                    PageSize = pageSize
+                },
+                TotalCount = total,
+                TotalPages = (int)Math.Ceiling(total / (double)pageSize),
+                CurrentPage = page
+            });
         }
 
         // GET /Data/Files/Import
         [Authorize(Policy = Policies.AtLeastSupervisor)]
         public async Task<IActionResult> Import()
         {
-            await PopulateImportOptionsAsync();
-            return View(new SingleReportImportViewModel());
+            return await ImportViewAsync(new SingleReportImportViewModel());
         }
 
         // POST /Data/Files/Import
@@ -356,19 +359,23 @@ namespace RRDA.Web.Areas.Data.Controllers
                 .Include(e => e.Properties)
                 .ToListAsync();
 
-            ViewBag.File        = file;
-            ViewBag.KindFilter  = kind;
-            ViewBag.TotalCount  = total;
-            ViewBag.TotalPages  = (int)Math.Ceiling(total / (double)pageSize);
-            ViewBag.CurrentPage = page;
-            ViewBag.Kinds       = await db.ReportEntities
+            var kinds = await db.ReportEntities
                 .Where(e => e.ReportFileId == fileId)
                 .Select(e => e.ReportSheet)
                 .Distinct()
                 .OrderBy(k => k)
                 .ToListAsync();
 
-            return View(entities);
+            return View(new FileEntitiesViewModel
+            {
+                File = file,
+                Entities = entities,
+                Kinds = kinds,
+                KindFilter = kind,
+                TotalCount = total,
+                TotalPages = (int)Math.Ceiling(total / (double)pageSize),
+                CurrentPage = page
+            });
         }
 
         // ── POST /Data/Files/Delete/{id} ──────────────────────────────────
@@ -440,20 +447,20 @@ namespace RRDA.Web.Areas.Data.Controllers
 
         private async Task<IActionResult> ImportViewAsync(SingleReportImportViewModel model)
         {
-            await PopulateImportOptionsAsync(model.BatchId);
+            model.BatchOptions = await GetImportOptionsAsync(model.BatchId);
             return View(nameof(Import), model);
         }
 
-        private async Task PopulateImportOptionsAsync(int? selectedBatchId = null)
+        private async Task<IReadOnlyList<SelectListItem>> GetImportOptionsAsync(int? selectedBatchId = null)
         {
-            ViewBag.Batches = new SelectList(
+            return new SelectList(
                 await db.ReportBatches
                     .AsNoTracking()
                     .OrderByDescending(b => b.Id)
                     .ToListAsync(),
                 "Id",
                 "Name",
-                selectedBatchId);
+                selectedBatchId).ToList();
         }
     }
 
@@ -462,5 +469,6 @@ namespace RRDA.Web.Areas.Data.Controllers
         public IFormFile? File { get; set; }
         public int? BatchId { get; set; }
         public DuplicateImportStrategy DuplicateStrategy { get; set; } = DuplicateImportStrategy.Block;
+        public IReadOnlyList<SelectListItem> BatchOptions { get; set; } = [];
     }
 }

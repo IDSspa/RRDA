@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using RRDA.Core.Exporting;
 using RRDA.Data;
 using RRDA.Web.Security;
+using RRDA.Web.Areas.Data.Models;
 using RRDA.Web.Services.TypePivot;
 using System.Globalization;
 
@@ -29,8 +30,6 @@ namespace RRDA.Web.Areas.Data.Controllers
             var reportType = await db.ReportTypes.FindAsync(reportTypeId);
             if (reportType is null) return NotFound();
 
-            ViewBag.ReportType = reportType;
-
             var rows = await db.ReportEntities
                 .AsNoTracking()
                 .Where(e => e.ReportFile.ReportTypeId == reportTypeId)
@@ -44,7 +43,11 @@ namespace RRDA.Web.Areas.Data.Controllers
                 .Take(200)
                 .ToListAsync();
 
-            return View(rows);
+            return View(new TabularSubjectViewModel
+            {
+                ReportType = reportType,
+                Rows = rows
+            });
         }
 
         public async Task<IActionResult> FilePivot(int fileId)

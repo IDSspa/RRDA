@@ -5,6 +5,7 @@ using RRDA.Data;
 using RRDA.Core;
 using RRDA.Plugins.Common;
 using RRDA.Web.Security;
+using RRDA.Web.Areas.Plugins.Models;
 
 namespace RRDA.Web.Areas.Plugins.Controllers
 {
@@ -42,10 +43,11 @@ namespace RRDA.Web.Areas.Plugins.Controllers
 
             if (type is null) return NotFound();
 
-            ViewBag.FileCount = await db.ReportFiles
-                .CountAsync(f => f.ReportTypeId == id);
-
-            return View(type);
+            return View(new ReportTypeDetailsViewModel
+            {
+                ReportType = type,
+                FileCount = await db.ReportFiles.CountAsync(f => f.ReportTypeId == id)
+            });
         }
 
         // ── GET /Plugins/ReportTypes/Create ───────────────────────────────
