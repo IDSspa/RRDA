@@ -7,6 +7,7 @@
    - RADAR/SOTTOASSIEME (?)
    - SOTTOASSIEME/COMPONENTE.
 3. implementare plugin mancanti (TC...)
+   - rimuovere plugin "Dummy"
 4. ottimizzazione query statistiche
 5. accesso 'veloce' alla vista tabellare per ogni tipologia di report da sidebar/dashboard
 6. cancellazione massiva report SOLO tramite applicazione web (per batch, per tipo?):

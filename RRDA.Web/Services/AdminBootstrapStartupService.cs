@@ -49,9 +49,11 @@ public sealed class AdminBootstrapStartupService(
             user.IsEnabled = true;
         }
 
-        await db.SaveChangesAsync(cancellationToken);
+        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
         try
         {
+            // Il bootstrap dell'Admin e il relativo audit sono un'unica operazione di sicurezza.
+            await db.SaveChangesAsync(cancellationToken);
             await auditService.WriteAsync(
                 db,
                 new AuditEventRequest(
@@ -63,11 +65,16 @@ public sealed class AdminBootstrapStartupService(
                     EntityId: user.Id.ToString(),
                     Description: "Creato o promosso il primo utente Admin tramite configurazione bootstrap."),
                 cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
         }
         catch (Exception ex)
         {
-            logger.LogWarning(ex, "Impossibile registrare l'audit del bootstrap Admin.");
+            logger.LogCritical(
+                ex,
+                "Bootstrap Admin annullato: impossibile salvare atomicamente l'utente e il relativo audit.");
+            throw;
         }
+
         logger.LogWarning(
             "Creato il primo utente Admin {WindowsUsername} tramite configurazione bootstrap. Rimuovere ora RRDA_BootstrapAdmin__WindowsUsername.",
             windowsUsername);

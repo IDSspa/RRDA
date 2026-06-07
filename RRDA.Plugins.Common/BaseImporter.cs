@@ -21,7 +21,7 @@ namespace RRDA.Plugins.Common
         /// <param name="validationConfigXml"></param>
         /// 
         /// <returns>True if file can be imported false otherwise</returns>
-        public Task<bool> CanImportAsync(string fileName, Stream? validationConfigXml = null)
+        public virtual Task<bool> CanImportAsync(string fileName, Stream? validationConfigXml = null)
         {
             if (string.IsNullOrWhiteSpace(fileName))
                 return Task.FromResult(false);
@@ -65,7 +65,8 @@ namespace RRDA.Plugins.Common
             try
             {
                 // Importa i dati dal file Excel
-                var entities = await ImportData(fileStream, config, progress, ct);
+                var entities = (await ImportDataAsync(fileStream, config, progress, ct)).ToList();
+                ValidateImportedEntities(entities);
 
                 result.Entities = entities;
                 result.Success = true;
@@ -89,7 +90,12 @@ namespace RRDA.Plugins.Common
         /// Ogni <see cref="ReportEntityDto"/> rappresenta una singola cella (o cella
         /// appartenente ad un range) estratta dal foglio Excel.
         /// </returns>
-        private static Task<IEnumerable<ReportEntityDto>> ImportData(
+        /// <remarks>
+        /// I plugin con formati non rappresentabili tramite Defined Names possono
+        /// sovrascrivere questo metodo. <see cref="ImportAsync"/> mantiene la gestione
+        /// comune del risultato, degli errori e della validazione minima dell'output.
+        /// </remarks>
+        protected virtual Task<IEnumerable<ReportEntityDto>> ImportDataAsync(
                 Stream xlsxStream,
                 ValidationConfig config,
                 IProgress<ImportProgress>? progress = null,
@@ -260,6 +266,30 @@ namespace RRDA.Plugins.Common
             }
 
             return Task.FromResult<IEnumerable<ReportEntityDto>>(entities);
+        }
+
+        private static void ValidateImportedEntities(IReadOnlyList<ReportEntityDto> entities)
+        {
+            for (var index = 0; index < entities.Count; index++)
+            {
+                var entity = entities[index]
+                    ?? throw new InvalidDataException($"L'entità importata in posizione {index} è null.");
+
+                if (string.IsNullOrWhiteSpace(entity.EntityKind))
+                    throw new InvalidDataException($"L'entità importata in posizione {index} non specifica EntityKind.");
+
+                if (string.IsNullOrWhiteSpace(entity.Key))
+                    throw new InvalidDataException($"L'entità importata in posizione {index} non specifica Key.");
+
+                if (entity.Properties is null)
+                    throw new InvalidDataException($"L'entità importata '{entity.Key}' non specifica Properties.");
+
+                if (!entity.Properties.ContainsKey("value"))
+                {
+                    throw new InvalidDataException(
+                        $"L'entità importata '{entity.Key}' non contiene la proprietà obbligatoria 'value'.");
+                }
+            }
         }
 
         private static string SerializeDataType(FieldDataType dt) => dt switch

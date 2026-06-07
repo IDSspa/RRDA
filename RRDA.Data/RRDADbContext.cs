@@ -8,7 +8,7 @@ namespace RRDA.Data
         public DbSet<ReportEntity> ReportEntities { get; set; } = null!;
         public DbSet<ReportProperty> ReportProperties { get; set; } = null!;
         public DbSet<ReportType> ReportTypes { get; set; } = null!;
-        public DbSet<ReportBatch> ReportBatches { get; set; }
+        public DbSet<ReportBatch> ReportBatches { get; set; } = null!;
         public DbSet<AppUser> AppUsers { get; set; } = null!;
         public DbSet<TabularSession> TabularSessions { get; set; } = null!;
         public DbSet<TabularSessionRow> TabularSessionRows { get; set; } = null!;

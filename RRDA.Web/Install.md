@@ -2,7 +2,7 @@
 
 1. Requisiti di sistema:
    - Sistema operativo: Windows Server 2016 o superiore
-   - .NET Framework: Versione 4.7.2 o superiore
+   - .NET 8 o superiore
    - IIS (Internet Information Services) installato e configurato
    - SQL Server Express: Versione 2016 o superiore
 
@@ -20,7 +20,7 @@
    - Impostare le autorizzazioni appropriate per il sito web.
 
 5. Configurazione dell'applicazione:
-   - Aprire il file di configurazione (web.config) nella cartella di installazione di RRDA Web.
+   - Aprire il file di configurazione (appsettings.json) nella cartella di installazione di RRDA Web.
    - Modificare le stringhe di connessione al database per puntare al database creato in precedenza.
 
 6. Avvio dell'applicazione:
