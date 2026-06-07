@@ -117,7 +117,8 @@ namespace RRDA.Plugins.Common
                 var wbPart = doc.WorkbookPart
                              ?? throw new InvalidOperationException("WorkbookPart non trovato nel file xlsx.");
 
-                var workbook = wbPart.Workbook;
+                var workbook = wbPart.Workbook
+                               ?? throw new InvalidDataException("Workbook non trovato nel file xlsx.");
 
                 // Shared strings (opzionale – non tutti i file ce l'hanno)
                 var sharedStrings = wbPart.SharedStringTablePart?.SharedStringTable;

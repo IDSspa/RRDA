@@ -197,29 +197,38 @@ namespace RRDA.Plugins.Common
         public static string NormalizeCellRef(string r) => r.Replace("$", "").ToUpperInvariant();
         public static Dictionary<string, string> ReadHeaders(Row row, SharedStringTable? shared)
             => row.Elements<Cell>()
+                  .Where(c => !string.IsNullOrWhiteSpace(c.CellReference?.Value))
                   .ToDictionary(
-                      c => GetColumn(c.CellReference!),
+                      c => GetColumn(c.CellReference?.Value
+                          ?? throw new InvalidDataException("Riferimento cella mancante nell'header.")),
                       c => GetValue(c, shared));
         public static string GetValue(Cell cell, SharedStringTable? shared)
         {
             if (cell.CellValue == null) return string.Empty;
             var v = cell.CellValue.InnerText;
-            return cell.DataType?.Value == CellValues.SharedString
-                ? shared?.ElementAt(int.Parse(v)).InnerText ?? string.Empty
-                : v;
+            if (cell.DataType?.Value != CellValues.SharedString)
+                return v;
+
+            return int.TryParse(v, out var index)
+                ? shared?.Elements<SharedStringItem>().ElementAtOrDefault(index)?.InnerText ?? string.Empty
+                : string.Empty;
         }
         public static string? ReadCellValue(SpreadsheetDocument doc, Cell cell)
         {
-            if (cell == null)
-                return null;
-
             var value = cell.CellValue?.InnerText;
 
             // Caso: stringa in SharedStringTable
-            if (cell.DataType != null && cell.DataType == CellValues.SharedString)
+            if (cell.DataType?.Value == CellValues.SharedString)
             {
-                var sst = doc.WorkbookPart.SharedStringTablePart.SharedStringTable;
-                return sst.ChildElements[int.Parse(value)].InnerText;
+                if (!int.TryParse(value, out var index))
+                    return null;
+
+                return doc.WorkbookPart?
+                    .SharedStringTablePart?
+                    .SharedStringTable?
+                    .Elements<SharedStringItem>()
+                    .ElementAtOrDefault(index)?
+                    .InnerText;
             }
 
             return value;

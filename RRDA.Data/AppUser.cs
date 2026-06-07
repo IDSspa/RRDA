@@ -11,7 +11,8 @@ namespace RRDA.Data
 
         /// <summary>
         /// Nome utente Windows nel formato DOMAIN\username oppure solo username
-        /// per ambienti workgroup. Confronto case-insensitive a livello applicativo.
+        /// per ambienti workgroup. Il confronto case-insensitive è governato
+        /// dalla collation SQL Server.
         /// Es: "IDS\m.santucci"
         /// </summary>
         public required string WindowsUsername { get; set; }

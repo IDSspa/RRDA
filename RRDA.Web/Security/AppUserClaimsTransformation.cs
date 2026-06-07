@@ -42,10 +42,12 @@ namespace RRDA.Web.Security
             {
                 await using var db = await dbFactory.CreateDbContextAsync();
 
+                // Il confronto case-insensitive è demandato alla collation SQL Server;
+                // evita conversioni culture-sensitive e preserva l'uso dell'indice.
                 var appUser = await db.AppUsers
                     .AsNoTracking()
                     .FirstOrDefaultAsync(u =>
-                        u.WindowsUsername.ToLower() == windowsUsername.ToLower() &&
+                        u.WindowsUsername == windowsUsername &&
                         u.IsEnabled);
 
                 if (appUser is null)

@@ -34,10 +34,49 @@ public sealed class ValidationFileCreatorTests
 
         Assert.Equal("Meas_F_1950", field.Attribute("definedName")?.Value);
         Assert.Equal(expectedType, field.Attribute("type")?.Value);
+        Assert.Equal("Hz", field.Attribute("unit")?.Value);
         Assert.Equal("Serial", document.Root?.Attribute("subjectKeyField")?.Value);
 
         output.Position = 0;
-        Assert.Equal("Serial", ValidationConfig.Load(output).SubjectKeyField);
+        var config = ValidationConfig.Load(output);
+        Assert.Equal("Serial", config.SubjectKeyField);
+        Assert.Equal("Hz", config.FieldRules.Single(rule => rule.DefinedName == "Meas_F_1950").Unit);
+    }
+
+    [Theory]
+    [InlineData("MeasuredTemperature", "°C")]
+    [InlineData("Output_Voltage_Max", "V")]
+    [InlineData("Signal_Gain", "dB")]
+    [InlineData("Test_Duration", "s")]
+    public void CreateFromStream_InfersUnitFromDefinedName(
+        string definedName,
+        string expectedUnit)
+    {
+        using var workbookStream = CreateWorkbookWithSharedString(definedName, "1.5");
+        using var output = new MemoryStream();
+
+        ValidationFileCreator.CreateFromStream(workbookStream, output, culture: "it-IT");
+
+        output.Position = 0;
+        var field = XDocument.Load(output).Descendants("Field")
+            .Single(element => element.Attribute("definedName")?.Value == definedName);
+
+        Assert.Equal(expectedUnit, field.Attribute("unit")?.Value);
+    }
+
+    [Fact]
+    public void CreateFromStream_OmitsUnitWhenDefinedNameHasNoKnownKeyword()
+    {
+        using var workbookStream = CreateWorkbookWithSharedString("Generic_Measurement", "1.5");
+        using var output = new MemoryStream();
+
+        ValidationFileCreator.CreateFromStream(workbookStream, output, culture: "it-IT");
+
+        output.Position = 0;
+        var field = XDocument.Load(output).Descendants("Field")
+            .Single(element => element.Attribute("definedName")?.Value == "Generic_Measurement");
+
+        Assert.Null(field.Attribute("unit"));
     }
 
     private static MemoryStream CreateWorkbookWithSharedString(

@@ -3,13 +3,16 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RRDA.Data;
 using RRDA.Core;
+using RRDA.Plugins.Common;
 using RRDA.Web.Security;
 
 namespace RRDA.Web.Areas.Plugins.Controllers
 {
     [Area("Plugins")]
     [Authorize(Policy = Policies.AdminOnly)]
-    public class ReportTypesController(RRDADbContext db) : Controller
+    public class ReportTypesController(
+        RRDADbContext db,
+        IPluginCatalog pluginCatalog) : Controller
     {
         // ── GET /Plugins/ReportTypes ──────────────────────────────────────
         public async Task<IActionResult> Index()
@@ -50,7 +53,6 @@ namespace RRDA.Web.Areas.Plugins.Controllers
         {
             Key   = string.Empty,
             Name  = string.Empty,
-            SubjectKind = ResolveSubjectKindFromPluginKey(string.Empty),
             Files = [],
             TabularSessions = []
         });
@@ -60,9 +62,10 @@ namespace RRDA.Web.Areas.Plugins.Controllers
         public async Task<IActionResult> Create(ReportType model)
         {
             if (!ModelState.IsValid) return View(model);
+            if (!TryApplyPluginSubjectKind(model)) return View(model);
 
             var exists = await db.ReportTypes
-                .AnyAsync(t => t.Key.Equals(model.Key, StringComparison.CurrentCultureIgnoreCase));
+                .AnyAsync(t => t.Key == model.Key);
 
             if (exists)
             {
@@ -71,7 +74,6 @@ namespace RRDA.Web.Areas.Plugins.Controllers
                 return View(model);
             }
 
-            model.SubjectKind = ResolveSubjectKindFromPluginKey(model.Key);
             model.Files = [];
             model.TabularSessions = [];
             db.ReportTypes.Add(model);
@@ -95,9 +97,10 @@ namespace RRDA.Web.Areas.Plugins.Controllers
         {
             if (id != model.Id) return BadRequest();
             if (!ModelState.IsValid) return View(model);
+            if (!TryApplyPluginSubjectKind(model)) return View(model);
 
             var exists = await db.ReportTypes
-                .AnyAsync(t => t.Key.Equals(model.Key, StringComparison.CurrentCultureIgnoreCase)
+                .AnyAsync(t => t.Key == model.Key
                             && t.Id != id);
 
             if (exists)
@@ -113,7 +116,7 @@ namespace RRDA.Web.Areas.Plugins.Controllers
             type.Key         = model.Key;
             type.Name        = model.Name;
             type.Description = model.Description;
-            type.SubjectKind = ResolveSubjectKindFromPluginKey(model.Key);
+            type.SubjectKind = model.SubjectKind;
 
             await db.SaveChangesAsync();
 
@@ -145,17 +148,20 @@ namespace RRDA.Web.Areas.Plugins.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        private static ReportSubjectKind ResolveSubjectKindFromPluginKey(string reportTypeKey)
+        private bool TryApplyPluginSubjectKind(ReportType reportType)
         {
-            var key = (reportTypeKey ?? string.Empty).ToUpperInvariant();
+            var plugin = pluginCatalog.Current.Plugins.FirstOrDefault(candidate =>
+                string.Equals(candidate.Name, reportType.Key, StringComparison.OrdinalIgnoreCase));
+            if (plugin is null)
+            {
+                ModelState.AddModelError(
+                    nameof(reportType.Key),
+                    $"Nessun plugin caricato espone la chiave '{reportType.Key}'.");
+                return false;
+            }
 
-            if (key.Contains("3LIV") || key.Contains("RADAR"))
-                return ReportSubjectKind.Radar;
-
-            if (key.Contains("2LIV") || key.Contains("SUB"))
-                return ReportSubjectKind.SubAssembly;
-
-            return ReportSubjectKind.Component;
+            reportType.SubjectKind = plugin.SubjectKind;
+            return true;
         }
     }
 

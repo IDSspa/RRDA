@@ -30,7 +30,7 @@ namespace RRDA.Web.Areas.Admin.Controllers
 
             // Verifica duplicato
             var exists = await db.AppUsers
-                .AnyAsync(u => u.WindowsUsername.Equals(model.WindowsUsername, StringComparison.CurrentCultureIgnoreCase));
+                .AnyAsync(u => u.WindowsUsername == model.WindowsUsername);
 
             if (exists)
             {
@@ -64,7 +64,7 @@ namespace RRDA.Web.Areas.Admin.Controllers
 
             // Verifica duplicato su altri utenti
             var exists = await db.AppUsers
-                .AnyAsync(u => u.WindowsUsername.Equals(model.WindowsUsername, StringComparison.CurrentCultureIgnoreCase)
+                .AnyAsync(u => u.WindowsUsername == model.WindowsUsername
                             && u.Id != id);
 
             if (exists)

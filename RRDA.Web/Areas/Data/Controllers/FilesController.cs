@@ -40,7 +40,7 @@ namespace RRDA.Web.Areas.Data.Controllers
 
             if (!string.IsNullOrWhiteSpace(importedBy))
                 query = query.Where(f => f.ImportedBy != null &&
-                    f.ImportedBy.ToLower().Contains(importedBy.ToLower()));
+                    f.ImportedBy.Contains(importedBy));
 
             if (from.HasValue)
                 query = query.Where(f => f.UploadedAt >= from.Value);

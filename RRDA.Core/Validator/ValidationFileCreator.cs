@@ -1,6 +1,7 @@
 ﻿using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Spreadsheet;
 using System.Globalization;
+using System.Text.RegularExpressions;
 using System.Xml.Linq;
 
 namespace RRDA.Core.Validator
@@ -49,6 +50,21 @@ namespace RRDA.Core.Validator
                 "Serial",
                 "SN"
             };
+
+        /// <summary>
+        /// Mapping conservativo tra unità di misura e parole chiave presenti nei
+        /// DefinedName. Le parole chiave vengono confrontate come token completi,
+        /// così abbreviazioni come "F" non corrispondono a parti di altre parole.
+        /// </summary>
+        private static readonly (string Unit, string[] Keywords)[] UnitMappings =
+        [
+            ("Hz", ["frequency", "freq", "frequenza"]),
+            ("V", ["voltage", "volt", "tensione"]),
+            ("A", ["current", "corrente", "ampere", "curr"]),
+            ("W", ["power", "pwr", "potenza", "pow"]),
+            ("dB", ["gain", "guadagno", "attenuation", "attenuazione", "db", "flat", "att"]),
+            ("s", ["time", "tempo", "duration", "durata"])
+        ];
 
         /// <summary>
         /// Crea il file di validazione su disco.
@@ -144,7 +160,7 @@ namespace RRDA.Core.Validator
                     var fieldMappings = new XElement("FieldMappings");
                     foreach (var dn in definedNames)
                     {
-                        var dnName = dn.Name ?? string.Empty;
+                        var dnName = dn.Name?.Value ?? string.Empty;
                         var map = new XElement("Map",
                             new XAttribute("definedName", dnName),
                             new XAttribute("field", dnName)
@@ -161,7 +177,7 @@ namespace RRDA.Core.Validator
                 var fieldsEl = new XElement("FieldRules");
                 foreach (var dn in definedNames)
                 {
-                    var dnName = dn.Name ?? string.Empty;
+                    var dnName = dn.Name?.Value ?? string.Empty;
                     var inferredType = InferTypeForDefinedName(dn, sheetIndex,
                                        wbPart.SharedStringTablePart?.SharedStringTable,
                                        wbPart);
@@ -170,6 +186,10 @@ namespace RRDA.Core.Validator
                         new XAttribute("required", "false"),
                         new XAttribute("type", inferredType)
                     );
+                    var inferredUnit = InferUnitForDefinedName(dnName);
+                    if (inferredUnit is not null)
+                        fieldEl.SetAttributeValue("unit", inferredUnit);
+
                     fieldsEl.Add(fieldEl);
                 }
                 // anche se non ci sono defined names, Fields deve esistere (XSD non lo rende opzionale)
@@ -242,6 +262,28 @@ namespace RRDA.Core.Validator
 
             // 5. Fallback
             return "string";
+        }
+        private static string? InferUnitForDefinedName(string definedName)
+        {
+            if (string.IsNullOrWhiteSpace(definedName))
+                return null;
+
+            var tokenizedName = Regex.Replace(
+                definedName,
+                "([a-z0-9])([A-Z])",
+                "$1_$2",
+                RegexOptions.CultureInvariant);
+            var tokens = Regex.Split(tokenizedName, "[^A-Za-z0-9]+")
+                .Where(token => !string.IsNullOrWhiteSpace(token))
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var (unit, keywords) in UnitMappings)
+            {
+                if (keywords.Any(tokens.Contains))
+                    return unit;
+            }
+
+            return null;
         }
         private static string ReadCellText(Cell cell, SharedStringTable? sharedStrings)
         {
