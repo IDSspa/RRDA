@@ -1,30 +1,22 @@
 # TODO
 
-1. ~~implementazione grafici statistici~~
-2. ~~gestione esportazione dati filtrati vista tablellare (csv, xls)~~
-4. gestione/visualizzazione valori 'ranged'
-6. gestione collegamenti/navigazione:
+1. gestione/visualizzazione valori 'ranged'
+2. gestione collegamenti/navigazione:
+   - importazione carta di identità radar,
    - RADAR/COMPONENTE,
-   - RADAR/SOTTOASSIEME ?
-   - SOTTOASSIEME/COMPONENTE
-   - importazione carta di identità radar
-7. ~~importazione singolo report applicazione web~~
-8. cancellazione massiva report SOLO tramite applicazione web (per batch, per tipo?):
-   - ~~logging applicazione web su registro di sistema (login, operazioni critiche)~~
-9. gestione paginazione tabella:
-   - ~~implementazione ordinamento vista tabellare -> default SubjectKey (pulsanti asc/desc)~~
-   - ottimizzazione query statistiche
-10. ~~revisione criticità strutturali intera soluzione (implementazione "per services")~~
-11. revisione UI WEB:
-    - accesso 'veloce' alla vista tabellare per ogni tipologia di report da sidebar/dashboard
-11. ~~importazione plugin applicazione web~~
-12. ~~verificare aggiornamento tabella ReportTypes tramite RepImp (inserimento/aggiornamento plugins)~~
-13. ~~creare installer per RepImp~~
-14. ~~footer header vista tabellare fissi righe dati scrollabili~~
-15. semplificazione struttura database (es. ReportProperties?):
-    - spostare Unit e IsSubjectKey in ReportEntities?
-    - eliminare ridondanza tra valori memorizzati in ReportProperties  e campi di ReportProperties stessa
-16. rimozione codice non utilizzato
-17. ~~quando un operazione richiede tempi di elaborazione consistenti mostrare un messaggio di attesa~~  
-    ~~sovrapposto alla UI per evidenziare il passaggio del tempo ed evitare/bloccare ulteriori operazioni da parte dell'utente.~~
-18. implementare plugin mancanti (TC...)
+   - RADAR/SOTTOASSIEME (?)
+   - SOTTOASSIEME/COMPONENTE.
+3. implementare plugin mancanti (TC...)
+4. ottimizzazione query statistiche
+5. accesso 'veloce' alla vista tabellare per ogni tipologia di report da sidebar/dashboard
+6. cancellazione massiva report SOLO tramite applicazione web (per batch, per tipo?):
+7. semplificazione struttura database (es. ReportProperties?):
+   - spostare Unit e IsSubjectKey in ReportEntities?
+   - eliminare ridondanza tra valori memorizzati in ReportProperties e campi di ReportProperties stessa
+8. rimozione codice non utilizzato
+9. Estrarre ImportResultRepository in un'interfaccia iniettabile e rimuovere la reflection su ImportResult da MainWindow.
+10. Suddividere TabularController in servizi dedicati, anche parzialmente, partendo dalla logica plot che è la più isolata.
+11. Implementare un IHostedService o un job schedulato per la pulizia delle sessioni tabellari scadute, 
+	oppure rimuovere l'intera infrastruttura TabularSession se non è pianificata a breve.
+12. Sostituire i ViewBag con dynamic nelle view con ViewModel tipizzati.
+13. Estendere la suite di test con almeno un test di integrazione per la pipeline import e uno per TabularController.TypePivot.

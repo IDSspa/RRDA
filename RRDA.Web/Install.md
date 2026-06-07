@@ -8,6 +8,7 @@
 
 2. Installazione di RRDA Web:
    - Scaricare il pacchetto di installazione di RRDA Web dal sito ufficiale.
+   - Rimuovere se presente il file: appsettings.Development.json
 
 3. Configurazione del database:
    - Creare un nuovo database in SQL Server Express per RRDA Web.

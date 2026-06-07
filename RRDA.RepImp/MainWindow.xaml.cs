@@ -408,8 +408,9 @@ namespace RRDA.RepImp
                     return false;
                 }
 
-                // Chiamata a ImportAsync del plugin
-                object? resultObj = null;
+                // Il caricamento del plugin è dinamico, ma il risultato è definito dal
+                // contratto condiviso IReportImporter.
+                ImportResult? importResult = null;
 
                 try
                 {
@@ -424,9 +425,7 @@ namespace RRDA.RepImp
                     // Carica e valida la configurazione XML
                     var config = ValidationConfig.Load(validationStream);
 
-                    // ImportAsync restituisce ImportResult; usiamo reflection-safe nel logging dopo l'await
-                    var task = plugin.ImportAsync(fileStream, config, innerProgress, ct);
-                    resultObj = await task;
+                    importResult = await plugin.ImportAsync(fileStream, config, innerProgress, ct);
                 }
                 catch (Exception ex)
                 {
@@ -443,7 +442,7 @@ namespace RRDA.RepImp
                     return false;
                 }
 
-                if (resultObj == null)
+                if (importResult == null)
                 {
                     Log($"ImportAsync ha restituito null per file '{fi.Name}'.");
                     await WriteAuditAsync(
@@ -456,49 +455,16 @@ namespace RRDA.RepImp
                     return false;
                 }
 
-                // Logging robusto usando reflection per leggere campi comuni (Success, Errors, Entities, ReportTypeKey)
-                var rType = resultObj.GetType();
-
-                var successProp = rType.GetProperty("Success");
-                if (successProp != null)
-                {
-                    var val = successProp.GetValue(resultObj);
-                    Log($"Import result - Success: {val}");
-                }
-
-                var reportTypeProp = rType.GetProperty("ReportTypeKey") ?? rType.GetProperty("ReportType");
-                if (reportTypeProp != null)
-                {
-                    var val = reportTypeProp.GetValue(resultObj);
-                    Log($"Import result - ReportType: {val}");
-                }
-
-                var errorsProp = rType.GetProperty("Errors");
-                if (errorsProp != null)
-                {
-                    if (errorsProp.GetValue(resultObj) is System.Collections.IEnumerable errsObj)
-                    {
-                        var errs = errsObj.Cast<object>().Select(x => x?.ToString() ?? string.Empty).ToList();
-                        Log($"Import result - Errors ({errs.Count}):{(errs.Count > 0 ? " " + string.Join(" | ", errs.Take(10)) : " nessuno")}");
-                    }
-                }
-
-                var entitiesProp = rType.GetProperty("Entities");
-                if (entitiesProp != null)
-                {
-                    if (entitiesProp.GetValue(resultObj) is System.Collections.IEnumerable entsObj)
-                    {
-                        int count = 0;
-                        foreach (var _ in entsObj) count++;
-                        Log($"Import result - Entities: {count}");
-                    }
-                }
+                Log($"Import result - Success: {importResult.Success}");
+                Log($"Import result - ReportType: {importResult.ReportTypeKey}");
+                Log($"Import result - Errors ({importResult.Errors.Count}):{(importResult.Errors.Count > 0 ? " " + string.Join(" | ", importResult.Errors.Take(10)) : " nessuno")}");
+                Log($"Import result - Entities: {importResult.Entities?.Count() ?? 0}");
 
                 Log($"Importazione completata per '{fi.Name}'.");
 
-                if (resultObj is ImportResult checkedImportResult && !checkedImportResult.Success)
+                if (!importResult.Success)
                 {
-                    var firstError = checkedImportResult.Errors.FirstOrDefault();
+                    var firstError = importResult.Errors.FirstOrDefault();
                     Log($"Import fallito per '{fi.Name}'{(string.IsNullOrWhiteSpace(firstError) ? "." : $": {firstError}")}");
                     await WriteAuditAsync(
                         "Report.ImportFailed",
@@ -510,8 +476,8 @@ namespace RRDA.RepImp
                         {
                             FilePath = fi.FullPath,
                             Plugin = plugin.Name,
-                            checkedImportResult.ReportTypeKey,
-                            checkedImportResult.Errors
+                            importResult.ReportTypeKey,
+                            importResult.Errors
                         });
                     return false;
                 }
@@ -520,8 +486,7 @@ namespace RRDA.RepImp
                 // ====================================================
                 try
                 {
-                    if (resultObj is ImportResult importResult
-                        && importResult.Entities != null
+                    if (importResult.Entities != null
                         && importResult.Entities.Any())
                     {
                         RRDADbContext? db = null;
