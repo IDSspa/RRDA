@@ -8,14 +8,28 @@ using RRDA.Plugins.Common;
 using RRDA.Web.Security;
 using RRDA.Web.Services;
 using RRDA.Web.Services.TypePivot;
+using System.Net;
 using System.Runtime.Versioning;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables(prefix: "RRDA_");
 
 var isDevelopment = builder.Environment.IsDevelopment();
-var skipWindowsAuth = isDevelopment &&
+var skipWindowsAuthRequested =
     builder.Configuration.GetValue<bool>("DevSettings:SkipWindowsAuth");
+if (skipWindowsAuthRequested && !isDevelopment)
+{
+    throw new InvalidOperationException(
+        "DevSettings:SkipWindowsAuth può essere abilitato esclusivamente nell'ambiente Development.");
+}
+
+var skipWindowsAuth = isDevelopment && skipWindowsAuthRequested;
+var simulatedUser = builder.Configuration.GetValue<string>("DevSettings:SimulatedUser");
+if (skipWindowsAuth && string.IsNullOrWhiteSpace(simulatedUser))
+{
+    throw new InvalidOperationException(
+        "DevSettings:SimulatedUser deve essere configurato quando SkipWindowsAuth è abilitato.");
+}
 
 if (OperatingSystem.IsWindows() && !isDevelopment)
 {
@@ -40,9 +54,11 @@ if (skipWindowsAuth)
     builder.Services.AddAuthentication("DevCookie")
         .AddCookie("DevCookie", o =>
         {
-            o.LoginPath              = "/DevLogin";
-            o.AccessDeniedPath  = "/AccessDenied";
+            o.LoginPath = "/DevLogin";
+            o.AccessDeniedPath = "/AccessDenied";
             o.ExpireTimeSpan = TimeSpan.FromHours(8);
+            o.Cookie.HttpOnly = true;
+            o.Cookie.SameSite = SameSiteMode.Strict;
         });
 }
 else
@@ -114,15 +130,15 @@ app.UseAuthorization();
 // ─────────────────────────────────────────────────────────────────────────────
 if (skipWindowsAuth)
 {
-    app.MapGet("/DevLogin", async (HttpContext ctx, IConfiguration cfg) =>
+    app.MapGet("/DevLogin", async (HttpContext ctx) =>
     {
-        var devUser = cfg.GetValue<string>("DevSettings:SimulatedUser")
-                      ?? "DEV\\developer";
+        if (!IsLocalDevelopmentRequest(ctx))
+            return Results.NotFound();
 
         var claims = new[]
         {
             new System.Security.Claims.Claim(
-                System.Security.Claims.ClaimTypes.Name, devUser),
+                System.Security.Claims.ClaimTypes.Name, simulatedUser!),
             new System.Security.Claims.Claim(
                 System.Security.Claims.ClaimTypes.AuthenticationMethod, "DevCookie")
         };
@@ -131,7 +147,7 @@ if (skipWindowsAuth)
         var principal = new System.Security.Claims.ClaimsPrincipal(identity);
 
         await ctx.SignInAsync("DevCookie", principal);
-        ctx.Response.Redirect("/");
+        return Results.Redirect("/");
     }).AllowAnonymous();
 }
 
@@ -147,6 +163,17 @@ app.MapControllerRoute(
     pattern: "{controller=Dashboard}/{action=Index}/{id?}");
 
 app.Run();
+
+static bool IsLocalDevelopmentRequest(HttpContext context)
+{
+    var remoteIp = context.Connection.RemoteIpAddress;
+    if (remoteIp is null || !IPAddress.IsLoopback(remoteIp))
+        return false;
+
+    var host = context.Request.Host.Host;
+    return string.Equals(host, "localhost", StringComparison.OrdinalIgnoreCase)
+        || IPAddress.TryParse(host, out var hostIp) && IPAddress.IsLoopback(hostIp);
+}
 
 [SupportedOSPlatform("windows")]
 static void AddWindowsEventLog(ILoggingBuilder logging)
