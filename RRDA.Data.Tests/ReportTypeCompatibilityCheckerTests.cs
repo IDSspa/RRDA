@@ -100,8 +100,7 @@ public sealed class ReportTypeCompatibilityCheckerTests
             Name = key,
             Description = string.Empty,
             SubjectKind = subjectKind,
-            Files = [],
-            TabularSessions = []
+            Files = []
         };
 
     private sealed class TestPlugin(string name, ReportSubjectKind subjectKind) : IReportImporter

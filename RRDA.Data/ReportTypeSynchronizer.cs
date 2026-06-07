@@ -67,8 +67,7 @@ public sealed class ReportTypeSynchronizer : IReportTypeSynchronizer
                 Name = plugin.Name,
                 Description = string.Empty,
                 SubjectKind = plugin.SubjectKind,
-                Files = [],
-                TabularSessions = []
+                Files = []
             });
             inserted.Add(plugin.Name);
         }

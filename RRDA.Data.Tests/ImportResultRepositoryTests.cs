@@ -85,8 +85,7 @@ public sealed class ImportResultRepositoryTests
         {
             Key = "TEST",
             Name = "Test",
-            Files = [],
-            TabularSessions = []
+            Files = []
         };
 
     private static ReportFile CreateReportFile(ReportType reportType, string fullPath) =>

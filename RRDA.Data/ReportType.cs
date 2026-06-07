@@ -23,7 +23,5 @@ namespace RRDA.Data
         // Navigazione verso i file associati
         public required ICollection<ReportFile> Files { get; set; } = [];
 
-        // Navigazione verso le sessioni cache tabellare
-        public required ICollection<TabularSession> TabularSessions { get; set; } = [];
     }
 }

@@ -119,8 +119,7 @@ public sealed class ReportTypeSynchronizerTests
             Name = name,
             Description = description,
             SubjectKind = subjectKind,
-            Files = [],
-            TabularSessions = []
+            Files = []
         };
 
     private sealed class TestPlugin(string name, ReportSubjectKind subjectKind) : IReportImporter

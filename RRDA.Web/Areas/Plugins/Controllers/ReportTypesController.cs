@@ -55,8 +55,7 @@ namespace RRDA.Web.Areas.Plugins.Controllers
         {
             Key   = string.Empty,
             Name  = string.Empty,
-            Files = [],
-            TabularSessions = []
+            Files = []
         });
 
         // ── POST /Plugins/ReportTypes/Create ──────────────────────────────
@@ -77,7 +76,6 @@ namespace RRDA.Web.Areas.Plugins.Controllers
             }
 
             model.Files = [];
-            model.TabularSessions = [];
             db.ReportTypes.Add(model);
             await db.SaveChangesAsync();
 

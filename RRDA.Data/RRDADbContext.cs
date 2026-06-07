@@ -10,8 +10,6 @@ namespace RRDA.Data
         public DbSet<ReportType> ReportTypes { get; set; } = null!;
         public DbSet<ReportBatch> ReportBatches { get; set; } = null!;
         public DbSet<AppUser> AppUsers { get; set; } = null!;
-        public DbSet<TabularSession> TabularSessions { get; set; } = null!;
-        public DbSet<TabularSessionRow> TabularSessionRows { get; set; } = null!;
         public DbSet<AuditEvent> AuditEvents { get; set; } = null!;
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -78,65 +76,6 @@ namespace RRDA.Data
                     .HasForeignKey(x => x.ReportBatchId)
                     .IsRequired(false)
                     .OnDelete(DeleteBehavior.SetNull);
-            });
-
-            modelBuilder.Entity<TabularSession>(b =>
-            {
-                b.ToTable("TabularSessions");
-
-                b.HasKey(x => x.Id);
-
-                b.Property(x => x.FilterHash)
-                    .HasMaxLength(128)
-                    .IsRequired();
-
-                b.Property(x => x.UserId)
-                    .HasMaxLength(256);
-
-                b.Property(x => x.CreatedAt)
-                    .HasColumnType("datetime2")
-                    .IsRequired();
-
-                b.Property(x => x.ExpiresAt)
-                    .HasColumnType("datetime2")
-                    .IsRequired();
-
-                b.Property(x => x.SourceWatermark)
-                    .HasColumnType("datetime2")
-                    .IsRequired();
-
-                b.HasIndex(x => new { x.ReportTypeId, x.UserId, x.FilterHash });
-                b.HasIndex(x => x.ExpiresAt);
-
-                b.HasOne(x => x.ReportType)
-                    .WithMany(t => t.TabularSessions)
-                    .HasForeignKey(x => x.ReportTypeId)
-                    .OnDelete(DeleteBehavior.Cascade);
-
-                b.HasMany(x => x.Rows)
-                    .WithOne(r => r.TabularSession)
-                    .HasForeignKey(r => r.TabularSessionId)
-                    .OnDelete(DeleteBehavior.Cascade);
-            });
-
-            modelBuilder.Entity<TabularSessionRow>(b =>
-            {
-                b.ToTable("TabularSessionRows");
-
-                b.HasKey(x => x.Id);
-
-                b.Property(x => x.Id)
-                    .ValueGeneratedOnAdd();
-
-                b.Property(x => x.EntityKey)
-                    .HasMaxLength(400)
-                    .IsRequired();
-
-                b.Property(x => x.JsonData)
-                    .HasColumnType("nvarchar(max)")
-                    .IsRequired();
-
-                b.HasIndex(x => new { x.TabularSessionId, x.RowIndex });
             });
 
             modelBuilder.Entity<ReportEntity>(b =>
