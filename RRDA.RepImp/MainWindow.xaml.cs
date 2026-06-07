@@ -1097,7 +1097,10 @@ namespace RRDA.RepImp
 
             try
             {
-                ValidationFileCreator.CreateFromFile(fi.FullPath, outputFile);
+                ValidationFileCreator.CreateFromFile(
+                    fi.FullPath,
+                    outputFile,
+                    plugin.SubjectKeyDefinedName);
                 if (FilesListView.ItemsSource is List<RepImpFileItem> fileItems)
                 {
                     var index = fileItems.FindIndex(item => item.FullPath == fi.FullPath);

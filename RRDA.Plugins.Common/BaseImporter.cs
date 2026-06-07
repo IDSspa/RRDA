@@ -14,6 +14,7 @@ namespace RRDA.Plugins.Common
         public abstract string SupportedFileExtension { get; }
         public abstract string MatchingPattern { get; }
         public abstract ReportSubjectKind SubjectKind { get; }
+        public abstract string SubjectKeyDefinedName { get; }
         /// <summary>
         /// Check if fileName can be imported by the implemented plugin class
         /// </summary>
@@ -64,6 +65,8 @@ namespace RRDA.Plugins.Common
 
             try
             {
+                ValidateSubjectKeyConfiguration(config);
+
                 // Importa i dati dal file Excel
                 var entities = (await ImportDataAsync(fileStream, config, progress, ct)).ToList();
                 ValidateImportedEntities(entities);
@@ -77,6 +80,25 @@ namespace RRDA.Plugins.Common
             }
 
             return result;
+        }
+
+        private void ValidateSubjectKeyConfiguration(ValidationConfig config)
+        {
+            if (string.IsNullOrWhiteSpace(SubjectKeyDefinedName))
+            {
+                throw new InvalidDataException(
+                    $"Il plugin '{Name}' non dichiara un DefinedName valido per la SubjectKey.");
+            }
+
+            if (!string.Equals(
+                    config.SubjectKeyField,
+                    SubjectKeyDefinedName,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidDataException(
+                    $"Il validatore dichiara SubjectKey '{config.SubjectKeyField}', "
+                    + $"ma il plugin '{Name}' richiede il DefinedName '{SubjectKeyDefinedName}'.");
+            }
         }
         /// <summary>
         /// Legge le celle (singole o range) del file Excel riferite dai DefinedNames
@@ -199,10 +221,10 @@ namespace RRDA.Plugins.Common
                         // SINGOLA CELLA  →  row_index = -1, col_index = -1
                         // -----------------------------------------------------------------
                         var cellValue = OpenXmlExcelReader.ReadCellValue(wsPart, startAddress, sharedStrings, wbPart);
-                        bool isSubjectKey = false;
-
-                        if (string.Equals(fieldName, config.SubjectKeyField, StringComparison.OrdinalIgnoreCase))
-                            isSubjectKey = true;
+                        var isSubjectKey = string.Equals(
+                            definedName,
+                            SubjectKeyDefinedName,
+                            StringComparison.OrdinalIgnoreCase);
 
                         entities.Add(new ReportEntityDto
                         {

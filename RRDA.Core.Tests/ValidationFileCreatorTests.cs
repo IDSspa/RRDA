@@ -25,6 +25,7 @@ public sealed class ValidationFileCreatorTests
         ValidationFileCreator.CreateFromStream(
             workbookStream,
             output,
+            "Serial",
             culture: "it-IT");
 
         output.Position = 0;
@@ -55,7 +56,7 @@ public sealed class ValidationFileCreatorTests
         using var workbookStream = CreateWorkbookWithSharedString(definedName, "1.5");
         using var output = new MemoryStream();
 
-        ValidationFileCreator.CreateFromStream(workbookStream, output, culture: "it-IT");
+        ValidationFileCreator.CreateFromStream(workbookStream, output, "Serial", culture: "it-IT");
 
         output.Position = 0;
         var field = XDocument.Load(output).Descendants("Field")
@@ -70,13 +71,25 @@ public sealed class ValidationFileCreatorTests
         using var workbookStream = CreateWorkbookWithSharedString("Generic_Measurement", "1.5");
         using var output = new MemoryStream();
 
-        ValidationFileCreator.CreateFromStream(workbookStream, output, culture: "it-IT");
+        ValidationFileCreator.CreateFromStream(workbookStream, output, "Serial", culture: "it-IT");
 
         output.Position = 0;
         var field = XDocument.Load(output).Descendants("Field")
             .Single(element => element.Attribute("definedName")?.Value == "Generic_Measurement");
 
         Assert.Null(field.Attribute("unit"));
+    }
+
+    [Fact]
+    public void CreateFromStream_RejectsMissingPluginSubjectKey()
+    {
+        using var workbookStream = CreateWorkbookWithSharedString("Measurement", "1.5");
+        using var output = new MemoryStream();
+
+        var exception = Assert.Throws<InvalidDataException>(() =>
+            ValidationFileCreator.CreateFromStream(workbookStream, output, "MissingKey"));
+
+        Assert.Contains("MissingKey", exception.Message);
     }
 
     private static MemoryStream CreateWorkbookWithSharedString(

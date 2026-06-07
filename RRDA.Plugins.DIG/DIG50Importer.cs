@@ -10,5 +10,6 @@ namespace RRDA.Plugins.DIG_50
         public override string SupportedFileExtension => ".xlsx";
         public override string MatchingPattern => "NCH_2022_008_10_LXOD-RS_DIG_50";
         public override ReportSubjectKind SubjectKind => ReportSubjectKind.Component;
+        public override string SubjectKeyDefinedName => "Serial";
     }
 }

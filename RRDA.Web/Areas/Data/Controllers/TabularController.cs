@@ -10,7 +10,7 @@ using System.Globalization;
 namespace RRDA.Web.Areas.Data.Controllers
 {
     [Area("Data")]
-    [Authorize(Policy = Policies.AtLeastSupervisor)]
+    [Authorize(Policy = Policies.AnyUser)]
     public class TabularController(
         RRDADbContext db,
         IConfiguration configuration,

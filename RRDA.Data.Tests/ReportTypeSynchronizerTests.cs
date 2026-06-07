@@ -129,6 +129,7 @@ public sealed class ReportTypeSynchronizerTests
         public string SupportedFileExtension => ".test";
         public string MatchingPattern => "*";
         public ReportSubjectKind SubjectKind => subjectKind;
+        public string SubjectKeyDefinedName => "Serial";
 
         public Task<bool> CanImportAsync(string fileName, Stream? validationConfigXml = null) =>
             Task.FromResult(true);

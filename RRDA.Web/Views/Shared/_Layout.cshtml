@@ -203,6 +203,13 @@
             background: #0d1117; border-color: #1f6feb;
             color: #c9d1d9; box-shadow: 0 0 0 3px #1f6feb22;
         }
+        .form-select:disabled {
+            background-color: #161b22;
+            border-color: #30363d;
+            color: #8b949e;
+            cursor: not-allowed;
+            opacity: 1;
+        }
         .form-label { color: #8b949e; font-size: .85rem; margin-bottom: .3rem; }
 
         /* ── Badge generici ── */
@@ -259,6 +266,21 @@
 
     <div class="sidebar-divider"></div>
 
+    <!-- ── Dati (tutti) ── -->
+    <div class="sidebar-section-label">Dati</div>
+
+    <a class="sidebar-link @ActiveIf("Data", "Reports")"
+       asp-area="Data" asp-controller="Reports" asp-action="Index">
+        <span class="icon">▦</span> Reports
+    </a>
+
+    <a class="sidebar-link @ActiveIf("Data", "Files")"
+       asp-area="Data" asp-controller="Files" asp-action="Index">
+        <span class="icon">📄</span> File importati
+    </a>
+
+    <div class="sidebar-divider"></div>
+
     <!-- ── Amministrazione (solo Admin) ── -->
     @if (isAdmin)
     {
@@ -301,13 +323,6 @@
         <div class="sidebar-divider"></div>
     }
 
-    <!-- ── Dati (tutti) ── -->
-    <div class="sidebar-section-label">Dati</div>
-
-    <a class="sidebar-link @ActiveIf("Data", "Files")"
-       asp-area="Data" asp-controller="Files" asp-action="Index">
-        <span class="icon">📄</span> File importati
-    </a>
 </nav>
 
 <!-- ═══════════════════════════════════════════ MAIN ═════ -->

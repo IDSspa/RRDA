@@ -10,5 +10,6 @@ namespace RRDA.Plugins.Dummy
         public override string SupportedFileExtension => ".xlsx";
         public override string MatchingPattern => "Dummy1";
         public override ReportSubjectKind SubjectKind => ReportSubjectKind.Component;
+        public override string SubjectKeyDefinedName => "Serial";
     }
 }

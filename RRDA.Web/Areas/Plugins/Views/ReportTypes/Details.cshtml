@@ -41,30 +41,6 @@
     </div>
 </div>
 
-<div class="rrda-card mb-3">
-    <h6 style="margin:0 0 .75rem 0;color:#c9d1d9;font-weight:600;">Analisi soggetto</h6>
-    <a asp-area="Data" asp-controller="Tabular" asp-action="TypePivot" asp-route-reportTypeId="@Model.ReportType.Id" id="typePivotLink" class="btn-rrda-primary" style="text-decoration:none;">Vista tabellare</a>
-</div>
-
-<div class="modal fade" id="typePivotLoadingModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="typePivotLoadingModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content" style="background:#161b22;border:1px solid #30363d;color:#c9d1d9;">
-            <div class="modal-body" style="padding:1.5rem;">
-                <div class="d-flex align-items-center gap-3">
-                    <div class="spinner-border text-primary rrda-loading-spinner" role="status" aria-hidden="true"></div>
-                    <div>
-                        <h6 id="typePivotLoadingModalLabel" style="margin:0 0 .35rem 0;color:#c9d1d9;font-weight:600;">Elaborazione vista tabellare</h6>
-                        <p style="margin:0;color:#8b949e;font-size:.875rem;">
-                            Preparazione dei dati in corso. L'operazione puo richiedere qualche istante in base al numero di record presenti.
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-
 <div class="rrda-card">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h6 style="margin:0;color:#c9d1d9;font-weight:600;">Ultimi 10 file importati</h6>
@@ -104,32 +80,3 @@
         </table>
     }
 </div>
-
-@section Scripts {
-    <script>
-        (() => {
-            const typePivotLink = document.getElementById('typePivotLink');
-            const loadingModalElement = document.getElementById('typePivotLoadingModal');
-
-            if (!typePivotLink || !loadingModalElement || !window.bootstrap) {
-                return;
-            }
-
-            const loadingModal = new bootstrap.Modal(loadingModalElement, {
-                backdrop: 'static',
-                keyboard: false
-            });
-
-            typePivotLink.addEventListener('click', (event) => {
-                if (event.defaultPrevented || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) {
-                    return;
-                }
-
-                document.body.setAttribute('aria-busy', 'true');
-                typePivotLink.setAttribute('aria-disabled', 'true');
-                typePivotLink.style.pointerEvents = 'none';
-                loadingModal.show();
-            });
-        })();
-    </script>
-}

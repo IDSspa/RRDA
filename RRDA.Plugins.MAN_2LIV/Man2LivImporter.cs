@@ -10,5 +10,6 @@ namespace RRDA.Plugins.MAN_2Liv
         public override string SupportedFileExtension => ".xlsx";
         public override string MatchingPattern => "NCH_PAIPL_MAN_2Liv";
         public override ReportSubjectKind SubjectKind => ReportSubjectKind.SubAssembly;
+        public override string SubjectKeyDefinedName => "Serial";
     }
 }

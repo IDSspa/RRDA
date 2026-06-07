@@ -9,13 +9,11 @@
 3. implementare plugin mancanti (TC...)
    - rimuovere plugin "Dummy"
 4. ottimizzazione query statistiche
-5. accesso 'veloce' alla vista tabellare per ogni tipologia di report da sidebar/dashboard
-6. cancellazione massiva report SOLO tramite applicazione web (per batch, per tipo?):
-7. semplificazione struttura database (es. ReportProperties?):
+   - possibile ricorso alla parallelizzazione in TabularController (verifica prompt con Codex)
+5. cancellazione massiva report SOLO tramite applicazione web (per batch, per tipo?):
+6. semplificazione struttura database (es. ReportProperties?):
+   - ImportResultRepository.SaveAsync non filtra le chiavi interne (verifica prompt con Codex)
    - spostare Unit e IsSubjectKey in ReportEntities?
    - eliminare ridondanza tra valori memorizzati in ReportProperties e campi di ReportProperties stessa
-8. rimozione codice non utilizzato
-9. Implementare un IHostedService o un job schedulato per la pulizia delle sessioni tabellari scadute, 
-   oppure rimuovere l'intera infrastruttura TabularSession se non è pianificata a breve.
-10. Estendere la suite di test con almeno un test di integrazione per la pipeline import e uno per TabularController.TypePivot.
-11. Impostando grafico tipo PDF il select "Riferimento tooltip" diventa a sfondo bianco con testo in grigio chiaro, non molto leggibile.
+7. Estendere la suite di test con almeno un test di integrazione per la pipeline import e uno per TabularController.TypePivot.
+8. Rendere le procedure di inferenze () configurabili a runtime tramite file xml.

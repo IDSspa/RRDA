@@ -10,5 +10,6 @@ namespace RRDA.Plugins.SBX
         public override string SupportedFileExtension => ".xlsx";
         public override string MatchingPattern => "NCH_2022_004_1_3_LXOD-RS_SBX";
         public override ReportSubjectKind SubjectKind => ReportSubjectKind.Component;
+        public override string SubjectKeyDefinedName => "Serial";
     }
 }

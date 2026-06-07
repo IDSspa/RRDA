@@ -10,5 +10,6 @@ namespace RRDA.Plugins.DAS_054_3LIV_ACC
         public override string SupportedFileExtension => ".xlsx";
         public override string MatchingPattern => "REPORT-DAS0054-ACCETTAZIONE_INT";
         public override ReportSubjectKind SubjectKind => ReportSubjectKind.Radar;
+        public override string SubjectKeyDefinedName => "Serial";
     }
 }

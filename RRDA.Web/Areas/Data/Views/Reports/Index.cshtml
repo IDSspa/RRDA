@@ -1,0 +1,151 @@
+@model RRDA.Web.Areas.Data.Models.ReportsIndexViewModel
+
+@{
+    ViewData["Title"] = "Reports";
+}
+
+<div class="d-flex align-items-center justify-content-between mb-3">
+    <div>
+        <h4 style="margin:0;color:#c9d1d9;font-weight:600;">Reports</h4>
+        <div style="color:#8b949e;font-size:.82rem;margin-top:.25rem;">
+            Seleziona un tipo di report per aprire la relativa vista tabellare.
+        </div>
+    </div>
+    <span id="reports-count" style="color:#8b949e;font-size:.82rem;">
+        @Model.ReportTypes.Count tipi
+    </span>
+</div>
+
+<div class="rrda-card mb-3">
+    <label for="reports-search" class="form-label">Cerca tipo di report</label>
+    <input id="reports-search" type="search" class="form-control"
+           placeholder="Chiave, nome, descrizione o soggetto..." autocomplete="off" />
+</div>
+
+<div id="reports-grid" class="row g-3">
+    @foreach (var reportType in Model.ReportTypes)
+    {
+        var disabled = reportType.ReportCount == 0;
+        <div class="col-sm-6 col-xl-4 report-card"
+             data-search="@($"{reportType.Key} {reportType.Name} {reportType.Description} {reportType.SubjectKind}".ToLowerInvariant())">
+            <div class="rrda-card h-100 d-flex flex-column @(disabled ? "report-card-disabled" : "")">
+                <div class="d-flex justify-content-between align-items-start gap-3">
+                    <div>
+                        <h5 style="margin:0;color:#c9d1d9;font-family:monospace;">@reportType.Key</h5>
+                        <div style="color:#8b949e;font-size:.85rem;margin-top:.25rem;">@reportType.Name</div>
+                    </div>
+                    <span class="badge-pill"
+                          style="background:#1f6feb22;color:#58a6ff;border:1px solid #1f6feb44;">
+                        @reportType.ReportCount report
+                    </span>
+                </div>
+
+                <p style="color:#8b949e;font-size:.82rem;margin:1rem 0;flex:1;">
+                    @(string.IsNullOrWhiteSpace(reportType.Description) ? "Nessuna descrizione." : reportType.Description)
+                </p>
+
+                <div class="d-flex justify-content-between align-items-center">
+                    <span style="color:#484f58;font-size:.78rem;">@reportType.SubjectKind</span>
+                    @if (disabled)
+                    {
+                        <span style="color:#484f58;font-size:.82rem;">Nessun dato disponibile</span>
+                    }
+                    else
+                    {
+                        <a asp-controller="Tabular" asp-action="TypePivot"
+                           asp-route-reportTypeId="@reportType.Id"
+                           class="btn-rrda-primary report-type-pivot-link"
+                           style="text-decoration:none;font-size:1.1rem;line-height:1;padding:.45rem .65rem;"
+                           title="Apri vista tabellare"
+                           aria-label="Apri vista tabellare per @reportType.Key">
+                            ▦
+                        </a>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<div id="reports-empty" class="rrda-card mt-3" style="display:none;color:#8b949e;">
+    Nessun tipo di report corrisponde alla ricerca.
+</div>
+
+<div class="modal fade" id="typePivotLoadingModal" data-bs-backdrop="static" data-bs-keyboard="false"
+     tabindex="-1" aria-labelledby="typePivotLoadingModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background:#161b22;border:1px solid #30363d;color:#c9d1d9;">
+            <div class="modal-body" style="padding:1.5rem;">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="spinner-border text-primary rrda-loading-spinner" role="status" aria-hidden="true"></div>
+                    <div>
+                        <h6 id="typePivotLoadingModalLabel" style="margin:0 0 .35rem 0;color:#c9d1d9;font-weight:600;">
+                            Elaborazione vista tabellare
+                        </h6>
+                        <p style="margin:0;color:#8b949e;font-size:.875rem;">
+                            Preparazione dei dati in corso. L'operazione può richiedere qualche istante in base al numero di record presenti.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .report-card-disabled {
+        opacity: .48;
+        filter: grayscale(.35);
+    }
+</style>
+
+@section Scripts {
+    <script>
+        (() => {
+            const search = document.getElementById('reports-search');
+            const cards = Array.from(document.querySelectorAll('.report-card'));
+            const count = document.getElementById('reports-count');
+            const empty = document.getElementById('reports-empty');
+            const typePivotLinks = Array.from(document.querySelectorAll('.report-type-pivot-link'));
+            const loadingModalElement = document.getElementById('typePivotLoadingModal');
+
+            search?.addEventListener('input', () => {
+                const query = search.value.trim().toLocaleLowerCase('it');
+                let visible = 0;
+
+                cards.forEach(card => {
+                    const matches = !query || card.dataset.search?.includes(query);
+                    card.style.display = matches ? '' : 'none';
+                    if (matches) visible++;
+                });
+
+                count.textContent = `${visible} tipi`;
+                empty.style.display = visible === 0 ? '' : 'none';
+            });
+
+            if (!loadingModalElement || !window.bootstrap) {
+                return;
+            }
+
+            const loadingModal = new bootstrap.Modal(loadingModalElement, {
+                backdrop: 'static',
+                keyboard: false
+            });
+
+            typePivotLinks.forEach(link => {
+                link.addEventListener('click', event => {
+                    if (event.defaultPrevented || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) {
+                        return;
+                    }
+
+                    document.body.setAttribute('aria-busy', 'true');
+                    typePivotLinks.forEach(item => {
+                        item.setAttribute('aria-disabled', 'true');
+                        item.style.pointerEvents = 'none';
+                    });
+                    loadingModal.show();
+                });
+            });
+        })();
+    </script>
+}

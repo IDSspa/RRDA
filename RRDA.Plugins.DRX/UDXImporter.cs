@@ -10,5 +10,6 @@ namespace RRDA.Plugins.DRX
         public override string SupportedFileExtension => ".xlsx";
         public override string MatchingPattern => "NCH_2022_002_DRX_MAN";
         public override ReportSubjectKind SubjectKind => ReportSubjectKind.Component;
+        public override string SubjectKeyDefinedName => "Serial";
     }
 }

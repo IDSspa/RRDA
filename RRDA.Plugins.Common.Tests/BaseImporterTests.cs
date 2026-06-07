@@ -11,7 +11,9 @@ public sealed class BaseImporterTests
     {
         var importer = new CustomImporter();
 
-        var result = await importer.ImportAsync(Stream.Null, new ValidationConfig());
+        var result = await importer.ImportAsync(
+            Stream.Null,
+            new ValidationConfig { SubjectKeyField = importer.SubjectKeyDefinedName });
 
         Assert.True(result.Success);
         Assert.Equal(importer.Name, result.ReportTypeKey);
@@ -24,7 +26,9 @@ public sealed class BaseImporterTests
     {
         var importer = new InvalidCustomImporter();
 
-        var result = await importer.ImportAsync(Stream.Null, new ValidationConfig());
+        var result = await importer.ImportAsync(
+            Stream.Null,
+            new ValidationConfig { SubjectKeyField = importer.SubjectKeyDefinedName });
 
         Assert.False(result.Success);
         Assert.Null(result.Entities);
@@ -41,6 +45,34 @@ public sealed class BaseImporterTests
         Assert.False(await importer.CanImportAsync("ordinary.xlsx"));
     }
 
+    [Fact]
+    public async Task ImportAsync_RejectsValidatorWithDifferentSubjectKey()
+    {
+        var importer = new CustomImporter();
+
+        var result = await importer.ImportAsync(
+            Stream.Null,
+            new ValidationConfig { SubjectKeyField = "DifferentKey" });
+
+        Assert.False(result.Success);
+        Assert.Contains(result.Errors, error =>
+            error.Contains(importer.SubjectKeyDefinedName, StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public async Task ImportAsync_RejectsPluginWithoutSubjectKey()
+    {
+        var importer = new MissingSubjectKeyImporter();
+
+        var result = await importer.ImportAsync(
+            Stream.Null,
+            new ValidationConfig());
+
+        Assert.False(result.Success);
+        Assert.Contains(result.Errors, error =>
+            error.Contains("non dichiara", StringComparison.OrdinalIgnoreCase));
+    }
+
     private class CustomImporter : BaseImporter
     {
         public override string Name => "CUSTOM";
@@ -48,6 +80,7 @@ public sealed class BaseImporterTests
         public override string SupportedFileExtension => ".input";
         public override string MatchingPattern => "unused";
         public override ReportSubjectKind SubjectKind => ReportSubjectKind.Component;
+        public override string SubjectKeyDefinedName => "Serial";
 
         public override Task<bool> CanImportAsync(string fileName, Stream? validationConfigXml = null) =>
             Task.FromResult(string.Equals(fileName, "special.input", StringComparison.OrdinalIgnoreCase));
@@ -88,5 +121,10 @@ public sealed class BaseImporterTests
                     Properties = []
                 }
             ]);
+    }
+
+    private sealed class MissingSubjectKeyImporter : CustomImporter
+    {
+        public override string SubjectKeyDefinedName => string.Empty;
     }
 }

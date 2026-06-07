@@ -41,24 +41,14 @@ namespace RRDA.Core.Validator
             };
 
         /// <summary>
-        /// Definisce i nomi di campo che, se presenti in un DefinedName, suggeriscono che
-        /// il campo è una chiave soggetto.
-        /// </summary>
-        private static readonly HashSet<string> SubjectKeyNames =             
-            new(StringComparer.OrdinalIgnoreCase)
-            {
-                "Serial",
-                "SN"
-            };
-
-        /// <summary>
         /// Mapping conservativo tra unità di misura e parole chiave presenti nei
         /// DefinedName. Le parole chiave vengono confrontate come token completi,
         /// così abbreviazioni come "F" non corrispondono a parti di altre parole.
         /// </summary>
         private static readonly (string Unit, string[] Keywords)[] UnitMappings =
         [
-            ("Hz", ["frequency", "freq", "frequenza"]),
+            ("Hz", ["frequency", "freq", "frequenza", "f"]),
+            ("°C", ["temperature", "temperatura", "temp"]),
             ("V", ["voltage", "volt", "tensione"]),
             ("A", ["current", "corrente", "ampere", "curr"]),
             ("W", ["power", "pwr", "potenza", "pow"]),
@@ -71,16 +61,22 @@ namespace RRDA.Core.Validator
         /// </summary>
         /// <param name="xlsxPath">Percorso file .xlsx di input.</param>
         /// <param name="outputXmlPath">Percorso file XML di output (sovrascritto).</param>
+        /// <param name="subjectKeyDefinedName">DefinedName SubjectKey dichiarato dal plugin.</param>
         /// <param name="failOnError">Valore dell'attributo failOnError nel root (default: true).</param>
         /// <param name="culture">Valore dell'attributo culture (default: CultureInfo.CurrentCulture.DefinedName).</param>
-        public static void CreateFromFile(string xlsxPath, string outputXmlPath, bool failOnError = true, string? culture = null)
+        public static void CreateFromFile(
+            string xlsxPath,
+            string outputXmlPath,
+            string subjectKeyDefinedName,
+            bool failOnError = true,
+            string? culture = null)
         {
             if (string.IsNullOrWhiteSpace(xlsxPath)) throw new ArgumentNullException(nameof(xlsxPath));
             if (string.IsNullOrWhiteSpace(outputXmlPath)) throw new ArgumentNullException(nameof(outputXmlPath));
 
             using var inFs = File.OpenRead(xlsxPath);
             using var outFs = File.Create(outputXmlPath);
-            CreateFromStream(inFs, outFs, failOnError, culture);
+            CreateFromStream(inFs, outFs, subjectKeyDefinedName, failOnError, culture);
         }
         /// <summary>
         /// Crea il file di validazione scrivendo l'XML su uno stream di output.
@@ -88,12 +84,19 @@ namespace RRDA.Core.Validator
         /// </summary>
         /// <param name="xlsxStream">Stream di input .xlsx (non chiuso dalla routine).</param>
         /// <param name="outputXmlStream">Stream di output per l'XML (non chiuso dalla routine).</param>
+        /// <param name="subjectKeyDefinedName">DefinedName SubjectKey dichiarato dal plugin.</param>
         /// <param name="failOnError">Valore dell'attributo failOnError nel root (default: true).</param>
         /// <param name="culture">Valore dell'attributo culture (default: CultureInfo.CurrentCulture.DefinedName).</param>
-        public static void CreateFromStream(Stream xlsxStream, Stream outputXmlStream, bool failOnError = true, string? culture = null)
+        public static void CreateFromStream(
+            Stream xlsxStream,
+            Stream outputXmlStream,
+            string subjectKeyDefinedName,
+            bool failOnError = true,
+            string? culture = null)
         {
             ArgumentNullException.ThrowIfNull(xlsxStream);
             ArgumentNullException.ThrowIfNull(outputXmlStream);
+            ArgumentException.ThrowIfNullOrWhiteSpace(subjectKeyDefinedName);
 
             // SpreadsheetDocument richiede uno stream seekable: copiamo se necessario
             Stream input = xlsxStream;
@@ -122,11 +125,14 @@ namespace RRDA.Core.Validator
 
                 var sheets = wb?.Sheets?.Elements<Sheet>()?.ToList() ?? [];
 
-                var subjectKey = definedNames.FirstOrDefault(dn => dn.Name?.Value is string name && SubjectKeyNames.Contains(name))?.Name?.Value;
-                if (string.IsNullOrWhiteSpace(subjectKey))
+                var subjectKeyExists = definedNames.Any(dn => string.Equals(
+                    dn.Name?.Value,
+                    subjectKeyDefinedName,
+                    StringComparison.OrdinalIgnoreCase));
+                if (!subjectKeyExists)
                 {
                     throw new InvalidDataException(
-                        $"Nessun SubjectKey trovato. Il workbook deve definire uno dei nomi: {string.Join(", ", SubjectKeyNames)}.");
+                        $"Il DefinedName SubjectKey '{subjectKeyDefinedName}' dichiarato dal plugin non è presente nel workbook.");
                 }
 
                 // root conforme a ValidationConfig.xsd
@@ -134,7 +140,7 @@ namespace RRDA.Core.Validator
                 root.SetAttributeValue("failOnError", failOnError.ToString().ToLowerInvariant());
                 root.SetAttributeValue("culture", (culture ?? CultureInfo.CurrentCulture.Name));
 
-                root.SetAttributeValue("subjectKeyField", subjectKey);
+                root.SetAttributeValue("subjectKeyField", subjectKeyDefinedName);
 
                 // Indice sheetName → WorksheetPart (riuso stesso pattern di OpenXmlExcelReader)
                 var sheetIndex = BuildSheetIndex(wb!, wbPart);

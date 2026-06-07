@@ -10,6 +10,10 @@ namespace RRDA.Core
         string MatchingPattern { get; }
         ReportSubjectKind SubjectKind { get; }
         /// <summary>
+        /// DefinedName del workbook che identifica univocamente il soggetto del report.
+        /// </summary>
+        string SubjectKeyDefinedName { get; }
+        /// <summary>
         /// Verifica se il plugin è idoneo al caricamento del file di report fornito.
         /// Deve essere usato prima di chiamare <see cref="ImportAsync"/>.
         /// </summary>

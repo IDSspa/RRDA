@@ -10,5 +10,6 @@ namespace RRDA.Plugins.ALI
         public override string SupportedFileExtension => ".xlsx";
         public override string MatchingPattern => "NCH_PAIPL_ALI";
         public override ReportSubjectKind SubjectKind => ReportSubjectKind.Component;
+        public override string SubjectKeyDefinedName => "Serial";
     }
 }

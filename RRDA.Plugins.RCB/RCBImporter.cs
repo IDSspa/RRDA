@@ -10,5 +10,6 @@ namespace RRDA.Plugins.RCB
         public override string SupportedFileExtension => ".xlsx";
         public override string MatchingPattern => "NCH_PAIPL_RCB";
         public override ReportSubjectKind SubjectKind => ReportSubjectKind.Component;
+        public override string SubjectKeyDefinedName => "Serial";
     }
 }

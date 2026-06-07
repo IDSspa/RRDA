@@ -10,5 +10,6 @@ namespace RRDA.Plugins.MAN_CIR
         public override string SupportedFileExtension => ".xlsx";
         public override string MatchingPattern => "NCH_PAIPL_MAN_CIR";
         public override ReportSubjectKind SubjectKind => ReportSubjectKind.Component;
+        public override string SubjectKeyDefinedName => "Serial";
     }
 }
