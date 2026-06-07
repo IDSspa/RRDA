@@ -107,15 +107,18 @@ namespace RRDA.Core.Validator
                 var sheets = wb?.Sheets?.Elements<Sheet>()?.ToList() ?? [];
 
                 var subjectKey = definedNames.FirstOrDefault(dn => dn.Name?.Value is string name && SubjectKeyNames.Contains(name))?.Name?.Value;
+                if (string.IsNullOrWhiteSpace(subjectKey))
+                {
+                    throw new InvalidDataException(
+                        $"Nessun SubjectKey trovato. Il workbook deve definire uno dei nomi: {string.Join(", ", SubjectKeyNames)}.");
+                }
 
                 // root conforme a ValidationConfig.xsd
                 var root = new XElement("ValidationConfig");
                 root.SetAttributeValue("failOnError", failOnError.ToString().ToLowerInvariant());
                 root.SetAttributeValue("culture", (culture ?? CultureInfo.CurrentCulture.Name));
 
-                // Imposta il valore di subjectKeyField se è stato identificato un DefinedName che corrisponde a una chiave soggetto
-                if (!string.IsNullOrEmpty(subjectKey))
-                    root.SetAttributeValue("subjectKeyField", subjectKey);
+                root.SetAttributeValue("subjectKeyField", subjectKey);
 
                 // Indice sheetName → WorksheetPart (riuso stesso pattern di OpenXmlExcelReader)
                 var sheetIndex = BuildSheetIndex(wb!, wbPart);

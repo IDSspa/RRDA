@@ -260,21 +260,6 @@ namespace RRDA.Data
                 b.Property(x => x.LastLoginAt)
                     .HasColumnType("datetime2");
 
-                // ----------------------------------------------------------------
-                // Seed: primo utente Admin — SOSTITUIRE con il proprio account
-                // prima di eseguire la migration.
-                // Il valore di CreatedAt deve essere costante per evitare migration
-                // rilevate come modifiche ad ogni build.
-                // ----------------------------------------------------------------
-                b.HasData(new AppUser
-                {
-                    Id = 1,
-                    WindowsUsername = @"IDS\m.santucci",   // <-- modificare
-                    DisplayName = "Administrator (seed)",
-                    Role = AppUserRole.Admin,
-                    IsEnabled = true,
-                    CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc)
-                });
             });
 
             base.OnModelCreating(modelBuilder);

@@ -30,7 +30,7 @@ namespace RRDA.RepImp
         private ListSortDirection _lastDirection;
         private bool _applyForAll = false;
         private DuplicateImportStrategy _duplicateStrategy = DuplicateImportStrategy.NewVersion;
-        private readonly ObservableCollection<FileItem> _fileItems = [];
+        private readonly ObservableCollection<RepImpFileItem> _fileItems = [];
         private readonly IReportTypeCompatibilityChecker _reportTypeCompatibilityChecker;
         private readonly IPluginService _pluginService;
         private readonly IAuditService _auditService;
@@ -149,19 +149,27 @@ namespace RRDA.RepImp
                     cts.Token);
 
                 var fileItems = scannedFiles
-                    .Select(f => new FileItem(
-                        f.Name,
-                        f.Length,
-                        f.LastWriteTime,
-                        f.ReportType ?? string.Empty,
-                        f.FullPath))
+                    .Select(f =>
+                    {
+                        var reportType = f.ReportType ?? string.Empty;
+                        var validatorPath = ResolveValidatorPath(reportType);
+                        return new RepImpFileItem(
+                            f.Name,
+                            f.Length,
+                            f.LastWriteTime,
+                            reportType,
+                            f.FullPath,
+                            validatorPath is not null,
+                            validatorPath);
+                    })
                     .ToList();
 
                 FilesListView.ItemsSource = fileItems;
 
                 Log($"Caricati {fileItems.Count} file *.xlsx da '{folderPath}' " +
                     $"(profondità ricorsione={maxDepth}). " +
-                    $"Plugin applicabili trovati per {fileItems.Count(f => !string.IsNullOrEmpty(f.Tipo))} file.");
+                    $"Plugin applicabili trovati per {fileItems.Count(f => !string.IsNullOrEmpty(f.Tipo))} file; " +
+                    $"validatori disponibili per {fileItems.Count(f => f.HasValidator)} file.");
             }
             catch (OperationCanceledException)
             {
@@ -210,6 +218,15 @@ namespace RRDA.RepImp
             return _pluginService.ResolvePluginsFolder(
                 Properties.Settings.Default.PluginsFolder,
                 AppDomain.CurrentDomain.BaseDirectory);
+        }
+
+        private string? ResolveValidatorPath(string? pluginName)
+        {
+            if (string.IsNullOrWhiteSpace(pluginName))
+                return null;
+
+            var path = Path.Combine(ResolvePluginsFolder(), $"{pluginName}.xml");
+            return File.Exists(path) ? path : null;
         }
 
         private async Task CheckReportTypesCompatibilityAsync()
@@ -338,7 +355,7 @@ namespace RRDA.RepImp
             }
         }
 
-        private async Task<bool> ImportReport(FileItem fi,
+        private async Task<bool> ImportReport(RepImpFileItem fi,
                                               string? user = null,
                                               ImportProgressDialog? progressDlg = null,
                                               int? batchId = null,
@@ -358,47 +375,37 @@ namespace RRDA.RepImp
                 return false;
             }
 
+            var validatorPath = ResolveValidatorPath(plugin.Name);
+            if (validatorPath is null)
+            {
+                var message = $"Configurazione di validazione mancante per il plugin '{plugin.Name}'.";
+                Log($"Import non disponibile per '{fi.Name}': {message}");
+                MessageBox.Show(this, message, "Validatore mancante", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return false;
+            }
+
             Log($"Avvio import per '{fi.Name}' usando plugin '{plugin.Name}'...");
 
             // Prepariamo gli stream: file di input + possibile validation config (se presente)
             FileStream? fileStream = null;
-            FileStream? validationStream = null;
+            Stream? validationStream = null;
 
             try
             {
                 fileStream = File.OpenRead(fi.FullPath);
 
-                // Tentiamo di trovare un file di configurazione XML per il plugin nella cartella dei plugin
-                var pluginsFolder = ResolvePluginsFolder();
-
-                string? possibleConfigPath = null;
-
-                if (!string.IsNullOrWhiteSpace(pluginsFolder) && Directory.Exists(pluginsFolder))
+                try
                 {
-                    var validatorFilePath = Path.Combine(pluginsFolder, plugin.Name + ".xml");
-
-                    if (File.Exists(validatorFilePath)) possibleConfigPath = validatorFilePath;
+                    validationStream = File.OpenRead(validatorPath);
+                    Log($"Usata configurazione di validazione: '{validatorPath}'.");
                 }
-
-                if (!string.IsNullOrWhiteSpace(possibleConfigPath))
+                catch (Exception ex)
                 {
-                    try
-                    {
-                        validationStream = File.OpenRead(possibleConfigPath);
-                        Log($"Usata configurazione di validazione: '{possibleConfigPath}'.");
-                    }
-                    catch (Exception ex)
-                    {
-                        Log($"Impossibile aprire configurazione di validazione '{possibleConfigPath}': {ex.Message}. Verrà passato uno stream vuoto.");
-                        validationStream?.Dispose();
-                        validationStream = Stream.Null as FileStream;
-                    }
-                }
-                else
-                {
-                    // Nessuna configurazione trovata: passiamo Stream.Null
-                    validationStream = Stream.Null as FileStream;
-                    Log("Nessuna configurazione di validazione trovata per il plugin; passato Stream.Null.");
+                    Log($"Impossibile aprire configurazione di validazione '{validatorPath}': {ex.Message}");
+                    MessageBox.Show(this,
+                        $"Impossibile aprire il validatore:{Environment.NewLine}{validatorPath}{Environment.NewLine}{ex.Message}",
+                        "Errore validatore", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return false;
                 }
 
                 // Chiamata a ImportAsync del plugin
@@ -415,17 +422,7 @@ namespace RRDA.RepImp
 
 
                     // Carica e valida la configurazione XML
-                    var config = ValidationConfig.Load(validationStream ?? Stream.Null);
-
-                    /*
-                     * MainWindow.ImportReport() gestisce già il caso in cui il file XML non esista 
-                     * passando Stream.Null. Con la nuova firma occorre decidere il comportamento: 
-                     * se SubjectKeyField è obbligatorio nello XSD, un file XML mancante diventa un 
-                     * errore bloccante. 
-                     * Loggare un warning e restituire un ImportResult con Success = false prima 
-                     * ancora di chiamare ImportAsync, rendendo esplicito che un import senza 
-                     * configurazione valida non è ammesso?
-                     */
+                    var config = ValidationConfig.Load(validationStream);
 
                     // ImportAsync restituisce ImportResult; usiamo reflection-safe nel logging dopo l'await
                     var task = plugin.ImportAsync(fileStream, config, innerProgress, ct);
@@ -596,7 +593,7 @@ namespace RRDA.RepImp
                                 try
                                 {
                                     var (reportFileId, entitiesSaved, propertiesSaved) =
-                                        await ImportResultRepository.SaveAsync(fi,
+                                        await ImportResultRepository.SaveAsync(fi.ToDataFileItem(),
                                                                                importResult,
                                                                                db,
                                                                                Log,
@@ -836,9 +833,9 @@ namespace RRDA.RepImp
 
         private void FilesListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (FilesListView.SelectedItem is FileItem fi)
+            if (FilesListView.SelectedItem is RepImpFileItem fi)
             {
-                Log($"File selezionato: {fi.Name} ({fi.Length} byte) - Tipo: {fi.Tipo}");
+                Log($"File selezionato: {fi.Name} ({fi.Length} byte) - Tipo: {fi.Tipo} - Validatore: {fi.ValidatorStatus}");
             }
             else if (FilesListView.SelectedItem is FileInfo ffi)
             {
@@ -859,25 +856,16 @@ namespace RRDA.RepImp
                 // Se è stato selezionato solo un file, anche se non valido, abilitiamo i comandi di apertura e apertura percorso
                 FileOpenFolderMenuItem.IsEnabled = FileOpenMenuItem.IsEnabled = (FilesListView.SelectedItems.Count == 1);
 
-                bool isFValidFile = false;
+                var selectedFiles = FilesListView.SelectedItems.OfType<RepImpFileItem>().ToList();
+                var firstSelectedFile = selectedFiles.FirstOrDefault();
 
-                FileItem? firstValidFile = null;
+                FileImportMenuItem.IsEnabled = selectedFiles.Count > 0
+                    && selectedFiles.All(file =>
+                        !string.IsNullOrWhiteSpace(file.Tipo)
+                        && ResolveValidatorPath(file.Tipo) is not null);
 
-                // Viene verificato se il file è valido (ha un plugin associato) per abilitare il comando di importazione ed esportazione validatore.
-                // Se sono selezionati più file, il comando di importazione è abilitato se almeno uno è valido,
-                // mentre il comando di esportazione validatore è abilitato solo se esattamente uno è valido.
-                foreach (var item in FilesListView.SelectedItems)
-                    if (item is FileItem fi && !string.IsNullOrWhiteSpace(fi.Tipo))
-                    {
-                        isFValidFile = true;
-                        firstValidFile = fi;
-                        break;
-                    }
-
-                FileImportMenuItem.IsEnabled = (isFValidFile && firstValidFile != null);
-
-                if (isFValidFile && firstValidFile != null && FilesListView.SelectedItems.Count == 1)
-                    FileExportValidatorMenuItem.IsEnabled = (_plugins.FirstOrDefault(p => string.Equals(p.Name, firstValidFile.Tipo, StringComparison.OrdinalIgnoreCase)) != null);
+                if (firstSelectedFile != null && selectedFiles.Count == 1)
+                    FileExportValidatorMenuItem.IsEnabled = (_plugins.FirstOrDefault(p => string.Equals(p.Name, firstSelectedFile.Tipo, StringComparison.OrdinalIgnoreCase)) != null);
                 else
                     FileExportValidatorMenuItem.IsEnabled = false;
             }
@@ -904,7 +892,7 @@ namespace RRDA.RepImp
                 // Determina il file selezionato (può essere FileItem o FileInfo)
                 string? fullPath = null;
 
-                if (FilesListView.SelectedItem is FileItem fi)
+                if (FilesListView.SelectedItem is RepImpFileItem fi)
                     fullPath = fi.FullPath;
                 else if (FilesListView.SelectedItem is FileInfo ffi)
                     fullPath = ffi.FullName;
@@ -947,11 +935,23 @@ namespace RRDA.RepImp
 
         private async void File_Import_Click(object? sender, RoutedEventArgs e)
         {
-            var selectedItems = FilesListView.SelectedItems?.OfType<FileItem>().ToList();
+            var selectedItems = FilesListView.SelectedItems?.OfType<RepImpFileItem>().ToList();
 
             if (selectedItems == null || selectedItems.Count == 0)
             {
                 MessageBox.Show(this, "Seleziona almeno un file da importare.", "Nessun file selezionato", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            var unavailableFiles = selectedItems
+                .Where(file => string.IsNullOrWhiteSpace(file.Tipo) || ResolveValidatorPath(file.Tipo) is null)
+                .Select(file => file.Name)
+                .ToList();
+            if (unavailableFiles.Count > 0)
+            {
+                var message = $"Importazione non disponibile: {unavailableFiles.Count} file non hanno un plugin o un validatore disponibile.";
+                Log($"{message} File: {string.Join(", ", unavailableFiles)}.");
+                MessageBox.Show(this, message, "Validatore mancante", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -1079,7 +1079,7 @@ namespace RRDA.RepImp
 
         private void File_ExportValidator_Click(object? sender, RoutedEventArgs e)
         {
-            if (FilesListView.SelectedItem is not FileItem fi)
+            if (FilesListView.SelectedItem is not RepImpFileItem fi)
             {
                 MessageBox.Show(this, "Seleziona un file per esportare il validatore.", "Nessun file selezionato", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
@@ -1145,6 +1145,19 @@ namespace RRDA.RepImp
             try
             {
                 ValidationFileCreator.CreateFromFile(fi.FullPath, outputFile);
+                if (FilesListView.ItemsSource is List<RepImpFileItem> fileItems)
+                {
+                    var index = fileItems.FindIndex(item => item.FullPath == fi.FullPath);
+                    if (index >= 0)
+                    {
+                        fileItems[index] = fi with
+                        {
+                            HasValidator = true,
+                            ValidatorPath = outputFile
+                        };
+                        CollectionViewSource.GetDefaultView(FilesListView.ItemsSource)?.Refresh();
+                    }
+                }
                 Log($"File di validazione creato in '{outputFile}' per report '{fi.Name}' utilizzando plugin '{plugin.Name}'.");
                 MessageBox.Show(this, $"File di validazione creato:{Environment.NewLine}{outputFile}", "Esporta validatore", MessageBoxButton.OK, MessageBoxImage.Information);
             }
@@ -1160,7 +1173,7 @@ namespace RRDA.RepImp
             try
             {
                 // Seleziona il file dalla lista (può essere FileItem o FileInfo)
-                if (FilesListView.SelectedItem is FileItem fi)
+                if (FilesListView.SelectedItem is RepImpFileItem fi)
                 {
                     if (!File.Exists(fi.FullPath))
                     {

@@ -1,6 +1,9 @@
 ﻿using DocumentFormat.OpenXml.Spreadsheet;
 using System.Globalization;
+using System.Reflection;
+using System.Xml;
 using System.Xml.Linq;
+using System.Xml.Schema;
 
 namespace RRDA.Core.Validator
 {
@@ -20,12 +23,41 @@ namespace RRDA.Core.Validator
         /// <returns></returns>
         public static ValidationConfig Load(Stream xmlStream)
         {
-            // TODO: Aggiungere validazione XML contro uno schema XSD per garantire la correttezza del formato e dei dati.
-            // Aggiungere gestione eccezioni per errori di parsing, mancanza di attributi obbligatori, o formati di dati
-            // errati, con messaggi chiari per facilitare il debug e la correzione del file XML.
-            var doc = XDocument.Load(xmlStream);
+            ArgumentNullException.ThrowIfNull(xmlStream);
 
-            var root = doc.Root!;
+            XDocument doc;
+            try
+            {
+                using var schemaStream = Assembly.GetExecutingAssembly()
+                    .GetManifestResourceStream("RRDA.Core.Validator.ValidationConfig.xsd")
+                    ?? throw new InvalidOperationException("Schema XSD ValidationConfig non disponibile.");
+                var schemas = new XmlSchemaSet();
+                schemas.Add(null, XmlReader.Create(schemaStream));
+
+                var settings = new XmlReaderSettings
+                {
+                    DtdProcessing = DtdProcessing.Prohibit,
+                    XmlResolver = null,
+                    ValidationType = ValidationType.Schema,
+                    Schemas = schemas
+                };
+                settings.ValidationEventHandler += (_, args) =>
+                    throw new XmlSchemaValidationException(
+                        $"ValidationConfig XML non valido: {args.Message}",
+                        args.Exception);
+
+                using var reader = XmlReader.Create(xmlStream, settings);
+                doc = XDocument.Load(reader, LoadOptions.SetLineInfo);
+            }
+            catch (Exception ex) when (ex is XmlException or XmlSchemaException)
+            {
+                throw new InvalidDataException(
+                    $"Impossibile caricare ValidationConfig: {ex.Message}",
+                    ex);
+            }
+
+            var root = doc.Root
+                ?? throw new InvalidDataException("ValidationConfig XML privo dell'elemento root.");
 
             var cfg = new ValidationConfig
             {
@@ -124,7 +156,7 @@ namespace RRDA.Core.Validator
                 cfg.FieldRules.Add(fr);
             }
 
-            cfg.SubjectKeyField = (string?)root?.Attribute("subjectKeyField") ?? string.Empty;
+            cfg.SubjectKeyField = (string?)root.Attribute("subjectKeyField") ?? string.Empty;
 
             var rowRules = root.Element("RowRules")?.Elements("Rule") ?? [];
             

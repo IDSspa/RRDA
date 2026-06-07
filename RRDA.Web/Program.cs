@@ -10,6 +10,7 @@ using RRDA.Web.Services;
 using System.Runtime.Versioning;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Configuration.AddEnvironmentVariables(prefix: "RRDA_");
 
 var isDevelopment = builder.Environment.IsDevelopment();
 var skipWindowsAuth = isDevelopment &&
@@ -79,6 +80,7 @@ builder.Services.AddSingleton<IPluginCatalog, PluginCatalog>();
 builder.Services.AddScoped<IReportTypeSynchronizer, ReportTypeSynchronizer>();
 builder.Services.AddScoped<IWebPluginManagementService, WebPluginManagementService>();
 builder.Services.AddScoped<IWebAuditService, WebAuditService>();
+builder.Services.AddHostedService<AdminBootstrapStartupService>();
 builder.Services.AddHostedService<PluginCatalogStartupService>();
 
 var app = builder.Build();

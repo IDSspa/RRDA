@@ -30,11 +30,6 @@ namespace RRDA.Data.Migrations
                     table.PrimaryKey("PK_AppUsers", x => x.Id);
                 });
 
-            migrationBuilder.InsertData(
-                table: "AppUsers",
-                columns: new[] { "Id", "CreatedAt", "DisplayName", "IsEnabled", "LastLoginAt", "Role", "WindowsUsername" },
-                values: new object[] { 1, new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), "Administrator (seed)", true, null, 2, "IDS\\m.santucci" });
-
             migrationBuilder.CreateIndex(
                 name: "IX_AppUsers_WindowsUsername",
                 table: "AppUsers",

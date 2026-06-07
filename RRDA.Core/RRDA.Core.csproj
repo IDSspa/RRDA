@@ -11,9 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="Validator\ValidationConfig.xsd">
-      <SubType>Designer</SubType>
-    </None>
+    <EmbeddedResource Include="Validator\ValidationConfig.xsd" />
   </ItemGroup>
 
 </Project>

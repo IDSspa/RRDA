@@ -63,16 +63,6 @@ namespace RRDA.Data.Migrations
 
                     b.ToTable("AppUsers", (string)null);
 
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            DisplayName = "Administrator (seed)",
-                            IsEnabled = true,
-                            Role = 2,
-                            WindowsUsername = "IDS\\m.santucci"
-                        });
                 });
 
             modelBuilder.Entity("RRDA.Data.ReportBatch", b =>

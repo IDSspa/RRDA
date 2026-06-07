@@ -29,10 +29,15 @@ public sealed class ValidationFileCreatorTests
 
         output.Position = 0;
         var document = XDocument.Load(output);
-        var field = document.Descendants("Field").Single();
+        var field = document.Descendants("Field")
+            .Single(element => element.Attribute("definedName")?.Value == "Meas_F_1950");
 
         Assert.Equal("Meas_F_1950", field.Attribute("definedName")?.Value);
         Assert.Equal(expectedType, field.Attribute("type")?.Value);
+        Assert.Equal("Serial", document.Root?.Attribute("subjectKeyField")?.Value);
+
+        output.Position = 0;
+        Assert.Equal("Serial", ValidationConfig.Load(output).SubjectKeyField);
     }
 
     private static MemoryStream CreateWorkbookWithSharedString(
@@ -62,6 +67,12 @@ public sealed class ValidationFileCreatorTests
                             CellReference = "K54",
                             DataType = CellValues.SharedString,
                             CellValue = new CellValue("0")
+                        },
+                        new Cell
+                        {
+                            CellReference = "L54",
+                            DataType = CellValues.Number,
+                            CellValue = new CellValue("1")
                         })));
 
             workbookPart.Workbook.AppendChild(new Sheets(
@@ -76,6 +87,11 @@ public sealed class ValidationFileCreatorTests
                 {
                     Name = definedName,
                     Text = "Procedura!$K$54"
+                },
+                new DefinedName
+                {
+                    Name = "Serial",
+                    Text = "Procedura!$L$54"
                 }));
         }
 

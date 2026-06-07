@@ -175,6 +175,7 @@
                                 <GridView>
                                     <GridViewColumn x:Name="NameColumn" Header="Nome" Width="300" DisplayMemberBinding="{Binding Name}"/>
                                     <GridViewColumn x:Name="TypeColumn" Header="Tipo" Width="200" DisplayMemberBinding="{Binding Tipo}" HeaderTemplate="{StaticResource SortableHeaderTemplate}"/>
+                                    <GridViewColumn x:Name="ValidatorColumn" Header="Validatore" Width="120" DisplayMemberBinding="{Binding ValidatorStatus}"/>
                                     <GridViewColumn x:Name="PathColumn" Header="Percorso" Width="400" DisplayMemberBinding="{Binding FullPath}"/>
                                     <GridViewColumn x:Name="SizeColumn" Header="Dimensione" Width="100" DisplayMemberBinding="{Binding Length}"/>
                                     <GridViewColumn x:Name="LastModifiedColumn" Header="Ultima modifica" Width="180" DisplayMemberBinding="{Binding LastWriteTime}"/>
