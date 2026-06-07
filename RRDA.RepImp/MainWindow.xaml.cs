@@ -492,25 +492,8 @@ namespace RRDA.RepImp
                     if (importResult.Entities != null
                         && importResult.Entities.Any())
                     {
-                        RRDADbContext? db = null;
-                        var connStr = Properties.Settings.Default.ConnectionString;
-
                         try
                         {
-                            if (!string.IsNullOrWhiteSpace(connStr))
-                            {
-                                var optionsBuilder = new DbContextOptionsBuilder<RRDADbContext>();
-                                optionsBuilder.UseSqlServer(connStr);
-                                db = new RRDADbContext(optionsBuilder.Options);
-                            }
-                            else
-                            {
-                                db = new RRDAContextFactory().CreateDbContext([]);
-                                Log("ConnectionString non impostata; usata la connection string della RRDAContextFactory come fallback.");
-                            }
-
-                            await using (db)
-                            {
                                 // -------------------------------------------------------
                                 // Controllo duplicato: verifica se il file è già in DB
                                 // prima di aprire il dialog, per non disturbarlo se il
@@ -520,7 +503,6 @@ namespace RRDA.RepImp
                                 int existing = await _importResultRepository.CountExistingAsync(
                                     fileName: fi.Name,
                                     reportTypeKey: importResult.ReportTypeKey,
-                                    db: db,
                                     cancellationToken: ct);
 
                                 if (existing > 0 && !_applyForAll)
@@ -566,7 +548,6 @@ namespace RRDA.RepImp
                                     var saved = await _importResultRepository.SaveAsync(
                                         file: fi.ToDataFileItem(),
                                         importResult: importResult,
-                                        db: db,
                                         logger: Log,
                                         user: user,
                                         batchId: batchId,
@@ -608,7 +589,6 @@ namespace RRDA.RepImp
                                         die.Message,
                                         new { FilePath = fi.FullPath, Plugin = plugin.Name });
                                 }
-                            }
                         }
                         catch (Exception ex)
                         {

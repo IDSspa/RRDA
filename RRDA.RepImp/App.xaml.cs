@@ -14,7 +14,8 @@ namespace RRDA.RepImp
             new ReportTypeCompatibilityChecker();
         private readonly IPluginService _pluginService = new PluginService();
         private readonly IAuditService _auditService = new AuditService();
-        private readonly IImportResultRepository _importResultRepository = new ImportResultRepository();
+        private readonly IImportResultRepository _importResultRepository =
+            new ImportResultRepository(new SettingsDbContextFactory());
 
         protected override void OnStartup(StartupEventArgs e)
         {

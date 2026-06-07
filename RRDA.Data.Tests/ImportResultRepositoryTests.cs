@@ -23,14 +23,15 @@ public sealed class ImportResultRepositoryTests
     [Fact]
     public async Task CountExistingAsync_UsesFileNameAndReportTypeAcrossDifferentPaths()
     {
-        await using var db = CreateDbContext();
+        var factory = CreateDbContextFactory();
+        await using var db = factory.CreateDbContext();
         var reportType = CreateReportType();
         db.ReportFiles.Add(CreateReportFile(reportType, @"C:\client-a\report.xlsx"));
         await db.SaveChangesAsync();
 
-        IImportResultRepository repository = new ImportResultRepository();
+        IImportResultRepository repository = new ImportResultRepository(factory);
 
-        var count = await repository.CountExistingAsync("report.xlsx", reportType.Key, db);
+        var count = await repository.CountExistingAsync("report.xlsx", reportType.Key);
 
         Assert.Equal(1, count);
     }
@@ -38,12 +39,13 @@ public sealed class ImportResultRepositoryTests
     [Fact]
     public async Task SaveAsync_BlockRejectsSameFileNameAndReportTypeFromDifferentPath()
     {
-        await using var db = CreateDbContext();
+        var factory = CreateDbContextFactory();
+        await using var db = factory.CreateDbContext();
         var reportType = CreateReportType();
         db.ReportFiles.Add(CreateReportFile(reportType, @"C:\client-a\report.xlsx"));
         await db.SaveChangesAsync();
 
-        IImportResultRepository repository = new ImportResultRepository();
+        IImportResultRepository repository = new ImportResultRepository(factory);
         var file = new ImportFileItem(
             "report.xlsx",
             Length: 100,
@@ -61,21 +63,21 @@ public sealed class ImportResultRepositoryTests
             repository.SaveAsync(
                 file,
                 result,
-                db,
                 duplicateStrategy: DuplicateImportStrategy.Block));
 
         Assert.Equal("report.xlsx", exception.FileName);
         Assert.Equal(1, exception.ExistingCount);
-        Assert.Single(db.ReportFiles);
+        await using var verificationDb = factory.CreateDbContext();
+        Assert.Single(verificationDb.ReportFiles);
     }
 
-    private static RRDADbContext CreateDbContext()
+    private static IDbContextFactory<RRDADbContext> CreateDbContextFactory()
     {
         var options = new DbContextOptionsBuilder<RRDADbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .ConfigureWarnings(warnings => warnings.Ignore(InMemoryEventId.TransactionIgnoredWarning))
             .Options;
-        return new RRDADbContext(options);
+        return new TestDbContextFactory(options);
     }
 
     private static ReportType CreateReportType() =>
@@ -98,4 +100,10 @@ public sealed class ImportResultRepositoryTests
             Entities = [],
             FileLastModify = DateTime.UtcNow
         };
+
+    private sealed class TestDbContextFactory(DbContextOptions<RRDADbContext> options)
+        : IDbContextFactory<RRDADbContext>
+    {
+        public RRDADbContext CreateDbContext() => new(options);
+    }
 }

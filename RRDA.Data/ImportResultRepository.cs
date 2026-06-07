@@ -7,28 +7,29 @@ namespace RRDA.Data
     /// Repository per la persistenza del risultato di import.
     /// Implementazione EF Core (usa il modello RRDADbContext).
     /// </summary>
-    public sealed class ImportResultRepository : IImportResultRepository
+    public sealed class ImportResultRepository(
+        IDbContextFactory<RRDADbContext> dbFactory) : IImportResultRepository
     {
         /// <summary>
-        /// Salva ImportResult nel database usando il DbContext EF Core fornito.
+        /// Salva ImportResult usando un DbContext creato e gestito dal repository.
         /// Restituisce il riepilogo dei dati salvati.
         /// </summary>
         public async Task<ImportSaveResult> SaveAsync(
             ImportFileItem file,
             ImportResult importResult,
-            RRDADbContext db,
             Action<string>? logger = null,
             string? user = null,
             int? batchId = null,
             DuplicateImportStrategy duplicateStrategy = DuplicateImportStrategy.NewVersion,
             CancellationToken cancellationToken = default)
         {
-            ArgumentNullException.ThrowIfNull(db);
             ArgumentNullException.ThrowIfNull(file);
             ArgumentNullException.ThrowIfNull(importResult);
             
             if (string.IsNullOrWhiteSpace(file.Name))
                 throw new ArgumentException("FileName non valido.", nameof(file));
+
+            await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
 
             // transazione EF
             await using var tran = await db.Database.BeginTransactionAsync(cancellationToken);
@@ -171,10 +172,9 @@ namespace RRDA.Data
         public async Task<int> CountExistingAsync(
             string fileName,
             string reportTypeKey,
-            RRDADbContext db,
             CancellationToken cancellationToken = default)
         {
-            ArgumentNullException.ThrowIfNull(db);
+            await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
 
             return await db.ReportFiles
                            .AsNoTracking()

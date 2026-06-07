@@ -7,7 +7,6 @@ public interface IImportResultRepository
     Task<ImportSaveResult> SaveAsync(
         ImportFileItem file,
         ImportResult importResult,
-        RRDADbContext db,
         Action<string>? logger = null,
         string? user = null,
         int? batchId = null,
@@ -17,7 +16,6 @@ public interface IImportResultRepository
     Task<int> CountExistingAsync(
         string fileName,
         string reportTypeKey,
-        RRDADbContext db,
         CancellationToken cancellationToken = default);
 }
 

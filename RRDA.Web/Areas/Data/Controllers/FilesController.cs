@@ -239,7 +239,6 @@ namespace RRDA.Web.Areas.Data.Controllers
                 var saved = await importResultRepository.SaveAsync(
                     file: fileItem,
                     importResult: importResult,
-                    db: db,
                     logger: message => logger.LogInformation("{ImportMessage}", message),
                     user: User.Identity?.Name,
                     batchId: model.BatchId,
