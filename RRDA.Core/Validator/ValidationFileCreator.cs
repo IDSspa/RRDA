@@ -180,9 +180,12 @@ namespace RRDA.Core.Validator
                         new XAttribute("required", "false"),
                         new XAttribute("type", inferredType)
                     );
-                    var inferredUnit = unitMappings.InferUnit(dnName);
-                    if (inferredUnit is not null)
-                        fieldEl.SetAttributeValue("unit", inferredUnit);
+                    if (IsNumericType(inferredType))
+                    {
+                        var inferredUnit = unitMappings.InferUnit(dnName);
+                        if (inferredUnit is not null)
+                            fieldEl.SetAttributeValue("unit", inferredUnit);
+                    }
 
                     fieldsEl.Add(fieldEl);
                 }
@@ -257,6 +260,9 @@ namespace RRDA.Core.Validator
             // 5. Fallback
             return "string";
         }
+        private static bool IsNumericType(string inferredType)
+            => inferredType is "int" or "double";
+
         private static string ReadCellText(Cell cell, SharedStringTable? sharedStrings)
         {
             if (cell.DataType?.Value == CellValues.SharedString

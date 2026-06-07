@@ -10,12 +10,13 @@ namespace RRDA.Core.Tests;
 public sealed class ValidationFileCreatorTests
 {
     [Theory]
-    [InlineData("1950.002381", "double")]
-    [InlineData("1950", "int")]
-    [InlineData("testo", "string")]
+    [InlineData("1950.002381", "double", "MHz")]
+    [InlineData("1950", "int", "MHz")]
+    [InlineData("testo", "string", null)]
     public void CreateFromStream_InfersTypeFromSharedStringValue(
         string sharedStringValue,
-        string expectedType)
+        string expectedType,
+        string? expectedUnit)
     {
         using var mappings = CreateUnitMappings();
         using var workbookStream = CreateWorkbookWithSharedString("Meas_F_1950", sharedStringValue);
@@ -35,13 +36,13 @@ public sealed class ValidationFileCreatorTests
 
         Assert.Equal("Meas_F_1950", field.Attribute("definedName")?.Value);
         Assert.Equal(expectedType, field.Attribute("type")?.Value);
-        Assert.Equal("MHz", field.Attribute("unit")?.Value);
+        Assert.Equal(expectedUnit, field.Attribute("unit")?.Value);
         Assert.Equal("Serial", document.Root?.Attribute("subjectKeyField")?.Value);
 
         output.Position = 0;
         var config = ValidationConfig.Load(output);
         Assert.Equal("Serial", config.SubjectKeyField);
-        Assert.Equal("MHz", config.FieldRules.Single(rule => rule.DefinedName == "Meas_F_1950").Unit);
+        Assert.Equal(expectedUnit, config.FieldRules.Single(rule => rule.DefinedName == "Meas_F_1950").Unit);
     }
 
     [Theory]
@@ -93,6 +94,33 @@ public sealed class ValidationFileCreatorTests
         Assert.Null(field.Attribute("unit"));
     }
 
+    [Theory]
+    [InlineData("ALI_PWR_IN", "123.45", "double", "W")]
+    [InlineData("ALI_PWR_IN_CHECK", "PASS", "string", null)]
+    public void CreateFromStream_AppliesUnitsOnlyToNumericFields(
+        string definedName,
+        string value,
+        string expectedType,
+        string? expectedUnit)
+    {
+        using var workbookStream = CreateWorkbookWithSharedString(definedName, value);
+        using var output = new MemoryStream();
+
+        ValidationFileCreator.CreateFromStream(
+            workbookStream,
+            output,
+            "Serial",
+            Path.Combine(AppContext.BaseDirectory, "UnitMappings.xml"),
+            culture: "it-IT");
+
+        output.Position = 0;
+        var field = XDocument.Load(output).Descendants("Field")
+            .Single(element => element.Attribute("definedName")?.Value == definedName);
+
+        Assert.Equal(expectedType, field.Attribute("type")?.Value);
+        Assert.Equal(expectedUnit, field.Attribute("unit")?.Value);
+    }
+
     [Fact]
     public void CreateFromStream_OmitsUnitsWhenMappingPathIsEmpty()
     {
@@ -133,6 +161,7 @@ public sealed class ValidationFileCreatorTests
     [InlineData("RIPPLE_V_DIGITAL", "mV")]
     [InlineData("MAN2_PWR_PA_FLAT", "dB")]
     [InlineData("PWR_3_3", "A")]
+    [InlineData("ALI_PWR_IN", "W")]
     public void UnitMappingResolver_LoadsDistributedMappingFile(
         string definedName,
         string expectedUnit)
