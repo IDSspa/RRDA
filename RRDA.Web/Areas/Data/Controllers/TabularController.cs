@@ -1,14 +1,11 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Memory;
 using RRDA.Core.Exporting;
 using RRDA.Data;
 using RRDA.Web.Security;
 using RRDA.Web.Services.TypePivot;
 using System.Globalization;
-using System.Security.Cryptography;
-using System.Text;
 
 namespace RRDA.Web.Areas.Data.Controllers
 {
@@ -17,16 +14,15 @@ namespace RRDA.Web.Areas.Data.Controllers
     public class TabularController(
         RRDADbContext db,
         IConfiguration configuration,
-        IMemoryCache cache,
         IDataExportService exportService,
         ITypePivotDatasetService typePivotDatasetService,
-        ITypePivotPlotService typePivotPlotService) : Controller
+        ITypePivotPlotService typePivotPlotService,
+        ITypePivotOrderingService typePivotOrderingService,
+        ITypePivotStatisticsService typePivotStatisticsService) : Controller
     {
         private const string DecimalPlacesCookieName = "RRDA_TypePivot_DecimalPlaces";
         private const int DefaultDecimalPlaces = 4;
         private const int MaxDecimalPlaces = 15;
-        private const int StatsCacheDurationMinutes = 10;  // Cache for 10 minutes
-        private const string StatsCacheKeyPrefix = "TypePivot_Stats_";
 
         public async Task<IActionResult> Subject(int reportTypeId)
         {
@@ -132,7 +128,9 @@ namespace RRDA.Web.Areas.Data.Controllers
             var allFilteredFileIds = filterResult.FileIds;
             var metadata = filterResult.Metadata;
             var totalFiles = allFilteredFileIds.Count;
-            var normalizedSortField = string.Equals(sortField, "SubjectKey", StringComparison.OrdinalIgnoreCase)
+            var normalizedSortField = metadata.HasSubjectKey
+                && (string.IsNullOrWhiteSpace(sortField)
+                    || string.Equals(sortField, "SubjectKey", StringComparison.OrdinalIgnoreCase))
                 ? "SubjectKey"
                 : null;
             var normalizedSortDirection = string.Equals(sortDirection, "desc", StringComparison.OrdinalIgnoreCase)
@@ -140,7 +138,10 @@ namespace RRDA.Web.Areas.Data.Controllers
                 : "asc";
 
             if (normalizedSortField == "SubjectKey")
-                allFilteredFileIds = await OrderFileIdsBySubjectKeyAsync(allFilteredFileIds, normalizedSortDirection);
+                allFilteredFileIds = await typePivotOrderingService.OrderBySubjectKeyAsync(
+                    allFilteredFileIds,
+                    normalizedSortDirection,
+                    cancellationToken);
 
             var filesPage = allFilteredFileIds
                 .Skip((page - 1) * pageSize)
@@ -210,12 +211,11 @@ namespace RRDA.Web.Areas.Data.Controllers
             var measurePairs = allPairs.Where(p => !p.IsSubjectKey).ToList();
 
             var visibleHeaders = metadata.VisibleHeaders;
-            var visibleHeaderSet = visibleHeaders.ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-            // ✅ Use cached method with ALREADY-FILTERED allFilteredFileIds
-            var columnStatistics = await GetColumnStatisticsAsync(
+            var columnStatistics = await typePivotStatisticsService.GetAsync(
                 allFilteredFileIds,
-                visibleHeaderSet);
+                visibleHeaders,
+                cancellationToken);
 
             // Costruzione righe
             var rows = filesPageDetails
@@ -449,181 +449,6 @@ namespace RRDA.Web.Areas.Data.Controllers
                 return Math.Clamp(cookiePlaces, 0, MaxDecimalPlaces);
 
             return fallback;
-        }
-
-        private static TypePivotColumnStatistics CalculateColumnStatistics(IEnumerable<string?> rawValues)
-        {
-            var values = rawValues
-                .Select(TryParseDouble)
-                .Where(v => v.HasValue)
-                .Select(v => v!.Value)
-                .OrderBy(v => v)
-                .ToList();
-
-            if (values.Count == 0)
-                return new TypePivotColumnStatistics();
-
-            var mean = values.Average();
-            var median = values.Count % 2 == 1
-                ? values[values.Count / 2]
-                : (values[(values.Count / 2) - 1] + values[values.Count / 2]) / 2;
-            var variance = values.Count > 1
-                ? values.Sum(v => Math.Pow(v - mean, 2)) / (values.Count - 1)
-                : 0;
-
-            var max = values.Last();
-            var min = values.First();
-
-            return new TypePivotColumnStatistics
-            {
-                Count = values.Count,
-                Mean = mean,
-                Median = median,
-                StandardDeviation = Math.Sqrt(variance),
-                Max = max,
-                Min = min
-            };
-        }
-
-        private static double? TryParseDouble(string? value)
-        {
-            if (string.IsNullOrWhiteSpace(value))
-                return null;
-
-            if (double.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out var invariantValue))
-                return invariantValue;
-
-            if (double.TryParse(value, NumberStyles.Any, CultureInfo.CurrentCulture, out var currentValue))
-                return currentValue;
-
-            return null;
-        }
-
-        private async Task<List<int>> OrderFileIdsBySubjectKeyAsync(
-            List<int> fileIds,
-            string sortDirection)
-        {
-            if (fileIds.Count == 0)
-                return [];
-
-            var subjectKeys = await db.ReportEntities
-                .AsNoTracking()
-                .Where(entity => fileIds.Contains(entity.ReportFileId))
-                .SelectMany(entity => entity.Properties
-                    .Where(property => property.Name == "value" && property.IsSubjectKey)
-                    .Select(property => new { entity.ReportFileId, property.Value }))
-                .ToListAsync();
-
-            var subjectKeysByFileId = subjectKeys
-                .GroupBy(item => item.ReportFileId)
-                .ToDictionary(group => group.Key, group => group.First().Value);
-            var direction = sortDirection == "desc" ? -1 : 1;
-            var comparer = Comparer<int>.Create((leftId, rightId) =>
-            {
-                subjectKeysByFileId.TryGetValue(leftId, out var left);
-                subjectKeysByFileId.TryGetValue(rightId, out var right);
-
-                var comparison = CompareSubjectKeys(left, right, direction);
-                return comparison != 0 ? comparison : leftId.CompareTo(rightId);
-            });
-
-            return [.. fileIds.OrderBy(id => id, comparer)];
-        }
-
-        private static int CompareSubjectKeys(string? left, string? right, int direction)
-        {
-            var leftMissing = string.IsNullOrWhiteSpace(left);
-            var rightMissing = string.IsNullOrWhiteSpace(right);
-
-            if (leftMissing || rightMissing)
-                return leftMissing == rightMissing ? 0 : leftMissing ? 1 : -1;
-
-            var leftNumber = TryParseDouble(left);
-            var rightNumber = TryParseDouble(right);
-            var comparison = leftNumber.HasValue && rightNumber.HasValue
-                ? leftNumber.Value.CompareTo(rightNumber.Value)
-                : StringComparer.OrdinalIgnoreCase.Compare(left, right);
-
-            return comparison * direction;
-        }
-
-        /// <summary>
-        /// Generates a hash-based cache key from the actual filtered file IDs.
-        /// This ensures the cache key changes whenever the filtered dataset changes.
-        /// </summary>
-        private static string GenerateStatsCacheKey(List<int> allFilteredFileIds)
-        {
-            // Create a string representation of the filtered file IDs
-            var fileIdsString = string.Join(",", allFilteredFileIds.OrderBy(x => x));
-
-            // Hash to create a stable, short cache key
-            var hash = ComputeSha256Hash(fileIdsString);
-
-            return $"{StatsCacheKeyPrefix}{hash}";
-        }
-
-        /// <summary>
-        /// Computes SHA256 hash of a string to create a stable cache key.
-        /// </summary>
-        private static string ComputeSha256Hash(string input)
-        {
-            var hashedBytes = SHA256.HashData(Encoding.UTF8.GetBytes(input));
-            return Convert.ToBase64String(hashedBytes).Replace("/", "_").Replace("+", "-");
-        }
-
-        /// <summary>
-        /// Fetches and calculates column statistics for the filtered dataset.
-        /// Uses caching to avoid redundant calculations for the same filtered data.
-        /// Cache key is based on the actual filtered file IDs, so it changes when filters change.
-        /// </summary>
-        private async Task<Dictionary<string, TypePivotColumnStatistics>> GetColumnStatisticsAsync(
-            List<int> allFilteredFileIds,
-            HashSet<string> visibleHeaderSet)
-        {
-            // Generate cache key based on actual filtered data
-            string cacheKey = GenerateStatsCacheKey(allFilteredFileIds);
-
-            // Try to get from cache
-            if (cache.TryGetValue(cacheKey, out Dictionary<string, TypePivotColumnStatistics>? cachedStats))
-            {
-                return cachedStats ?? [];
-            }
-
-            // Not in cache - fetch and calculate statistics
-            var statsQueryPairs = allFilteredFileIds.Count == 0 ? [] : await db.ReportEntities
-                .AsNoTracking()
-                .Where(e => allFilteredFileIds.Contains(e.ReportFileId))
-                .SelectMany(e => e.Properties
-                    .Where(p => p.Name == "value" && !p.IsSubjectKey)
-                    .Select(p => new PivotPair
-                    {
-                        FileId = e.ReportFileId,
-                        Key = e.Key,
-                        Value = p.Value,
-                        IsSubjectKey = false,
-                        DataType = p.DataType,
-                        Unit = p.Unit
-                    }))
-                .ToListAsync();
-
-            // Calculate statistics for visible headers
-            var columnStatistics = statsQueryPairs
-                .Where(p => visibleHeaderSet.Contains(p.Key))
-                .GroupBy(p => p.Key, StringComparer.OrdinalIgnoreCase)
-                .ToDictionary(
-                    g => g.Key,
-                    g => CalculateColumnStatistics(g.Select(p => p.Value)),
-                    StringComparer.OrdinalIgnoreCase);
-
-            // Store in cache with 10-minute expiration
-            var cacheOptions = new MemoryCacheEntryOptions
-            {
-                AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(StatsCacheDurationMinutes)
-            };
-
-            cache.Set(cacheKey, columnStatistics, cacheOptions);
-
-            return columnStatistics;
         }
 
     }

@@ -84,6 +84,8 @@ builder.Services.AddScoped<IWebPluginManagementService, WebPluginManagementServi
 builder.Services.AddScoped<IWebAuditService, WebAuditService>();
 builder.Services.AddScoped<ITypePivotDatasetService, TypePivotDatasetService>();
 builder.Services.AddScoped<ITypePivotPlotService, TypePivotPlotService>();
+builder.Services.AddScoped<ITypePivotOrderingService, TypePivotOrderingService>();
+builder.Services.AddScoped<ITypePivotStatisticsService, TypePivotStatisticsService>();
 builder.Services.AddHostedService<AdminBootstrapStartupService>();
 builder.Services.AddHostedService<PluginCatalogStartupService>();
 
