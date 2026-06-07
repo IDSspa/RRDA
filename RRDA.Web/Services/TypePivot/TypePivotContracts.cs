@@ -1,4 +1,5 @@
 using RRDA.Data;
+using RRDA.Core.Exporting;
 using RRDA.Web.Areas.Data.Controllers;
 
 namespace RRDA.Web.Services.TypePivot;
@@ -13,6 +14,22 @@ public sealed record TypePivotFilterRequest(
     string? FilterTo,
     string? SubjectKeyFrom,
     string? SubjectKeyTo);
+
+public sealed record TypePivotViewRequest(
+    TypePivotFilterRequest Filter,
+    string? SortField,
+    string? SortDirection,
+    int Page,
+    int PageSize,
+    int DecimalPlaces);
+
+public sealed record TypePivotExportRequest(
+    TypePivotFilterRequest Filter,
+    DataExportFormat Format);
+
+public sealed record TypePivotExportResult(
+    DataExportDocument Document,
+    string FileName);
 
 public sealed class TypePivotDataset
 {

@@ -101,6 +101,8 @@ builder.Services.AddScoped<ITypePivotDatasetService, TypePivotDatasetService>();
 builder.Services.AddScoped<ITypePivotPlotService, TypePivotPlotService>();
 builder.Services.AddScoped<ITypePivotOrderingService, TypePivotOrderingService>();
 builder.Services.AddScoped<ITypePivotStatisticsService, TypePivotStatisticsService>();
+builder.Services.AddScoped<ITypePivotViewModelBuilder, TypePivotViewModelBuilder>();
+builder.Services.AddScoped<ITypePivotExportService, TypePivotExportService>();
 builder.Services.AddHostedService<AdminBootstrapStartupService>();
 builder.Services.AddHostedService<PluginCatalogStartupService>();
 
