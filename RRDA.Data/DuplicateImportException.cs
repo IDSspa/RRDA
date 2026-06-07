@@ -1,7 +1,7 @@
 ﻿namespace RRDA.Data
 {
     /// <summary>
-    /// Eccezione sollevata da <see cref="ImportResultRepository.SaveAsync"/> quando
+    /// Eccezione sollevata da <see cref="IImportResultRepository.SaveAsync"/> quando
     /// la strategia scelta è <see cref="DuplicateImportStrategy.Block"/> e il file
     /// risulta già presente in DB.
     /// Consente al chiamante di distinguere un blocco intenzionale da un errore DB.

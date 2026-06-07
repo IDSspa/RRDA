@@ -75,6 +75,7 @@ builder.Services.AddMemoryCache();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddSingleton<IDataExportService, DataExportService>();
 builder.Services.AddSingleton<IAuditService, AuditService>();
+builder.Services.AddScoped<IImportResultRepository, ImportResultRepository>();
 builder.Services.AddSingleton<IPluginService, PluginService>();
 builder.Services.AddSingleton<IPluginCatalog, PluginCatalog>();
 builder.Services.AddScoped<IReportTypeSynchronizer, ReportTypeSynchronizer>();

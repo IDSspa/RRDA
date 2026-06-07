@@ -14,7 +14,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Threading;
-using static RRDA.Data.ImportResultRepository;
 
 namespace RRDA.RepImp
 {
@@ -34,11 +33,13 @@ namespace RRDA.RepImp
         private readonly IReportTypeCompatibilityChecker _reportTypeCompatibilityChecker;
         private readonly IPluginService _pluginService;
         private readonly IAuditService _auditService;
+        private readonly IImportResultRepository _importResultRepository;
 
         public MainWindow(
             IReportTypeCompatibilityChecker reportTypeCompatibilityChecker,
             IPluginService pluginService,
-            IAuditService auditService)
+            IAuditService auditService,
+            IImportResultRepository importResultRepository)
         {
             _reportTypeCompatibilityChecker = reportTypeCompatibilityChecker
                 ?? throw new ArgumentNullException(nameof(reportTypeCompatibilityChecker));
@@ -46,6 +47,8 @@ namespace RRDA.RepImp
                 ?? throw new ArgumentNullException(nameof(pluginService));
             _auditService = auditService
                 ?? throw new ArgumentNullException(nameof(auditService));
+            _importResultRepository = importResultRepository
+                ?? throw new ArgumentNullException(nameof(importResultRepository));
             InitializeComponent();
 
             FilesListView.ItemsSource = _fileItems;
@@ -514,8 +517,11 @@ namespace RRDA.RepImp
                                 // file è nuovo.
                                 // -------------------------------------------------------
 
-                                int existing = await ImportResultRepository.CountExistingAsync(
-                                    fi.Name, importResult.ReportTypeKey, db);
+                                int existing = await _importResultRepository.CountExistingAsync(
+                                    fileName: fi.Name,
+                                    reportTypeKey: importResult.ReportTypeKey,
+                                    db: db,
+                                    cancellationToken: ct);
 
                                 if (existing > 0 && !_applyForAll)
                                 {
@@ -557,23 +563,25 @@ namespace RRDA.RepImp
                                 // -------------------------------------------------------
                                 try
                                 {
-                                    var (reportFileId, entitiesSaved, propertiesSaved) =
-                                        await ImportResultRepository.SaveAsync(fi.ToDataFileItem(),
-                                                                               importResult,
-                                                                               db,
-                                                                               Log,
-                                                                               user, batchId,
-                                                                               _duplicateStrategy);
+                                    var saved = await _importResultRepository.SaveAsync(
+                                        file: fi.ToDataFileItem(),
+                                        importResult: importResult,
+                                        db: db,
+                                        logger: Log,
+                                        user: user,
+                                        batchId: batchId,
+                                        duplicateStrategy: _duplicateStrategy,
+                                        cancellationToken: ct);
 
-                                    Log($"Persistenza completata: ReportFileId={reportFileId}, " +
-                                        $"Entities={entitiesSaved}, Properties={propertiesSaved}" +
+                                    Log($"Persistenza completata: ReportFileId={saved.ReportFileId}, " +
+                                        $"Entities={saved.EntitiesSaved}, Properties={saved.PropertiesSaved}" +
                                         (batchId.HasValue ? $", BatchId={batchId.Value}." : "."));
 
                                     await WriteAuditAsync(
                                         "Report.ImportSucceeded",
                                         "Success",
                                         "ReportFile",
-                                        reportFileId.ToString(),
+                                        saved.ReportFileId.ToString(),
                                         $"Importato '{fi.Name}' usando il plugin '{plugin.Name}'.",
                                         new
                                         {
@@ -584,8 +592,8 @@ namespace RRDA.RepImp
                                             importResult.ReportTypeKey,
                                             BatchId = batchId,
                                             DuplicateStrategy = _duplicateStrategy.ToString(),
-                                            EntitiesSaved = entitiesSaved,
-                                            PropertiesSaved = propertiesSaved
+                                            saved.EntitiesSaved,
+                                            saved.PropertiesSaved
                                         });
                                 }
                                 catch (DuplicateImportException die)

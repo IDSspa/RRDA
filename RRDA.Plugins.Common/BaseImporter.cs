@@ -85,7 +85,7 @@ namespace RRDA.Plugins.Common
         /// <param name="config">Configurazione di validazione già caricata.</param>
         /// <returns>
         /// Sequenza di <see cref="ReportEntityDto"/> pronti per essere salvati tramite
-        /// <see cref="ImportResultRepository.SaveAsync"/>.
+        /// <see cref="IImportResultRepository.SaveAsync"/>.
         /// Ogni <see cref="ReportEntityDto"/> rappresenta una singola cella (o cella
         /// appartenente ad un range) estratta dal foglio Excel.
         /// </returns>

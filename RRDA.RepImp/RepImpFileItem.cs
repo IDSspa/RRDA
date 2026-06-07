@@ -1,4 +1,4 @@
-using static RRDA.Data.ImportResultRepository;
+using RRDA.Data;
 
 namespace RRDA.RepImp;
 
@@ -15,6 +15,6 @@ public sealed record RepImpFileItem(
         ? "Non applicabile"
         : HasValidator ? "Presente" : "Mancante";
 
-    public FileItem ToDataFileItem() =>
+    public ImportFileItem ToDataFileItem() =>
         new(Name, Length, LastWriteTime, Tipo, FullPath);
 }

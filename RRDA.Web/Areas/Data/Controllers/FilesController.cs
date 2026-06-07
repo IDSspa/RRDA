@@ -16,6 +16,7 @@ namespace RRDA.Web.Areas.Data.Controllers
     public class FilesController(
         RRDADbContext db,
         IPluginCatalog pluginCatalog,
+        IImportResultRepository importResultRepository,
         IWebAuditService auditService,
         ILogger<FilesController> logger) : Controller
     {
@@ -227,21 +228,22 @@ namespace RRDA.Web.Areas.Data.Controllers
                     return await ImportViewAsync(model);
                 }
 
-                var fileItem = new ImportResultRepository.FileItem(
+                var fileItem = new ImportFileItem(
                     fileName,
                     file.Length,
                     DateTime.UtcNow,
                     plugin.Name,
                     $"RRDA.Web upload: {fileName}");
 
-                var saved = await ImportResultRepository.SaveAsync(
-                    fileItem,
-                    importResult,
-                    db,
-                    message => logger.LogInformation("{ImportMessage}", message),
-                    User.Identity?.Name,
-                    model.BatchId,
-                    model.DuplicateStrategy);
+                var saved = await importResultRepository.SaveAsync(
+                    file: fileItem,
+                    importResult: importResult,
+                    db: db,
+                    logger: message => logger.LogInformation("{ImportMessage}", message),
+                    user: User.Identity?.Name,
+                    batchId: model.BatchId,
+                    duplicateStrategy: model.DuplicateStrategy,
+                    cancellationToken: cancellationToken);
 
                 TempData["Success"] =
                     $"File '{fileName}' importato con plugin '{plugin.Name}': "

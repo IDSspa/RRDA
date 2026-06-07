@@ -1,8 +1,8 @@
 ﻿namespace RRDA.Data
 {    
      /// <summary>
-     /// Strategia scelta dall'utente quando un file con lo stesso FullPath
-     /// è già presente in ReportFiles.
+     /// Strategia scelta dall'utente quando un file con lo stesso nome e
+     /// ReportType è già presente in ReportFiles.
      /// </summary>
     public enum DuplicateImportStrategy
     {

@@ -14,6 +14,7 @@ namespace RRDA.RepImp
             new ReportTypeCompatibilityChecker();
         private readonly IPluginService _pluginService = new PluginService();
         private readonly IAuditService _auditService = new AuditService();
+        private readonly IImportResultRepository _importResultRepository = new ImportResultRepository();
 
         protected override void OnStartup(StartupEventArgs e)
         {
@@ -29,7 +30,11 @@ namespace RRDA.RepImp
             // ripristina la modalità di shutdown normale.
             splash.SplashClosed += (_, _) =>
             {
-                var main = new MainWindow(_reportTypeCompatibilityChecker, _pluginService, _auditService);
+                var main = new MainWindow(
+                    _reportTypeCompatibilityChecker,
+                    _pluginService,
+                    _auditService,
+                    _importResultRepository);
                 ShutdownMode = ShutdownMode.OnMainWindowClose;
                 MainWindow = main;
                 main.Show();
