@@ -18,6 +18,7 @@ namespace RRDA.RepImp
             ReportsFolderTextBox.Text = Properties.Settings.Default.ReportsFolder ?? string.Empty;
             PluginsFolderTextBox.Text = Properties.Settings.Default.PluginsFolder ?? string.Empty;
             UnitMappingsTextBox.Text = Properties.Settings.Default.UnitMappings ?? string.Empty;
+            ImportBanListTextBox.Text = Properties.Settings.Default.ImportBanList ?? string.Empty;
             ConnectionStringTextBox.Text = Properties.Settings.Default.ConnectionString ?? string.Empty;
 
             // Carica RecurseDepth (valore intero). Se non presente o non impostato, mostra 0.
@@ -96,6 +97,29 @@ namespace RRDA.RepImp
             }
         }
 
+        private void BrowseImportBanListButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var dlg = new OpenFileDialog
+                {
+                    FileName = ImportBanListTextBox.Text,
+                    Title = "Seleziona banlist di importazione",
+                    Filter = "File XML (*.xml)|*.xml|Tutti i file (*.*)|*.*",
+                    CheckFileExists = true
+                };
+
+                if (dlg.ShowDialog() == true)
+                {
+                    ImportBanListTextBox.Text = dlg.FileName;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, $"Impossibile selezionare il file:{Environment.NewLine}{ex.Message}", "Errore", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
         private void SaveButton_Click(object sender, RoutedEventArgs e)
         {
             // Validazione minima: accetta cartelle vuote ma verifica esistenza se valorizzate
@@ -130,6 +154,25 @@ namespace RRDA.RepImp
                 }
             }
 
+            if (!string.IsNullOrWhiteSpace(ImportBanListTextBox.Text))
+            {
+                try
+                {
+                    ImportBanListResolver.Load(ConfiguredPathResolver.ResolveFile(ImportBanListTextBox.Text));
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(
+                        this,
+                        $"Il file della banlist di importazione non è valido:{Environment.NewLine}{ex.Message}",
+                        "Banlist non valida",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                    ImportBanListTextBox.Focus();
+                    return;
+                }
+            }
+
             // Validazione RecurseDepth: intero >= 0
             int depth = 0;
             if (!string.IsNullOrWhiteSpace(RecurseDepthTextBox.Text))
@@ -145,6 +188,7 @@ namespace RRDA.RepImp
             Properties.Settings.Default.ReportsFolder = string.IsNullOrWhiteSpace(ReportsFolderTextBox.Text) ? null : ReportsFolderTextBox.Text;
             Properties.Settings.Default.PluginsFolder = string.IsNullOrWhiteSpace(PluginsFolderTextBox.Text) ? null : PluginsFolderTextBox.Text;
             Properties.Settings.Default.UnitMappings = string.IsNullOrWhiteSpace(UnitMappingsTextBox.Text) ? null : UnitMappingsTextBox.Text;
+            Properties.Settings.Default.ImportBanList = string.IsNullOrWhiteSpace(ImportBanListTextBox.Text) ? null : ImportBanListTextBox.Text;
             Properties.Settings.Default.ConnectionString = string.IsNullOrWhiteSpace(ConnectionStringTextBox.Text) ? null : ConnectionStringTextBox.Text;
             Properties.Settings.Default.RecurseDepth = depth;
             Properties.Settings.Default.Save();

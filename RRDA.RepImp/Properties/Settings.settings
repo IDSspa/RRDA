@@ -17,5 +17,8 @@
     <Setting Name="UnitMappings" Type="System.String" Scope="User">
       <Value Profile="(Default)">UnitMappings.xml</Value>
     </Setting>
+    <Setting Name="ImportBanList" Type="System.String" Scope="User">
+      <Value Profile="(Default)">ImportBanList.xml</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

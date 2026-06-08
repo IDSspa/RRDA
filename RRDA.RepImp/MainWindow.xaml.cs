@@ -1101,7 +1101,8 @@ namespace RRDA.RepImp
                     fi.FullPath,
                     outputFile,
                     plugin.SubjectKeyDefinedName,
-                    ConfiguredPathResolver.ResolveFile(Properties.Settings.Default.UnitMappings));
+                    ConfiguredPathResolver.ResolveFile(Properties.Settings.Default.UnitMappings),
+                    importBanListPath: ConfiguredPathResolver.ResolveFile(Properties.Settings.Default.ImportBanList));
                 if (FilesListView.ItemsSource is List<RepImpFileItem> fileItems)
                 {
                     var index = fileItems.FindIndex(item => item.FullPath == fi.FullPath);

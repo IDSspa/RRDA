@@ -10,35 +10,7 @@ namespace RRDA.Core.Validator
     /// a partire dai DefinedNames presenti in un .xlsx.
     /// </summary>
     public static class ValidationFileCreator
-    { 
-        /// <summary>
-        /// Prefissi riservati da Excel: qualsiasi DefinedName che inizia con uno di
-        /// questi valori viene scartato perché non ha significato nel dominio RRDA.
-        /// Il prefisso canonico è "_xlnm." (Print_Area, Print_Titles,
-        /// Filter_Database, _FilterDatabase, Criteria, Extract, Database, ecc.).
-        /// </summary>
-        private static readonly string[] ExcludedPrefixes =
-        [
-            "_xlnm.",   // nomi riservati Excel moderni  (es. _xlnm.Print_Area)
-            "__xlnm",   // variante con doppio underscore usata da alcuni provider (es. __xlnm.Print_Area)
-            "_xl.",     // variante abbreviata usata da alcuni provider
-            "__xl.",    // variante abbreviata con doppio underscore
-        ];
-        /// <summary>
-        /// Nomi esatti da escludere che non seguono un prefisso noto ma restano
-        /// non rilevanti per l'applicazione. Case-insensitive.
-        /// Estendere questa lista se si individuano altri nomi tecnici da scartare.
-        /// </summary>
-        private static readonly HashSet<string> ExcludedNames =
-            new(StringComparer.OrdinalIgnoreCase)
-            {
-                // nomi legacy usati da Excel 97-2003 senza prefisso _xlnm
-                "Print_Area",
-                "Print_Titles",
-                "Filter_Database",
-                "_FilterDatabase",
-            };
-
+    {
         /// <summary>
         /// Crea il file di validazione su disco.
         /// </summary>
@@ -48,20 +20,22 @@ namespace RRDA.Core.Validator
         /// <param name="unitMappingsPath">Percorso opzionale del file XML con i mapping delle unità di misura.</param>
         /// <param name="failOnError">Valore dell'attributo failOnError nel root (default: true).</param>
         /// <param name="culture">Valore dell'attributo culture (default: CultureInfo.CurrentCulture.DefinedName).</param>
+        /// <param name="importBanListPath">Percorso opzionale del file XML con le esclusioni di importazione.</param>
         public static void CreateFromFile(
             string xlsxPath,
             string outputXmlPath,
             string subjectKeyDefinedName,
             string? unitMappingsPath = null,
             bool failOnError = true,
-            string? culture = null)
+            string? culture = null,
+            string? importBanListPath = null)
         {
             if (string.IsNullOrWhiteSpace(xlsxPath)) throw new ArgumentNullException(nameof(xlsxPath));
             if (string.IsNullOrWhiteSpace(outputXmlPath)) throw new ArgumentNullException(nameof(outputXmlPath));
 
             using var inFs = File.OpenRead(xlsxPath);
             using var outFs = File.Create(outputXmlPath);
-            CreateFromStream(inFs, outFs, subjectKeyDefinedName, unitMappingsPath, failOnError, culture);
+            CreateFromStream(inFs, outFs, subjectKeyDefinedName, unitMappingsPath, failOnError, culture, importBanListPath);
         }
         /// <summary>
         /// Crea il file di validazione scrivendo l'XML su uno stream di output.
@@ -73,18 +47,21 @@ namespace RRDA.Core.Validator
         /// <param name="unitMappingsPath">Percorso opzionale del file XML con i mapping delle unità di misura.</param>
         /// <param name="failOnError">Valore dell'attributo failOnError nel root (default: true).</param>
         /// <param name="culture">Valore dell'attributo culture (default: CultureInfo.CurrentCulture.DefinedName).</param>
+        /// <param name="importBanListPath">Percorso opzionale del file XML con le esclusioni di importazione.</param>
         public static void CreateFromStream(
             Stream xlsxStream,
             Stream outputXmlStream,
             string subjectKeyDefinedName,
             string? unitMappingsPath = null,
             bool failOnError = true,
-            string? culture = null)
+            string? culture = null,
+            string? importBanListPath = null)
         {
             ArgumentNullException.ThrowIfNull(xlsxStream);
             ArgumentNullException.ThrowIfNull(outputXmlStream);
             ArgumentException.ThrowIfNullOrWhiteSpace(subjectKeyDefinedName);
             var unitMappings = UnitMappingResolver.Load(unitMappingsPath);
+            var importBanList = ImportBanListResolver.Load(importBanListPath);
 
             // SpreadsheetDocument richiede uno stream seekable: copiamo se necessario
             Stream input = xlsxStream;
@@ -107,11 +84,15 @@ namespace RRDA.Core.Validator
                 var allDefinedNames = wb?.DefinedNames?.Elements<DefinedName>().ToList()
                        ?? [];
 
-                var definedNames = allDefinedNames
-                    .Where(dn => IsRelevantDefinedName(dn.Name?.Value))
-                    .ToList();
+                var sheets = wb?.Sheets?.Elements<Sheet>()
+                    .Where(sheet => !importBanList.IsSheetExcluded(sheet.Name?.Value))
+                    .ToList() ?? [];
 
-                var sheets = wb?.Sheets?.Elements<Sheet>()?.ToList() ?? [];
+                var definedNames = allDefinedNames
+                    .Where(dn => !string.IsNullOrWhiteSpace(dn.Name?.Value))
+                    .Where(dn => !importBanList.IsDefinedNameExcluded(dn.Name?.Value))
+                    .Where(dn => !importBanList.IsSheetExcluded(GetSheetName(dn)))
+                    .ToList();
 
                 var subjectKeyExists = definedNames.Any(dn => string.Equals(
                     dn.Name?.Value,
@@ -119,6 +100,18 @@ namespace RRDA.Core.Validator
                     StringComparison.OrdinalIgnoreCase));
                 if (!subjectKeyExists)
                 {
+                    var subjectKey = allDefinedNames.FirstOrDefault(dn => string.Equals(
+                        dn.Name?.Value,
+                        subjectKeyDefinedName,
+                        StringComparison.OrdinalIgnoreCase));
+                    if (subjectKey is not null
+                        && (importBanList.IsDefinedNameExcluded(subjectKeyDefinedName)
+                            || importBanList.IsSheetExcluded(GetSheetName(subjectKey))))
+                    {
+                        throw new InvalidDataException(
+                            $"Il DefinedName SubjectKey '{subjectKeyDefinedName}' è escluso dalla banlist di importazione.");
+                    }
+
                     throw new InvalidDataException(
                         $"Il DefinedName SubjectKey '{subjectKeyDefinedName}' dichiarato dal plugin non è presente nel workbook.");
                 }
@@ -207,28 +200,6 @@ namespace RRDA.Core.Validator
                 buffer?.Dispose();
             }
         }
-        /// <summary>
-        /// Restituisce <c>false</c> per i DefinedNames riservati da Excel o comunque
-        /// non rilevanti per il dominio RRDA; <c>true</c> per tutti gli altri.
-        /// </summary>
-        private static bool IsRelevantDefinedName(string? name)
-        {
-            if (string.IsNullOrWhiteSpace(name))
-                return false;
-
-            // Esclusione per prefisso (es. _xlnm.Print_Area, _xl.SomeInternalName)
-            foreach (var prefix in ExcludedPrefixes)
-            {
-                if (name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-                    return false;
-            }
-
-            // Esclusione per nome esatto (nomi legacy senza prefisso noto)
-            if (ExcludedNames.Contains(name))
-                return false;
-
-            return true;
-        }
         private static string InferTypeForDefinedName(DefinedName dn, Dictionary<string, WorksheetPart> sheetIndex, SharedStringTable? sharedStrings, WorkbookPart wbPart)
         {
             var cell = ResolveCellForDefinedName(dn, sheetIndex);
@@ -304,6 +275,17 @@ namespace RRDA.Core.Validator
                          .Descendants<Cell>()
                          .FirstOrDefault(c =>
                              NormalizeCellRef(c.CellReference?.Value ?? "") == cellAddr);
+        }
+        private static string? GetSheetName(DefinedName dn)
+        {
+            var formula = dn.Text;
+            if (string.IsNullOrWhiteSpace(formula)) return null;
+
+            var firstPart = formula.Split(':')[0].Trim();
+            var bangIdx = firstPart.LastIndexOf('!');
+            if (bangIdx < 0) return null;
+
+            return firstPart[..bangIdx].Trim('\'');
         }
         private static Dictionary<string, WorksheetPart> BuildSheetIndex(Workbook workbook, WorkbookPart wbPart)
         {

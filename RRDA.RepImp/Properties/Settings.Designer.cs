@@ -83,5 +83,16 @@ namespace RRDA.RepImp.Properties {
                 this["UnitMappings"] = value;
             }
         }
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("ImportBanList.xml")]
+        public string ImportBanList {
+            get {
+                return ((string)(this["ImportBanList"]));
+            }
+            set {
+                this["ImportBanList"] = value;
+            }
+        }
     }
 }

@@ -149,6 +149,118 @@ public sealed class ValidationFileCreatorTests
     }
 
     [Fact]
+    public void CreateFromStream_ExcludesDefinedNamesFromImportBanList()
+    {
+        using var banList = CreateImportBanList(
+            definedNamePatterns: ["Generic_*"]);
+        using var workbookStream = CreateWorkbookWithSharedString("Generic_Measurement", "1.5");
+        using var output = new MemoryStream();
+
+        ValidationFileCreator.CreateFromStream(
+            workbookStream,
+            output,
+            "Serial",
+            importBanListPath: banList.Path);
+
+        output.Position = 0;
+        var document = XDocument.Load(output);
+
+        Assert.DoesNotContain(
+            document.Descendants("Field"),
+            element => element.Attribute("definedName")?.Value == "Generic_Measurement");
+        Assert.Contains(
+            document.Descendants("Field"),
+            element => element.Attribute("definedName")?.Value == "Serial");
+    }
+
+    [Fact]
+    public void CreateFromStream_ExcludesSheetsAndTheirDefinedNamesFromImportBanList()
+    {
+        using var banList = CreateImportBanList(sheetPatterns: ["Debug*"]);
+        using var workbookStream = CreateWorkbookWithSharedString(
+            "DebugValue",
+            "1.5",
+            definedNameSheet: "DebugData");
+        using var output = new MemoryStream();
+
+        ValidationFileCreator.CreateFromStream(
+            workbookStream,
+            output,
+            "Serial",
+            importBanListPath: banList.Path);
+
+        output.Position = 0;
+        var document = XDocument.Load(output);
+
+        Assert.DoesNotContain(
+            document.Descendants("Sheet"),
+            element => element.Attribute("Name")?.Value == "DebugData");
+        Assert.DoesNotContain(
+            document.Descendants("Field"),
+            element => element.Attribute("definedName")?.Value == "DebugValue");
+    }
+
+    [Fact]
+    public void CreateFromStream_RejectsSubjectKeyExcludedByImportBanList()
+    {
+        using var banList = CreateImportBanList(definedNamePatterns: ["Serial"]);
+        using var workbookStream = CreateWorkbookWithSharedString("Measurement", "1.5");
+        using var output = new MemoryStream();
+
+        var exception = Assert.Throws<InvalidDataException>(() =>
+            ValidationFileCreator.CreateFromStream(
+                workbookStream,
+                output,
+                "Serial",
+                importBanListPath: banList.Path));
+
+        Assert.Contains("banlist", exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void CreateFromStream_RejectsSubjectKeyOnExcludedSheet()
+    {
+        using var banList = CreateImportBanList(sheetPatterns: ["Procedura"]);
+        using var workbookStream = CreateWorkbookWithSharedString("Measurement", "1.5");
+        using var output = new MemoryStream();
+
+        var exception = Assert.Throws<InvalidDataException>(() =>
+            ValidationFileCreator.CreateFromStream(
+                workbookStream,
+                output,
+                "Serial",
+                importBanListPath: banList.Path));
+
+        Assert.Contains("banlist", exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void ImportBanListResolver_RejectsInvalidXml()
+    {
+        using var banList = new TemporaryFile("<ImportBanList />");
+
+        Assert.Throws<InvalidDataException>(() => ImportBanListResolver.Load(banList.Path));
+    }
+
+    [Fact]
+    public void ImportBanListResolver_LoadsDistributedExcelExclusions()
+    {
+        var resolver = ImportBanListResolver.Load(
+            Path.Combine(AppContext.BaseDirectory, "ImportBanList.xml"));
+
+        Assert.False(resolver.IsDefinedNameExcluded("Measurement"));
+        Assert.False(resolver.IsSheetExcluded("Procedura"));
+        Assert.True(resolver.IsDefinedNameExcluded("_xlnm.Print_Area"));
+        Assert.True(resolver.IsDefinedNameExcluded("__xlnm.Print_Titles"));
+        Assert.True(resolver.IsDefinedNameExcluded("_xl.InternalName"));
+        Assert.True(resolver.IsDefinedNameExcluded("__xl.InternalName"));
+        Assert.True(resolver.IsDefinedNameExcluded("Print_Area"));
+        Assert.True(resolver.IsDefinedNameExcluded("Print_Titles"));
+        Assert.True(resolver.IsDefinedNameExcluded("Filter_Database"));
+        Assert.True(resolver.IsDefinedNameExcluded("_FilterDatabase"));
+    }
+
+    [Fact]
     public void UnitMappingResolver_RejectsInvalidXml()
     {
         using var mappings = new TemporaryFile("<UnitMappings />");
@@ -205,9 +317,37 @@ public sealed class ValidationFileCreatorTests
         return new TemporaryFile(xml);
     }
 
+    private static TemporaryFile CreateImportBanList(
+        IReadOnlyList<string>? definedNamePatterns = null,
+        IReadOnlyList<string>? sheetPatterns = null)
+    {
+        var root = new XElement(
+            "ImportBanList",
+            new XAttribute("version", "1"),
+            new XAttribute("matchMode", "glob"),
+            new XAttribute("caseSensitive", "false"));
+
+        if (definedNamePatterns is { Count: > 0 })
+        {
+            root.Add(new XElement(
+                "DefinedNames",
+                definedNamePatterns.Select(pattern => new XElement("Pattern", pattern))));
+        }
+
+        if (sheetPatterns is { Count: > 0 })
+        {
+            root.Add(new XElement(
+                "Sheets",
+                sheetPatterns.Select(pattern => new XElement("Pattern", pattern))));
+        }
+
+        return new TemporaryFile(new XDocument(root).ToString());
+    }
+
     private static MemoryStream CreateWorkbookWithSharedString(
         string definedName,
-        string value)
+        string value,
+        string definedNameSheet = "Procedura")
     {
         var stream = new MemoryStream();
 
@@ -223,8 +363,8 @@ public sealed class ValidationFileCreatorTests
             sharedStringsPart.SharedStringTable = new SharedStringTable(
                 new SharedStringItem(new Text(value)));
 
-            var worksheetPart = workbookPart.AddNewPart<WorksheetPart>();
-            worksheetPart.Worksheet = new Worksheet(
+            var definedNameWorksheetPart = workbookPart.AddNewPart<WorksheetPart>();
+            definedNameWorksheetPart.Worksheet = new Worksheet(
                 new SheetData(
                     new Row(
                         new Cell
@@ -232,26 +372,56 @@ public sealed class ValidationFileCreatorTests
                             CellReference = "K54",
                             DataType = CellValues.SharedString,
                             CellValue = new CellValue("0")
-                        },
+                        })));
+
+            var subjectKeyWorksheetPart = definedNameSheet == "Procedura"
+                ? definedNameWorksheetPart
+                : workbookPart.AddNewPart<WorksheetPart>();
+            if (subjectKeyWorksheetPart != definedNameWorksheetPart)
+            {
+                subjectKeyWorksheetPart.Worksheet = new Worksheet(
+                    new SheetData(
+                        new Row(
                         new Cell
                         {
                             CellReference = "L54",
                             DataType = CellValues.Number,
                             CellValue = new CellValue("1")
                         })));
+            }
+            else
+            {
+                definedNameWorksheetPart.Worksheet.Descendants<Row>().Single().Append(
+                    new Cell
+                    {
+                        CellReference = "L54",
+                        DataType = CellValues.Number,
+                        CellValue = new CellValue("1")
+                    });
+            }
 
-            workbookPart.Workbook.AppendChild(new Sheets(
+            var sheets = new Sheets(
                 new Sheet
                 {
-                    Id = workbookPart.GetIdOfPart(worksheetPart),
+                    Id = workbookPart.GetIdOfPart(definedNameWorksheetPart),
                     SheetId = 1,
+                    Name = definedNameSheet
+                });
+            if (subjectKeyWorksheetPart != definedNameWorksheetPart)
+            {
+                sheets.Append(new Sheet
+                {
+                    Id = workbookPart.GetIdOfPart(subjectKeyWorksheetPart),
+                    SheetId = 2,
                     Name = "Procedura"
-                }));
+                });
+            }
+            workbookPart.Workbook.AppendChild(sheets);
             workbookPart.Workbook.AppendChild(new DefinedNames(
                 new DefinedName
                 {
                     Name = definedName,
-                    Text = "Procedura!$K$54"
+                    Text = $"'{definedNameSheet}'!$K$54"
                 },
                 new DefinedName
                 {
