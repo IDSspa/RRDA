@@ -315,7 +315,17 @@
     .type-pivot-range-modal .modal-content { background: #161b22; border: 1px solid #30363d; color: #c9d1d9; }
     .type-pivot-range-modal .modal-header { border-bottom-color: #30363d; }
     .type-pivot-range-modal .modal-body { overflow: hidden; }
-    .type-pivot-range-summary-text { color: #8b949e; font-size: .78rem; margin-bottom: .75rem; }
+    .type-pivot-range-detail-toolbar {
+        align-items: center; display: flex; gap: .75rem; justify-content: space-between; margin-bottom: .75rem;
+    }
+    .type-pivot-range-summary-text { color: #8b949e; font-size: .78rem; margin: 0; }
+    .type-pivot-range-chart-toggle { display: flex; flex: 0 0 auto; }
+    .type-pivot-range-chart-toggle .btn {
+        border-color: #484f58; color: #8b949e; font-size: .7rem; padding: .2rem .55rem;
+    }
+    .type-pivot-range-chart-toggle .btn-check:checked + .btn {
+        background: #1f6feb; border-color: #58a6ff; color: #fff;
+    }
     .type-pivot-range-detail-grid { display: grid; gap: 1rem; grid-template-columns: minmax(0, 2fr) minmax(220px, 1fr); }
     .type-pivot-range-detail-chart { height: 260px; min-width: 0; }
     .type-pivot-range-detail-table {
@@ -330,6 +340,7 @@
     .type-pivot-range-detail-table thead { position: sticky; top: 0; z-index: 1; }
 
     @@media (max-width: 900px) {
+        .type-pivot-range-detail-toolbar { align-items: flex-start; flex-direction: column; }
         .type-pivot-range-detail-grid { grid-template-columns: 1fr; }
         .type-pivot-range-detail-chart { height: 220px; }
         .type-pivot-range-detail-table { max-height: 180px; }
@@ -688,8 +699,8 @@
                                 {
                                     <button type="button" class="type-pivot-range-button"
                                             data-range-detail="@JsonSerializer.Serialize(cell)"
-                                            data-file-name="@row.FileName"
-                                            aria-label="Apri il dettaglio del ranged @range.Name per @row.FileName">
+                                            data-report-reference="@Model.ReportTypeKey · @row.SubjectKey"
+                                            aria-label="Apri il dettaglio del ranged @range.Name per @Model.ReportTypeKey seriale @row.SubjectKey">
                                         <svg class="type-pivot-range-sparkline" viewBox="0 0 104 24" preserveAspectRatio="none" aria-hidden="true">
                                             <polyline points="@SparklinePoints(cell)"></polyline>
                                         </svg>
@@ -799,7 +810,15 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Chiudi"></button>
             </div>
             <div class="modal-body">
-                <p id="typePivotRangeSummary" class="type-pivot-range-summary-text"></p>
+                <div class="type-pivot-range-detail-toolbar">
+                    <p id="typePivotRangeSummary" class="type-pivot-range-summary-text"></p>
+                    <div class="btn-group type-pivot-range-chart-toggle" role="group" aria-label="Tipo grafico ranged">
+                        <input type="radio" class="btn-check" name="typePivotRangeChartType" id="typePivotRangeChartLine" value="line" autocomplete="off" checked>
+                        <label class="btn btn-outline-secondary" for="typePivotRangeChartLine">Linea</label>
+                        <input type="radio" class="btn-check" name="typePivotRangeChartType" id="typePivotRangeChartBar" value="bar" autocomplete="off">
+                        <label class="btn btn-outline-secondary" for="typePivotRangeChartBar">Barre</label>
+                    </div>
+                </div>
                 <div class="type-pivot-range-detail-grid">
                     <div id="typePivotRangeChart" class="type-pivot-range-detail-chart"></div>
                     <div class="type-pivot-range-detail-table">
@@ -841,11 +860,51 @@
         (() => {
             const rangeModalElement = document.getElementById('typePivotRangeModal');
             const rangeModal = rangeModalElement && window.bootstrap ? new bootstrap.Modal(rangeModalElement) : null;
+            const rangeChartTypeInputs = document.querySelectorAll('input[name="typePivotRangeChartType"]');
+            let activeRange = null;
+
+            const renderRangeChart = () => {
+                if (!window.Plotly || !activeRange) {
+                    return;
+                }
+
+                const range = activeRange;
+                const chartType = document.querySelector('input[name="typePivotRangeChartType"]:checked')?.value ?? 'line';
+                const isBar = chartType === 'bar';
+                const trace = {
+                    type: isBar ? 'bar' : 'scatter',
+                    x: range.Points.map(point => point.Index),
+                    y: range.Points.map(point => point.Value),
+                    hovertemplate: `Indice %{x}<br>Valore %{y:.${@Model.DecimalPlaces}f}${range.Unit ? ` ${range.Unit}` : ''}<extra></extra>`
+                };
+
+                if (isBar) {
+                    trace.marker = { color: '#58a6ff', line: { color: '#79c0ff', width: 1 } };
+                } else {
+                    trace.mode = 'lines+markers';
+                    trace.line = { color: '#58a6ff', width: 2 };
+                    trace.marker = { color: '#79c0ff', size: 5 };
+                }
+
+                Plotly.react('typePivotRangeChart', [trace], {
+                    paper_bgcolor: '#161b22',
+                    plot_bgcolor: '#0d1117',
+                    bargap: .18,
+                    font: { color: '#c9d1d9', size: 11 },
+                    margin: { t: 8, r: 12, b: 40, l: 58 },
+                    xaxis: { title: 'Indice', gridcolor: '#30363d', zerolinecolor: '#484f58' },
+                    yaxis: { title: range.Unit ? `${range.Name} [${range.Unit}]` : range.Name, gridcolor: '#30363d', zerolinecolor: '#484f58' }
+                }, { responsive: true, displaylogo: false });
+            };
+
+            rangeChartTypeInputs.forEach(input => input.addEventListener('change', renderRangeChart));
+
             document.querySelectorAll('[data-range-detail]').forEach(button => {
                 button.addEventListener('click', () => {
                     const range = JSON.parse(button.dataset.rangeDetail);
+                    activeRange = range;
                     const format = value => Number(value).toFixed(@Model.DecimalPlaces);
-                    document.getElementById('typePivotRangeModalTitle').textContent = `${range.Name} — ${button.dataset.fileName}`;
+                    document.getElementById('typePivotRangeModalTitle').textContent = `${range.Name} — ${button.dataset.reportReference}`;
                     document.getElementById('typePivotRangeSummary').textContent = `${range.Points.length} elementi · min ${format(range.Min)} indice ${range.MinIndex} · max ${format(range.Max)} indice ${range.MaxIndex} · media ${format(range.Mean)} · mediana ${format(range.Median)} · dev. std ${format(range.StandardDeviation)}`;
                     const valuesBody = document.getElementById('typePivotRangeValues');
                     valuesBody.replaceChildren(...range.Points.map(point => {
@@ -857,23 +916,7 @@
                         row.append(indexCell, valueCell);
                         return row;
                     }));
-                    if (window.Plotly) {
-                        Plotly.react('typePivotRangeChart', [{
-                            type: 'bar',
-                            x: range.Points.map(point => point.Index),
-                            y: range.Points.map(point => point.Value),
-                            marker: { color: '#58a6ff', line: { color: '#79c0ff', width: 1 } },
-                            hovertemplate: `Indice %{x}<br>Valore %{y:.${@Model.DecimalPlaces}f}${range.Unit ? ` ${range.Unit}` : ''}<extra></extra>`
-                        }], {
-                            paper_bgcolor: '#161b22',
-                            plot_bgcolor: '#0d1117',
-                            bargap: .18,
-                            font: { color: '#c9d1d9', size: 11 },
-                            margin: { t: 8, r: 12, b: 40, l: 58 },
-                            xaxis: { title: 'Indice', gridcolor: '#30363d', zerolinecolor: '#484f58' },
-                            yaxis: { title: range.Unit ? `${range.Name} [${range.Unit}]` : range.Name, gridcolor: '#30363d', zerolinecolor: '#484f58' }
-                        }, { responsive: true, displaylogo: false });
-                    }
+                    renderRangeChart();
                     rangeModal?.show();
                 });
             });
