@@ -21,7 +21,8 @@ public sealed record TypePivotViewRequest(
     string? SortDirection,
     int Page,
     int PageSize,
-    int DecimalPlaces);
+    int DecimalPlaces,
+    bool UseCompactRanges);
 
 public sealed record TypePivotExportRequest(
     TypePivotFilterRequest Filter,
@@ -44,6 +45,8 @@ public sealed class TypePivotMetadata
 {
     public List<string> AllMeasureHeaders { get; init; } = [];
     public List<string> VisibleHeaders { get; init; } = [];
+    public List<string> ExpandedRangeHeaders { get; init; } = [];
+    public List<TypePivotRangeDescriptor> RangeHeaders { get; init; } = [];
     public Dictionary<string, string?> HeaderUnits { get; init; } = new(StringComparer.OrdinalIgnoreCase);
     public bool HasSubjectKey { get; init; }
     public string SubjectKeyLabel { get; init; } = "SubjectKey";

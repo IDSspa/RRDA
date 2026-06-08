@@ -77,7 +77,8 @@ public sealed class TypePivotExportService(
                 {
                     if (pair.IsSubjectKey)
                         row["SubjectKey"] = pair.Value;
-                    else if (metadata.VisibleHeaders.Contains(pair.Key, StringComparer.OrdinalIgnoreCase))
+                    else if (metadata.VisibleHeaders.Contains(pair.Key, StringComparer.OrdinalIgnoreCase)
+                        || metadata.ExpandedRangeHeaders.Contains(pair.Key, StringComparer.OrdinalIgnoreCase))
                         row[pair.Key] = pair.Value;
                 }
             }
@@ -99,6 +100,8 @@ public sealed class TypePivotExportService(
             columns.Insert(0, new DataExportColumn("SubjectKey", metadata.SubjectKeyLabel));
 
         columns.AddRange(metadata.VisibleHeaders.Select(header =>
+            new DataExportColumn(header, FormatHeaderLabel(header, metadata.HeaderUnits))));
+        columns.AddRange(metadata.ExpandedRangeHeaders.Select(header =>
             new DataExportColumn(header, FormatHeaderLabel(header, metadata.HeaderUnits))));
         return columns;
     }

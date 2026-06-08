@@ -17,6 +17,15 @@
         </div>
 
         <div class="col-sm-4">
+            <label asp-for="TypePivotRangeDisplayMode" class="form-label">Visualizzazione ranged</label>
+            <select asp-for="TypePivotRangeDisplayMode" class="form-select">
+                <option value="compact">Compatta</option>
+                <option value="expanded">Espansa</option>
+            </select>
+            <small style="color:#8b949e;">La modalità compatta raggruppa ogni sequenza in una sola colonna.</small>
+        </div>
+
+        <div class="col-sm-4">
             <button type="submit" class="btn-rrda-primary">Salva impostazioni</button>
         </div>
     </form>

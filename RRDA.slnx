@@ -62,5 +62,6 @@
       <Platform Project="x64" />
     </Project>
   </Folder>
+  <Project Path="RRDA.Web.Tests/RRDA.Web.Tests.csproj" />
   <Project Path="RRDA.Web/RRDA.Web.csproj" />
 </Solution>

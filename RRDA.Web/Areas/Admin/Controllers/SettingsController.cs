@@ -9,6 +9,7 @@ namespace RRDA.Web.Areas.Admin.Controllers
     public class SettingsController(IConfiguration configuration) : Controller
     {
         private const string DecimalPlacesCookieName = "RRDA_TypePivot_DecimalPlaces";
+        private const string RangeDisplayModeCookieName = "RRDA_TypePivot_RangeDisplayMode";
         private const int DefaultDecimalPlaces = 4;
         private const int MaxDecimalPlaces = 15;
         
@@ -24,9 +25,15 @@ namespace RRDA.Web.Areas.Admin.Controllers
                 effective = parsed;
             }
 
+            var rangeDisplayMode = Request.Cookies.TryGetValue(RangeDisplayModeCookieName, out var rangeCookie)
+                ? rangeCookie
+                : configuration.GetValue<string>("TypePivot:RangeDisplayMode") ?? "compact";
             var model = new SettingsViewModel
             {
-                TypePivotDecimalPlaces = Math.Clamp(effective, 0, MaxDecimalPlaces)
+                TypePivotDecimalPlaces = Math.Clamp(effective, 0, MaxDecimalPlaces),
+                TypePivotRangeDisplayMode = string.Equals(rangeDisplayMode, "expanded", StringComparison.OrdinalIgnoreCase)
+                    ? "expanded"
+                    : "compact"
             };
 
             return View(model);
@@ -38,8 +45,21 @@ namespace RRDA.Web.Areas.Admin.Controllers
         {
             model.TypePivotDecimalPlaces = Math.Clamp(model.TypePivotDecimalPlaces, 0, MaxDecimalPlaces);
 
+            model.TypePivotRangeDisplayMode = string.Equals(model.TypePivotRangeDisplayMode, "expanded", StringComparison.OrdinalIgnoreCase)
+                ? "expanded"
+                : "compact";
+
             Response.Cookies.Append(DecimalPlacesCookieName,
                 model.TypePivotDecimalPlaces.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                new CookieOptions
+                {
+                    Expires = DateTimeOffset.UtcNow.AddYears(1),
+                    IsEssential = true,
+                    SameSite = SameSiteMode.Lax
+                });
+
+            Response.Cookies.Append(RangeDisplayModeCookieName,
+                model.TypePivotRangeDisplayMode,
                 new CookieOptions
                 {
                     Expires = DateTimeOffset.UtcNow.AddYears(1),
@@ -55,5 +75,6 @@ namespace RRDA.Web.Areas.Admin.Controllers
     public class SettingsViewModel
     {
         public int TypePivotDecimalPlaces { get; set; }
+        public string TypePivotRangeDisplayMode { get; set; } = "compact";
     }
 }

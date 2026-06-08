@@ -69,7 +69,10 @@ public sealed class TypePivotViewModelBuilder(
                     Value = property.Value,
                     IsSubjectKey = property.IsSubjectKey,
                     DataType = property.DataType,
-                    Unit = property.Unit
+                    Unit = property.Unit,
+                    RangeName = entity.Properties.Where(x => x.Name == "name").Select(x => x.Value).FirstOrDefault(),
+                    RowIndex = entity.Properties.Where(x => x.Name == "row_index").Select(x => x.Value).FirstOrDefault(),
+                    ColIndex = entity.Properties.Where(x => x.Name == "col_index").Select(x => x.Value).FirstOrDefault()
                 }))
             .ToListAsync(cancellationToken);
 
@@ -94,8 +97,28 @@ public sealed class TypePivotViewModelBuilder(
 
             if (pair.IsSubjectKey)
                 row.SubjectKey = pair.Value;
-            else
+            else if (!pair.IsRange || !request.UseCompactRanges)
                 row.Values[pair.Key] = pair.Value;
+        }
+
+        if (request.UseCompactRanges)
+        {
+            foreach (var fileGroup in pairs.Where(pair => pair.IsRange && !pair.IsSubjectKey && !string.IsNullOrWhiteSpace(pair.RangeName))
+                         .GroupBy(pair => pair.FileId))
+            {
+                if (!rows.TryGetValue(fileGroup.Key, out var row))
+                    continue;
+
+                foreach (var rangeGroup in fileGroup.GroupBy(pair => pair.RangeName!, StringComparer.OrdinalIgnoreCase))
+                {
+                    var cell = TypePivotRangeAggregator.Build(
+                        rangeGroup.Key,
+                        rangeGroup.Select(pair => pair.Unit).FirstOrDefault(unit => !string.IsNullOrWhiteSpace(unit)),
+                        rangeGroup);
+                    if (cell is not null)
+                        row.Ranges[rangeGroup.Key] = cell;
+                }
+            }
         }
 
         model.Rows = [.. pageFileIds.Where(rows.ContainsKey).Select(id => rows[id])];
@@ -118,7 +141,11 @@ public sealed class TypePivotViewModelBuilder(
         {
             ReportTypeId = dataset.ReportType.Id,
             ReportTypeKey = dataset.ReportType.Key,
-            Headers = dataset.Metadata.VisibleHeaders,
+            Headers = request.UseCompactRanges
+                ? dataset.Metadata.VisibleHeaders
+                : [.. dataset.Metadata.VisibleHeaders, .. dataset.Metadata.ExpandedRangeHeaders],
+            RangeHeaders = request.UseCompactRanges ? dataset.Metadata.RangeHeaders : [],
+            UseCompactRanges = request.UseCompactRanges,
             HeaderUnits = dataset.Metadata.HeaderUnits,
             DynamicFilterFields = dataset.Metadata.AllMeasureHeaders,
             BatchId = request.Filter.BatchId,

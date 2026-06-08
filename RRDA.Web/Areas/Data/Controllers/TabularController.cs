@@ -19,6 +19,7 @@ namespace RRDA.Web.Areas.Data.Controllers
         ITypePivotExportService typePivotExportService) : Controller
     {
         private const string DecimalPlacesCookieName = "RRDA_TypePivot_DecimalPlaces";
+        private const string RangeDisplayModeCookieName = "RRDA_TypePivot_RangeDisplayMode";
         private const int DefaultDecimalPlaces = 4;
         private const int MaxDecimalPlaces = 15;
 
@@ -93,7 +94,8 @@ namespace RRDA.Web.Areas.Data.Controllers
                     sortDirection,
                     page,
                     pageSize,
-                    ResolveDecimalPlaces()),
+                    ResolveDecimalPlaces(),
+                    ResolveCompactRangeDisplay()),
                 cancellationToken);
 
             return model is null ? NotFound() : View(model);
@@ -210,5 +212,13 @@ namespace RRDA.Web.Areas.Data.Controllers
             return fallback;
         }
 
+        private bool ResolveCompactRangeDisplay()
+        {
+            var configured = configuration.GetValue<string>("TypePivot:RangeDisplayMode") ?? "compact";
+            var effective = Request.Cookies.TryGetValue(RangeDisplayModeCookieName, out var cookieValue)
+                ? cookieValue
+                : configured;
+            return !string.Equals(effective, "expanded", StringComparison.OrdinalIgnoreCase);
+        }
     }
 }

@@ -1,4 +1,6 @@
 ﻿@using System.Globalization
+@using System.Text.Json
+@using RRDA.Web.Areas.Data.Controllers
 @model RRDA.Web.Areas.Data.Controllers.TypePivotViewModel
 @{
     ViewData["Title"] = $"Type Pivot - {Model.ReportTypeKey}";
@@ -9,6 +11,22 @@
         return value.HasValue
             ? Math.Round(value.Value, Model.DecimalPlaces).ToString($"F{Model.DecimalPlaces}", CultureInfo.InvariantCulture)
             : "";
+    }
+
+    string SparklinePoints(TypePivotRangeCell cell)
+    {
+        const double width = 104;
+        const double height = 24;
+        if (cell.Points.Count == 1)
+            return $"0,{height / 2} {width},{height / 2}";
+
+        var span = cell.Max - cell.Min;
+        return string.Join(" ", cell.Points.Select((point, index) =>
+        {
+            var x = index * width / (cell.Points.Count - 1);
+            var y = span == 0 ? height / 2 : height - ((point.Value - cell.Min) / span * height);
+            return FormattableString.Invariant($"{x:F2},{y:F2}");
+        }));
     }
 }
 
@@ -284,12 +302,44 @@
     .type-pivot-plot-modal .modal-body {
         padding: 1rem;
     }
+
+    .type-pivot-range-cell { min-width: 145px; }
+    .type-pivot-range-button {
+        background: transparent; border: 1px solid #30363d; border-radius: 6px; color: #c9d1d9;
+        cursor: pointer; padding: .25rem .35rem; text-align: left; width: 100%;
+    }
+    .type-pivot-range-button:hover, .type-pivot-range-button:focus { border-color: #58a6ff; }
+    .type-pivot-range-sparkline { display: block; height: 24px; margin-bottom: .1rem; width: 104px; }
+    .type-pivot-range-sparkline polyline { fill: none; stroke: #58a6ff; stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+    .type-pivot-range-summary { color: #8b949e; display: block; font-size: .65rem; white-space: nowrap; }
+    .type-pivot-range-modal .modal-content { background: #161b22; border: 1px solid #30363d; color: #c9d1d9; }
+    .type-pivot-range-modal .modal-header { border-bottom-color: #30363d; }
+    .type-pivot-range-modal .modal-body { overflow: hidden; }
+    .type-pivot-range-summary-text { color: #8b949e; font-size: .78rem; margin-bottom: .75rem; }
+    .type-pivot-range-detail-grid { display: grid; gap: 1rem; grid-template-columns: minmax(0, 2fr) minmax(220px, 1fr); }
+    .type-pivot-range-detail-chart { height: 260px; min-width: 0; }
+    .type-pivot-range-detail-table {
+        max-height: 260px; overflow: auto; scrollbar-color: #484f58 #0d1117; scrollbar-width: thin;
+    }
+    .type-pivot-range-detail-table::-webkit-scrollbar { height: 7px; width: 7px; }
+    .type-pivot-range-detail-table::-webkit-scrollbar-track { background: #0d1117; }
+    .type-pivot-range-detail-table::-webkit-scrollbar-thumb { background: #484f58; border-radius: 6px; }
+    .type-pivot-range-detail-table::-webkit-scrollbar-thumb:hover { background: #6e7681; }
+    .type-pivot-range-detail-table table { font-size: .75rem; }
+    .type-pivot-range-detail-table td, .type-pivot-range-detail-table th { padding: .2rem .4rem; }
+    .type-pivot-range-detail-table thead { position: sticky; top: 0; z-index: 1; }
+
+    @@media (max-width: 900px) {
+        .type-pivot-range-detail-grid { grid-template-columns: 1fr; }
+        .type-pivot-range-detail-chart { height: 220px; }
+        .type-pivot-range-detail-table { max-height: 180px; }
+    }
 </style>
 
 <div class="d-flex align-items-center justify-content-between mb-3">
     <h4 style="margin:0;color:#c9d1d9;font-weight:600;">Vista orizzontale per tipo report: @Model.ReportTypeKey</h4>
     <div class="type-pivot-toolbar-actions">
-        <span style="color:#8b949e;font-size:.85rem;">File filtrati: @Model.TotalFiles</span>
+        <span style="color:#8b949e;font-size:.85rem;">File filtrati: @Model.TotalFiles · Ranged: @(Model.UseCompactRanges ? "compatti" : "espansi")</span>
         <a asp-area="Data"
            asp-controller="Tabular"
            asp-action="TypePivotExport"
@@ -559,6 +609,13 @@
                             @headerLabel
                         </th>
                     }
+                    @foreach (var range in Model.RangeHeaders)
+                    {
+                        var rangeLabel = string.IsNullOrWhiteSpace(range.Unit) ? range.Name : $"{range.Name} [{range.Unit}]";
+                        <th style="font-family:monospace;font-size:.78rem;white-space:nowrap;">
+                            @rangeLabel
+                        </th>
+                    }
                 </tr>
             </thead>
             <tbody>
@@ -624,6 +681,25 @@
                                 }
                             </td>
                         }
+                        @foreach (var range in Model.RangeHeaders)
+                        {
+                            <td class="type-pivot-range-cell">
+                                @if (row.Ranges.TryGetValue(range.Name, out var cell))
+                                {
+                                    <button type="button" class="type-pivot-range-button"
+                                            data-range-detail="@JsonSerializer.Serialize(cell)"
+                                            data-file-name="@row.FileName"
+                                            aria-label="Apri il dettaglio del ranged @range.Name per @row.FileName">
+                                        <svg class="type-pivot-range-sparkline" viewBox="0 0 104 24" preserveAspectRatio="none" aria-hidden="true">
+                                            <polyline points="@SparklinePoints(cell)"></polyline>
+                                        </svg>
+                                        <span class="type-pivot-range-summary">
+                                            @cell.Points.Count elementi · @FormatStatistic(cell.Min)…@FormatStatistic(cell.Max)
+                                        </span>
+                                    </button>
+                                }
+                            </td>
+                        }
                     
                     </tr>
                 }
@@ -638,6 +714,7 @@
                             @FormatStatistic(stats?.Max)
                         </td>
                     }
+                    @foreach (var range in Model.RangeHeaders) { <td></td> }
                 </tr>
                 <tr>
                     <th colspan="@staticFooterColumns" style="font-size:.76rem;color:#8b949e;">Media</th>
@@ -648,6 +725,7 @@
                             @FormatStatistic(stats?.Mean)
                         </td>
                     }
+                    @foreach (var range in Model.RangeHeaders) { <td></td> }
                 </tr>
                 <tr>
                     <th colspan="@staticFooterColumns" style="font-size:.76rem;color:#8b949e;">Min</th>
@@ -658,6 +736,7 @@
                             @FormatStatistic(stats?.Min)
                         </td>
                     }
+                    @foreach (var range in Model.RangeHeaders) { <td></td> }
                 </tr>
 @*                 <tr>
                     <th colspan="@staticFooterColumns" style="font-size:.76rem;color:#8b949e;">Mediana</th>
@@ -678,6 +757,7 @@
                             @FormatStatistic(stats?.StandardDeviation)
                         </td>
                     }
+                    @foreach (var range in Model.RangeHeaders) { <td></td> }
                 </tr>
             </tfoot>
         </table>
@@ -710,6 +790,30 @@
     </div>
 }
 
+
+<div class="modal fade type-pivot-range-modal" id="typePivotRangeModal" tabindex="-1" aria-labelledby="typePivotRangeModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="typePivotRangeModalTitle">Dettaglio ranged</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Chiudi"></button>
+            </div>
+            <div class="modal-body">
+                <p id="typePivotRangeSummary" class="type-pivot-range-summary-text"></p>
+                <div class="type-pivot-range-detail-grid">
+                    <div id="typePivotRangeChart" class="type-pivot-range-detail-chart"></div>
+                    <div class="type-pivot-range-detail-table">
+                        <table class="table table-dark table-sm mb-0">
+                            <thead><tr><th>Indice</th><th>Valore</th></tr></thead>
+                            <tbody id="typePivotRangeValues"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="modal fade type-pivot-plot-modal" id="typePivotPlotModal" tabindex="-1" aria-labelledby="typePivotPlotModalTitle" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
@@ -735,6 +839,45 @@
     <script src="~/lib/plotly/plotly.min.js"></script>
     <script>
         (() => {
+            const rangeModalElement = document.getElementById('typePivotRangeModal');
+            const rangeModal = rangeModalElement && window.bootstrap ? new bootstrap.Modal(rangeModalElement) : null;
+            document.querySelectorAll('[data-range-detail]').forEach(button => {
+                button.addEventListener('click', () => {
+                    const range = JSON.parse(button.dataset.rangeDetail);
+                    const format = value => Number(value).toFixed(@Model.DecimalPlaces);
+                    document.getElementById('typePivotRangeModalTitle').textContent = `${range.Name} — ${button.dataset.fileName}`;
+                    document.getElementById('typePivotRangeSummary').textContent = `${range.Points.length} elementi · min ${format(range.Min)} indice ${range.MinIndex} · max ${format(range.Max)} indice ${range.MaxIndex} · media ${format(range.Mean)} · mediana ${format(range.Median)} · dev. std ${format(range.StandardDeviation)}`;
+                    const valuesBody = document.getElementById('typePivotRangeValues');
+                    valuesBody.replaceChildren(...range.Points.map(point => {
+                        const row = document.createElement('tr');
+                        const indexCell = document.createElement('td');
+                        const valueCell = document.createElement('td');
+                        indexCell.textContent = point.Index;
+                        valueCell.textContent = `${format(point.Value)}${range.Unit ? ` ${range.Unit}` : ''}`;
+                        row.append(indexCell, valueCell);
+                        return row;
+                    }));
+                    if (window.Plotly) {
+                        Plotly.react('typePivotRangeChart', [{
+                            type: 'bar',
+                            x: range.Points.map(point => point.Index),
+                            y: range.Points.map(point => point.Value),
+                            marker: { color: '#58a6ff', line: { color: '#79c0ff', width: 1 } },
+                            hovertemplate: `Indice %{x}<br>Valore %{y:.${@Model.DecimalPlaces}f}${range.Unit ? ` ${range.Unit}` : ''}<extra></extra>`
+                        }], {
+                            paper_bgcolor: '#161b22',
+                            plot_bgcolor: '#0d1117',
+                            bargap: .18,
+                            font: { color: '#c9d1d9', size: 11 },
+                            margin: { t: 8, r: 12, b: 40, l: 58 },
+                            xaxis: { title: 'Indice', gridcolor: '#30363d', zerolinecolor: '#484f58' },
+                            yaxis: { title: range.Unit ? `${range.Name} [${range.Unit}]` : range.Name, gridcolor: '#30363d', zerolinecolor: '#484f58' }
+                        }, { responsive: true, displaylogo: false });
+                    }
+                    rangeModal?.show();
+                });
+            });
+
             const filterForm = document.getElementById('type-pivot-filter-form');
             const filterLoadingModalElement = document.getElementById('typePivotFilterLoadingModal');
             const tableScroll = document.querySelector('.type-pivot-table-scroll');

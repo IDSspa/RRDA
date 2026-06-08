@@ -16,4 +16,3 @@
    - spostare Unit e IsSubjectKey in ReportEntities?
    - eliminare ridondanza tra valori memorizzati in ReportProperties e campi di ReportProperties stessa
 7. Estendere la suite di test con almeno un test di integrazione per la pipeline import e uno per TabularController.TypePivot.
-8. Rendere le procedure di inferenze () configurabili a runtime tramite file xml.
