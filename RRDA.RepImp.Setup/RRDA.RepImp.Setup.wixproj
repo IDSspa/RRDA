@@ -11,7 +11,9 @@
     <InstallerVersion Condition="'$(InstallerVersion)' == ''">1.0.0</InstallerVersion>
     <PublishDir>$(MSBuildThisFileDirectory)..\artifacts\publish\RRDA.RepImp\$(Configuration)\$(RuntimeIdentifier)\</PublishDir>
     <PluginsDir>$(MSBuildThisFileDirectory)..\artifacts\plugins\$(Configuration)\net8.0\</PluginsDir>
-    <DefineConstants>PublishDir=$(PublishDir);PluginsDir=$(PluginsDir);InstallerVersion=$(InstallerVersion)</DefineConstants>
+    <DatabaseDir>$(MSBuildThisFileDirectory)..\artifacts\database\$(Configuration)\</DatabaseDir>
+    <DatabaseScript>$(DatabaseDir)RRDA.Db.Migrations.sql</DatabaseScript>
+    <DefineConstants>PublishDir=$(PublishDir);PluginsDir=$(PluginsDir);DatabaseDir=$(DatabaseDir);InstallerVersion=$(InstallerVersion)</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
@@ -38,17 +40,32 @@
     <PluginProject Include="..\RRDA.Plugins.UDX\RRDA.Plugins.UDX.csproj" />
   </ItemGroup>
 
-  <Target Name="PublishRepImp" BeforeTargets="BeforeBuild">
+  <Target Name="PrepareSetupPayload"
+          BeforeTargets="BeforeBuild"
+          DependsOnTargets="PublishRepImp;BuildPlugins;GenerateDatabaseScript" />
+
+  <Target Name="PublishRepImp">
     <MSBuild Projects="..\RRDA.RepImp\RRDA.RepImp.csproj"
-             Targets="Restore;Publish"
+             Targets="Restore"
+             Properties="Configuration=$(Configuration);RuntimeIdentifier=$(RuntimeIdentifier);SelfContained=$(SelfContained);PublishSingleFile=false;EnableWindowsTargeting=true" />
+    <MSBuild Projects="..\RRDA.RepImp\RRDA.RepImp.csproj"
+             Targets="Publish"
              Properties="Configuration=$(Configuration);RuntimeIdentifier=$(RuntimeIdentifier);SelfContained=$(SelfContained);PublishSingleFile=false;EnableWindowsTargeting=true;PublishDir=$(PublishDir)" />
   </Target>
 
-  <Target Name="BuildPlugins" BeforeTargets="BeforeBuild">
+  <Target Name="BuildPlugins">
     <MSBuild Projects="@(PluginProject)"
              Targets="Restore;Build"
              BuildInParallel="false"
              Properties="Configuration=$(Configuration);Platform=AnyCPU;SolutionDir=$(MSBuildThisFileDirectory)..\" />
+  </Target>
+
+  <Target Name="GenerateDatabaseScript">
+    <MakeDir Directories="$(DatabaseDir)" />
+    <Exec WorkingDirectory="$(MSBuildThisFileDirectory)..\"
+          Command="dotnet tool restore" />
+    <Exec WorkingDirectory="$(MSBuildThisFileDirectory)..\"
+          Command="dotnet tool run dotnet-ef migrations script --idempotent --configuration $(Configuration) --project .\RRDA.Data\RRDA.Data.csproj --startup-project .\RRDA.RepImp\RRDA.RepImp.csproj --output &quot;$(DatabaseScript)&quot;" />
   </Target>
 
 </Project>

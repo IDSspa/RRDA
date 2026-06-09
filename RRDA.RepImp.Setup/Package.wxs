@@ -19,6 +19,7 @@
     <Feature Id="MainFeature" Title="RRDA RepImp" Level="1">
       <ComponentGroupRef Id="PublishedApplicationFiles" />
       <ComponentGroupRef Id="PublishedPluginFiles" />
+      <ComponentGroupRef Id="DatabaseScripts" />
       <ComponentGroupRef Id="ApplicationShortcuts" />
     </Feature>
 
@@ -26,6 +27,7 @@
       <Directory Id="IDSFOLDER" Name="IDS">
         <Directory Id="INSTALLFOLDER" Name="RRDA RepImp">
           <Directory Id="PLUGINSFOLDER" Name="plugins" />
+          <Directory Id="DATABASEFOLDER" Name="Database" />
         </Directory>
       </Directory>
     </StandardDirectory>
@@ -42,6 +44,10 @@
 
     <ComponentGroup Id="PublishedPluginFiles" Directory="PLUGINSFOLDER">
       <Files Include="$(var.PluginsDir)RRDA.Plugins.*.dll" />
+    </ComponentGroup>
+
+    <ComponentGroup Id="DatabaseScripts" Directory="DATABASEFOLDER">
+      <Files Include="$(var.DatabaseDir)RRDA.Db.Migrations.sql" />
     </ComponentGroup>
 
     <ComponentGroup Id="ApplicationShortcuts">
