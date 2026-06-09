@@ -5,6 +5,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>5d3e82fb-3ece-4bc3-92de-970877abff0a</UserSecretsId>
+    <DefaultItemExcludes>$(DefaultItemExcludes);artifacts\**</DefaultItemExcludes>
   </PropertyGroup>
 	
     <PropertyGroup>
@@ -26,6 +27,10 @@
     <ProjectReference Include="..\RRDA.Core\RRDA.Core.csproj" />
     <ProjectReference Include="..\RRDA.Data\RRDA.Data.csproj" />
     <ProjectReference Include="..\RRDA.Plugins.Common\RRDA.Plugins.Common.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Update="appsettings.Development.json" CopyToPublishDirectory="Never" />
   </ItemGroup>
 
 </Project>
