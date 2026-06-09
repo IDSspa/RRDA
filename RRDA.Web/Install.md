@@ -91,8 +91,12 @@ adeguata.
 - Applicare aggiornamenti Windows prima del rilascio.
 - Installare soltanto ruoli e funzionalità necessari.
 - Limitare RDP agli amministratori e alle reti di gestione.
-- Non esporre SQL Server Express alla rete: mantenere TCP/IP disabilitato salvo
-  un requisito esplicito.
+- Abilitare TCP/IP per SQL Server Express: l'applicazione desktop RRDA.RepImp, 
+  installata sui PC degli operatori, si connette direttamente al database tramite 
+  rete intranet. Configurare una porta TCP fissa (ad esempio 1433) anziché affidarsi 
+  alle porte dinamiche, per semplificare le regole firewall. 
+  Aprire la porta esclusivamente verso le subnet intranet autorizzate; non esporla 
+  verso reti esterne o Internet.
 - Aprire sul firewall soltanto HTTPS `443`, limitando `RemoteAddress` alle subnet
   intranet autorizzate.
 - Non creare binding HTTP `80`: gli utenti devono utilizzare direttamente l'URL
@@ -187,13 +191,28 @@ TCP/IP o una porta SQL aperta nel firewall.
 Aprire **SQL Server Configuration Manager** e verificare:
 
 - `SQL Server (SQLEXPRESS)`: avvio `Automatic` e servizio in esecuzione;
-- `SQL Server Browser`: `Disabled`;
+- SQL Server Network Configuration > Protocols for SQLEXPRESS > TCP/IP: Enabled; 
+  configurare una porta TCP statica (es. 1433) in IPAll > TCP Port, azzerando TCP 
+  Dynamic Ports. Dopo la modifica riavviare il servizio SQL Server (SQLEXPRESS).
 - **SQL Server Network Configuration > Protocols for SQLEXPRESS > TCP/IP**:
   `Disabled`;
 - **Named Pipes**: `Disabled`, salvo requisito locale documentato;
 - **Shared Memory**: `Enabled`, usato dal collegamento locale IIS-SQL.
 
-Non creare regole firewall in ingresso per porte SQL (`1433` o porte dinamiche).
+Creare una regola firewall in ingresso per la porta TCP scelta, limitata alle
+sole subnet intranet dalle quali operano le postazioni con RRDA.RepImp:
+
+New-NetFirewallRule `
+    -DisplayName "RRDA SQL Express - intranet RepImp" `
+    -Direction Inbound `
+    -Action Allow `
+    -Protocol TCP `
+    -LocalPort 1433 `
+    -RemoteAddress "10.20.0.0/16" `
+    -Profile Domain
+
+Adattare RemoteAddress alle subnet effettive. La porta SQL non deve essere raggiungibile
+da reti guest, reti esterne o Internet.
 
 Aprire SSMS, collegarsi a `.\SQLEXPRESS`, fare clic destro sul server e scegliere
 **Properties**:
@@ -974,9 +993,12 @@ dall'autenticazione Windows, normalmente `DOMINIO\utente`.
 6. Creare un utente Operator di prova e verificarne i limiti.
 7. Eseguire un'importazione e una consultazione di prova.
 8. Controllare Event Viewer e tabella di audit.
-9. Eseguire e verificare il primo backup del database.
+9. Eseguire e verificare il primo backup del database.  
 10. Verificare da una rete non autorizzata che la porta HTTPS del server non sia
     raggiungibile.
+11. Da una postazione con RRDA.RepImp, verificare che la connessione al database 
+    avvenga correttamente e che un'importazione di prova si concluda senza errori 
+    di rete o di autenticazione SQL.
 
 Errori tipici:
 
