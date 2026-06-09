@@ -16,7 +16,7 @@
     <Pattern>_FilterDatabase</Pattern>
 	<Pattern>Esito_Finale_No</Pattern>
 	<Pattern>Esito_Finale_Si</Pattern>
-	<Pattern>Allegato.*</Pattern>
+	<Pattern>Allegato*</Pattern>
   </DefinedNames>
 	<Sheets>
 		<Pattern>Evoluzione_doc</Pattern>
