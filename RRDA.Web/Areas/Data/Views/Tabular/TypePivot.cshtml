@@ -31,6 +31,36 @@
 }
 
 <style>
+    .type-pivot-page {
+        --tp-surface: #161b22;
+        --tp-surface-raised: #1c2128;
+        --tp-surface-hover: #262c36;
+        --tp-canvas: #0d1117;
+        --tp-border: #30363d;
+        --tp-scroll-thumb: #484f58;
+        --tp-scroll-thumb-hover: #6e7681;
+        --tp-text: #c9d1d9;
+        --tp-muted: #8b949e;
+        --tp-accent: #58a6ff;
+        --tp-accent-soft: #79c0ff;
+        --tp-overlay: #0d1117e6;
+    }
+
+    html[data-theme="light"] .type-pivot-page {
+        --tp-surface: #ffffff;
+        --tp-surface-raised: #f8fafc;
+        --tp-surface-hover: #eef3f8;
+        --tp-canvas: #f4f7fb;
+        --tp-border: #cbd5e1;
+        --tp-scroll-thumb: #94a3b8;
+        --tp-scroll-thumb-hover: #64748b;
+        --tp-text: #263449;
+        --tp-muted: #64748b;
+        --tp-accent: #2563eb;
+        --tp-accent-soft: #60a5fa;
+        --tp-overlay: #f4f7fbe6;
+    }
+
     .type-pivot-table td, .type-pivot-table th {
         padding: .25rem .5rem;
     }
@@ -46,7 +76,7 @@
         overflow: auto;
         padding: 0;
         position: relative;
-        scrollbar-color: #484f58 #161b22;
+        scrollbar-color: var(--tp-scroll-thumb) var(--tp-surface);
         scrollbar-width: thin;
     }
 
@@ -56,21 +86,21 @@
     }
 
     .type-pivot-table-scroll::-webkit-scrollbar-track {
-        background: #161b22;
+        background: var(--tp-surface);
     }
 
     .type-pivot-table-scroll::-webkit-scrollbar-thumb {
-        background: #484f58;
-        border: 2px solid #161b22;
+        background: var(--tp-scroll-thumb);
+        border: 2px solid var(--tp-surface);
         border-radius: 8px;
     }
 
     .type-pivot-table-scroll::-webkit-scrollbar-thumb:hover {
-        background: #6e7681;
+        background: var(--tp-scroll-thumb-hover);
     }
 
     .type-pivot-table-scroll::-webkit-scrollbar-corner {
-        background: #161b22;
+        background: var(--tp-surface);
     }
 
     .type-pivot-table {
@@ -85,13 +115,13 @@
     }
 
     .type-pivot-table thead th {
-        background: #0d1117;
-        box-shadow: inset 0 -1px #30363d;
+        background: var(--tp-canvas);
+        box-shadow: inset 0 -1px var(--tp-border);
     }
 
     .type-pivot-sort-link {
         align-items: center;
-        color: #c9d1d9;
+        color: var(--tp-text);
         display: inline-flex;
         gap: .35rem;
         text-decoration: none;
@@ -99,11 +129,11 @@
 
     .type-pivot-sort-link:hover,
     .type-pivot-sort-link:focus {
-        color: #58a6ff;
+        color: var(--tp-accent);
     }
 
     .type-pivot-sort-indicator {
-        color: #58a6ff;
+        color: var(--tp-accent);
         font-size: .7rem;
     }
 
@@ -115,24 +145,24 @@
 
     .type-pivot-table tfoot th,
     .type-pivot-table tfoot td {
-        background: #161b22;
+        background: var(--tp-surface);
     }
 
     .type-pivot-table tfoot tr:first-child > * {
-        box-shadow: inset 0 1px #30363d;
+        box-shadow: inset 0 1px var(--tp-border);
     }
 
     /* Zebra stripe styling for improved readability */
     .type-pivot-table tbody tr:nth-child(odd) {
-        background-color: #0d1117;
+        background-color: var(--tp-canvas);
     }
 
     .type-pivot-table tbody tr:nth-child(even) {
-        background-color: #1c2128;
+        background-color: var(--tp-surface-raised);
     }
 
     .type-pivot-table tbody tr:hover {
-        background-color: #262c36;
+        background-color: var(--tp-surface-hover);
     }
 
     .type-pivot-toolbar {
@@ -161,13 +191,13 @@
     }
 
     .type-pivot-toolbar-title {
-        color: #c9d1d9;
+        color: var(--tp-text);
         font-weight: 600;
         margin: 0;
     }
 
     .type-pivot-toolbar-summary {
-        color: #8b949e;
+        color: var(--tp-muted);
         font-size: .82rem;
         margin-top: .15rem;
     }
@@ -175,7 +205,7 @@
     .type-pivot-collapse-toggle {
         align-items: center;
         background: transparent;
-        border: 1px solid #30363d;
+        border: 1px solid var(--tp-border);
         border-radius: 50%;
         display: inline-flex;
         height: 2rem;
@@ -185,8 +215,8 @@
     }
 
     .type-pivot-collapse-toggle::after {
-        border-bottom: 2px solid #8b949e;
-        border-right: 2px solid #8b949e;
+        border-bottom: 2px solid var(--tp-muted);
+        border-right: 2px solid var(--tp-muted);
         content: "";
         height: .55rem;
         margin-top: -.25rem;
@@ -202,17 +232,17 @@
 
     .type-pivot-collapse-toggle:hover,
     .type-pivot-collapse-toggle:focus {
-        border-color: #58a6ff;
+        border-color: var(--tp-accent);
         box-shadow: none;
     }
 
     .type-pivot-collapse-toggle:hover::after,
     .type-pivot-collapse-toggle:focus::after {
-        border-color: #58a6ff;
+        border-color: var(--tp-accent);
     }
 
     .type-pivot-collapse-body {
-        border-top: 1px solid #30363d;
+        border-top: 1px solid var(--tp-border);
         margin-top: .5rem;
         padding-top: .5rem;
     }
@@ -238,7 +268,7 @@
     }
 
     .type-pivot-plot-status {
-        color: #8b949e;
+        color: var(--tp-muted);
         font-size: .84rem;
         margin-bottom: .75rem;
     }
@@ -263,8 +293,8 @@
 
     .type-pivot-plot-loading-overlay {
         align-items: center;
-        background: #0d1117e6;
-        color: #c9d1d9;
+        background: var(--tp-overlay);
+        color: var(--tp-text);
         display: none;
         flex-direction: column;
         gap: .75rem;
@@ -280,7 +310,7 @@
     }
 
     .type-pivot-plot-loading-overlay p {
-        color: #8b949e;
+        color: var(--tp-muted);
         font-size: .875rem;
         margin: 0;
     }
@@ -290,54 +320,79 @@
     }
 
     .type-pivot-plot-modal .modal-content {
-        background: #161b22;
-        border: 1px solid #30363d;
-        color: #c9d1d9;
+        background: var(--tp-surface);
+        border: 1px solid var(--tp-border);
+        color: var(--tp-text);
+    }
+
+    .type-pivot-themed-modal {
+        background: var(--tp-surface);
+        border: 1px solid var(--tp-border);
+        color: var(--tp-text);
     }
 
     .type-pivot-plot-modal .modal-header {
-        border-bottom: 1px solid #30363d;
+        border-bottom: 1px solid var(--tp-border);
     }
 
     .type-pivot-plot-modal .modal-body {
         padding: 1rem;
+        scrollbar-color: var(--tp-scroll-thumb) var(--tp-surface);
+        scrollbar-width: thin;
     }
+
+    .type-pivot-plot-modal .modal-body::-webkit-scrollbar { width: 9px; }
+    .type-pivot-plot-modal .modal-body::-webkit-scrollbar-track { background: var(--tp-surface); }
+    .type-pivot-plot-modal .modal-body::-webkit-scrollbar-thumb {
+        background: var(--tp-scroll-thumb);
+        border: 2px solid var(--tp-surface);
+        border-radius: 8px;
+    }
+    .type-pivot-plot-modal .modal-body::-webkit-scrollbar-thumb:hover { background: var(--tp-scroll-thumb-hover); }
 
     .type-pivot-range-cell { min-width: 145px; }
     .type-pivot-range-button {
-        background: transparent; border: 1px solid #30363d; border-radius: 6px; color: #c9d1d9;
+        background: transparent; border: 1px solid var(--tp-border); border-radius: 6px; color: var(--tp-text);
         cursor: pointer; padding: .25rem .35rem; text-align: left; width: 100%;
     }
-    .type-pivot-range-button:hover, .type-pivot-range-button:focus { border-color: #58a6ff; }
+    .type-pivot-range-button:hover, .type-pivot-range-button:focus { border-color: var(--tp-accent); }
     .type-pivot-range-sparkline { display: block; height: 24px; margin-bottom: .1rem; width: 104px; }
-    .type-pivot-range-sparkline polyline { fill: none; stroke: #58a6ff; stroke-width: 1.5; vector-effect: non-scaling-stroke; }
-    .type-pivot-range-summary { color: #8b949e; display: block; font-size: .65rem; white-space: nowrap; }
-    .type-pivot-range-modal .modal-content { background: #161b22; border: 1px solid #30363d; color: #c9d1d9; }
-    .type-pivot-range-modal .modal-header { border-bottom-color: #30363d; }
+    .type-pivot-range-sparkline polyline { fill: none; stroke: var(--tp-accent); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+    .type-pivot-range-summary { color: var(--tp-muted); display: block; font-size: .65rem; white-space: nowrap; }
+    .type-pivot-range-modal .modal-content { background: var(--tp-surface); border: 1px solid var(--tp-border); color: var(--tp-text); }
+    .type-pivot-range-modal .modal-header { border-bottom-color: var(--tp-border); }
     .type-pivot-range-modal .modal-body { overflow: hidden; }
     .type-pivot-range-detail-toolbar {
         align-items: center; display: flex; gap: .75rem; justify-content: space-between; margin-bottom: .75rem;
     }
-    .type-pivot-range-summary-text { color: #8b949e; font-size: .78rem; margin: 0; }
+    .type-pivot-range-summary-text { color: var(--tp-muted); font-size: .78rem; margin: 0; }
     .type-pivot-range-chart-toggle { display: flex; flex: 0 0 auto; }
     .type-pivot-range-chart-toggle .btn {
-        border-color: #484f58; color: #8b949e; font-size: .7rem; padding: .2rem .55rem;
+        border-color: var(--tp-scroll-thumb); color: var(--tp-muted); font-size: .7rem; padding: .2rem .55rem;
     }
     .type-pivot-range-chart-toggle .btn-check:checked + .btn {
-        background: #1f6feb; border-color: #58a6ff; color: #fff;
+        background: var(--tp-accent); border-color: var(--tp-accent); color: #fff;
     }
     .type-pivot-range-detail-grid { display: grid; gap: 1rem; grid-template-columns: minmax(0, 2fr) minmax(220px, 1fr); }
     .type-pivot-range-detail-chart { height: 260px; min-width: 0; }
     .type-pivot-range-detail-table {
-        max-height: 260px; overflow: auto; scrollbar-color: #484f58 #0d1117; scrollbar-width: thin;
+        max-height: 260px; overflow: auto; scrollbar-color: var(--tp-scroll-thumb) var(--tp-canvas); scrollbar-width: thin;
     }
     .type-pivot-range-detail-table::-webkit-scrollbar { height: 7px; width: 7px; }
-    .type-pivot-range-detail-table::-webkit-scrollbar-track { background: #0d1117; }
-    .type-pivot-range-detail-table::-webkit-scrollbar-thumb { background: #484f58; border-radius: 6px; }
-    .type-pivot-range-detail-table::-webkit-scrollbar-thumb:hover { background: #6e7681; }
+    .type-pivot-range-detail-table::-webkit-scrollbar-track { background: var(--tp-canvas); }
+    .type-pivot-range-detail-table::-webkit-scrollbar-thumb { background: var(--tp-scroll-thumb); border: 1px solid var(--tp-canvas); border-radius: 6px; }
+    .type-pivot-range-detail-table::-webkit-scrollbar-thumb:hover { background: var(--tp-scroll-thumb-hover); }
     .type-pivot-range-detail-table table { font-size: .75rem; }
     .type-pivot-range-detail-table td, .type-pivot-range-detail-table th { padding: .2rem .4rem; }
     .type-pivot-range-detail-table thead { position: sticky; top: 0; z-index: 1; }
+    .type-pivot-range-values-table,
+    .type-pivot-range-values-table > :not(caption) > * > * {
+        background: var(--tp-canvas);
+        border-color: var(--tp-border);
+        color: var(--tp-text);
+    }
+    .type-pivot-page .btn-close { filter: invert(1) grayscale(100%) brightness(200%); }
+    html[data-theme="light"] .type-pivot-page .btn-close { filter: none; }
 
     @@media (max-width: 900px) {
         .type-pivot-range-detail-toolbar { align-items: flex-start; flex-direction: column; }
@@ -347,6 +402,7 @@
     }
 </style>
 
+<div class="type-pivot-page">
 <div class="d-flex align-items-center justify-content-between mb-3">
     <h4 style="margin:0;color:#c9d1d9;font-weight:600;">Vista orizzontale per tipo report: @Model.ReportTypeKey</h4>
     <div class="type-pivot-toolbar-actions">
@@ -547,7 +603,7 @@
 
 <div class="modal fade" id="typePivotFilterLoadingModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="typePivotFilterLoadingModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content" style="background:#161b22;border:1px solid #30363d;color:#c9d1d9;">
+        <div class="modal-content type-pivot-themed-modal">
             <div class="modal-body" style="padding:1.5rem;">
                 <div class="d-flex align-items-center gap-3">
                     <div class="spinner-border text-primary rrda-loading-spinner" role="status" aria-hidden="true"></div>
@@ -807,7 +863,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="typePivotRangeModalTitle">Dettaglio ranged</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Chiudi"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Chiudi"></button>
             </div>
             <div class="modal-body">
                 <div class="type-pivot-range-detail-toolbar">
@@ -822,7 +878,7 @@
                 <div class="type-pivot-range-detail-grid">
                     <div id="typePivotRangeChart" class="type-pivot-range-detail-chart"></div>
                     <div class="type-pivot-range-detail-table">
-                        <table class="table table-dark table-sm mb-0">
+                        <table class="table table-sm mb-0 type-pivot-range-values-table">
                             <thead><tr><th>Indice</th><th>Valore</th></tr></thead>
                             <tbody id="typePivotRangeValues"></tbody>
                         </table>
@@ -838,7 +894,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="typePivotPlotModalTitle">Scatter</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Chiudi"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Chiudi"></button>
             </div>
             <div class="modal-body">
                 <div id="typePivotPlotStatus" class="type-pivot-plot-status"></div>
@@ -853,11 +909,26 @@
         </div>
     </div>
 </div>
+</div>
 
 @section Scripts {
     <script src="~/lib/plotly/plotly.min.js"></script>
     <script>
         (() => {
+            const themeRoot = document.querySelector('.type-pivot-page');
+            const getThemePalette = () => {
+                const styles = getComputedStyle(themeRoot);
+                return {
+                    surface: styles.getPropertyValue('--tp-surface').trim(),
+                    canvas: styles.getPropertyValue('--tp-canvas').trim(),
+                    border: styles.getPropertyValue('--tp-border').trim(),
+                    text: styles.getPropertyValue('--tp-text').trim(),
+                    muted: styles.getPropertyValue('--tp-muted').trim(),
+                    accent: styles.getPropertyValue('--tp-accent').trim(),
+                    accentSoft: styles.getPropertyValue('--tp-accent-soft').trim()
+                };
+            };
+
             const rangeModalElement = document.getElementById('typePivotRangeModal');
             const rangeModal = rangeModalElement && window.bootstrap ? new bootstrap.Modal(rangeModalElement) : null;
             const rangeChartTypeInputs = document.querySelectorAll('input[name="typePivotRangeChartType"]');
@@ -869,6 +940,7 @@
                 }
 
                 const range = activeRange;
+                const palette = getThemePalette();
                 const chartType = document.querySelector('input[name="typePivotRangeChartType"]:checked')?.value ?? 'line';
                 const isBar = chartType === 'bar';
                 const trace = {
@@ -879,21 +951,21 @@
                 };
 
                 if (isBar) {
-                    trace.marker = { color: '#58a6ff', line: { color: '#79c0ff', width: 1 } };
+                    trace.marker = { color: palette.accent, line: { color: palette.accentSoft, width: 1 } };
                 } else {
                     trace.mode = 'lines+markers';
-                    trace.line = { color: '#58a6ff', width: 2 };
-                    trace.marker = { color: '#79c0ff', size: 5 };
+                    trace.line = { color: palette.accent, width: 2 };
+                    trace.marker = { color: palette.accentSoft, size: 5 };
                 }
 
                 Plotly.react('typePivotRangeChart', [trace], {
-                    paper_bgcolor: '#161b22',
-                    plot_bgcolor: '#0d1117',
+                    paper_bgcolor: palette.surface,
+                    plot_bgcolor: palette.canvas,
                     bargap: .18,
-                    font: { color: '#c9d1d9', size: 11 },
+                    font: { color: palette.text, size: 11 },
                     margin: { t: 8, r: 12, b: 40, l: 58 },
-                    xaxis: { title: 'Indice', gridcolor: '#30363d', zerolinecolor: '#484f58' },
-                    yaxis: { title: range.Unit ? `${range.Name} [${range.Unit}]` : range.Name, gridcolor: '#30363d', zerolinecolor: '#484f58' }
+                    xaxis: { title: 'Indice', gridcolor: palette.border, zerolinecolor: palette.muted },
+                    yaxis: { title: range.Unit ? `${range.Name} [${range.Unit}]` : range.Name, gridcolor: palette.border, zerolinecolor: palette.muted }
                 }, { responsive: true, displaylogo: false });
             };
 
@@ -1128,42 +1200,43 @@
                         return;
                     }
 
+                    const palette = getThemePalette();
                     const layout = {
                         ...payload.layout,
-                        paper_bgcolor: '#ffffff',
-                        plot_bgcolor: '#ffffff',
-                        font: { color: '#24292f' },
+                        paper_bgcolor: palette.surface,
+                        plot_bgcolor: palette.canvas,
+                        font: { color: palette.text },
                         margin: { l: 96, r: 32, t: 64, b: 96 },
                         xaxis: {
                             ...payload.layout.xaxis,
                             automargin: true,
-                            linecolor: '#57606a',
-                            gridcolor: '#d8dee4',
-                            zerolinecolor: '#d0d7de',
-                            tickfont: { color: '#24292f' },
+                            linecolor: palette.muted,
+                            gridcolor: palette.border,
+                            zerolinecolor: palette.border,
+                            tickfont: { color: palette.text },
                             title: {
                                 text: getAxisTitleText(payload.layout.xaxis),
-                                font: { color: '#24292f', size: 14 },
+                                font: { color: palette.text, size: 14 },
                                 standoff: 22
                             }
                         },
                         yaxis: {
                             ...payload.layout.yaxis,
                             automargin: true,
-                            linecolor: '#57606a',
-                            gridcolor: '#d8dee4',
-                            zerolinecolor: '#d0d7de',
-                            tickfont: { color: '#24292f' },
+                            linecolor: palette.muted,
+                            gridcolor: palette.border,
+                            zerolinecolor: palette.border,
+                            tickfont: { color: palette.text },
                             title: {
                                 text: getAxisTitleText(payload.layout.yaxis),
-                                font: { color: '#24292f', size: 14 },
+                                font: { color: palette.text, size: 14 },
                                 standoff: 28
                             }
                         },
                         legend: {
                             orientation: 'h',
                             y: -0.2,
-                            font: { color: '#24292f' }
+                            font: { color: palette.text }
                         }
                     };
 

@@ -10,6 +10,7 @@ namespace RRDA.Web.Areas.Admin.Controllers
     {
         private const string DecimalPlacesCookieName = "RRDA_TypePivot_DecimalPlaces";
         private const string RangeDisplayModeCookieName = "RRDA_TypePivot_RangeDisplayMode";
+        private const string ThemeCookieName = "RRDA_WebUi_Theme";
         private const int DefaultDecimalPlaces = 4;
         private const int MaxDecimalPlaces = 15;
         
@@ -28,12 +29,16 @@ namespace RRDA.Web.Areas.Admin.Controllers
             var rangeDisplayMode = Request.Cookies.TryGetValue(RangeDisplayModeCookieName, out var rangeCookie)
                 ? rangeCookie
                 : configuration.GetValue<string>("TypePivot:RangeDisplayMode") ?? "compact";
+            var theme = Request.Cookies.TryGetValue(ThemeCookieName, out var themeCookie)
+                ? themeCookie
+                : configuration.GetValue<string>("WebUi:Theme") ?? "dark";
             var model = new SettingsViewModel
             {
                 TypePivotDecimalPlaces = Math.Clamp(effective, 0, MaxDecimalPlaces),
                 TypePivotRangeDisplayMode = string.Equals(rangeDisplayMode, "expanded", StringComparison.OrdinalIgnoreCase)
                     ? "expanded"
-                    : "compact"
+                    : "compact",
+                Theme = NormalizeTheme(theme)
             };
 
             return View(model);
@@ -48,6 +53,7 @@ namespace RRDA.Web.Areas.Admin.Controllers
             model.TypePivotRangeDisplayMode = string.Equals(model.TypePivotRangeDisplayMode, "expanded", StringComparison.OrdinalIgnoreCase)
                 ? "expanded"
                 : "compact";
+            model.Theme = NormalizeTheme(model.Theme);
 
             Response.Cookies.Append(DecimalPlacesCookieName,
                 model.TypePivotDecimalPlaces.ToString(System.Globalization.CultureInfo.InvariantCulture),
@@ -67,14 +73,27 @@ namespace RRDA.Web.Areas.Admin.Controllers
                     SameSite = SameSiteMode.Lax
                 });
 
+            Response.Cookies.Append(ThemeCookieName,
+                model.Theme,
+                new CookieOptions
+                {
+                    Expires = DateTimeOffset.UtcNow.AddYears(1),
+                    IsEssential = true,
+                    SameSite = SameSiteMode.Lax
+                });
+
             TempData["Success"] = "Impostazione salvata correttamente.";
             return RedirectToAction(nameof(Index));
         }
+
+        private static string NormalizeTheme(string? theme) =>
+            string.Equals(theme, "light", StringComparison.OrdinalIgnoreCase) ? "light" : "dark";
     }
 
     public class SettingsViewModel
     {
         public int TypePivotDecimalPlaces { get; set; }
         public string TypePivotRangeDisplayMode { get; set; } = "compact";
+        public string Theme { get; set; } = "dark";
     }
 }
