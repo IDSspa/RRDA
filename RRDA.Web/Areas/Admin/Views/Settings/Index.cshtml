@@ -3,38 +3,75 @@
     ViewData["Title"] = "Impostazioni";
 }
 
-<div class="rrda-card" style="max-width:740px;">
+<style>
+    .settings-grid {
+        display: grid;
+        gap: 1rem;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    .settings-field {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+    }
+    .settings-field .form-control,
+    .settings-field .form-select {
+        min-height: 38px;
+    }
+    .settings-help {
+        display: block;
+        line-height: 1.35;
+        margin-top: .45rem;
+        min-height: 2.7em;
+    }
+    .settings-actions {
+        border-top: 1px solid #30363d;
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 1.25rem;
+        padding-top: 1rem;
+    }
+    html[data-theme="light"] .settings-actions { border-color: #dbe3ec; }
+    @@media (max-width: 900px) {
+        .settings-grid { grid-template-columns: 1fr; }
+        .settings-help { min-height: 0; }
+    }
+</style>
+
+<div class="rrda-card" style="max-width:960px;">
     <h4 style="margin-top:0;color:#c9d1d9;font-weight:600;">Impostazioni</h4>
     <p class="rrda-muted">Configura la visualizzazione dell'applicazione e della vista tabellare TypePivot.</p>
 
-    <form method="post" class="row g-3 align-items-end">
+    <form method="post">
         @Html.AntiForgeryToken()
 
-        <div class="col-sm-4">
-            <label asp-for="TypePivotDecimalPlaces" class="form-label">Decimali TypePivot</label>
-            <input asp-for="TypePivotDecimalPlaces" type="number" min="0" max="15" class="form-control" />
-            <small class="rrda-muted">Valori ammessi: 0 - 15</small>
+        <div class="settings-grid">
+            <div class="settings-field">
+                <label asp-for="TypePivotDecimalPlaces" class="form-label">Decimali TypePivot</label>
+                <input asp-for="TypePivotDecimalPlaces" type="number" min="0" max="15" class="form-control" />
+                <small class="rrda-muted settings-help">Valori ammessi: 0 - 15.</small>
+            </div>
+
+            <div class="settings-field">
+                <label asp-for="TypePivotRangeDisplayMode" class="form-label">Visualizzazione ranged</label>
+                <select asp-for="TypePivotRangeDisplayMode" class="form-select">
+                    <option value="compact">Compatta</option>
+                    <option value="expanded">Espansa</option>
+                </select>
+                <small class="rrda-muted settings-help">La modalità compatta raggruppa ogni sequenza in una sola colonna.</small>
+            </div>
+
+            <div class="settings-field">
+                <label asp-for="Theme" class="form-label">Tema</label>
+                <select asp-for="Theme" class="form-select">
+                    <option value="dark">Scuro</option>
+                    <option value="light">Chiaro</option>
+                </select>
+                <small class="rrda-muted settings-help">Il tema viene salvato per questo browser.</small>
+            </div>
         </div>
 
-        <div class="col-sm-4">
-            <label asp-for="TypePivotRangeDisplayMode" class="form-label">Visualizzazione ranged</label>
-            <select asp-for="TypePivotRangeDisplayMode" class="form-select">
-                <option value="compact">Compatta</option>
-                <option value="expanded">Espansa</option>
-            </select>
-            <small class="rrda-muted">La modalità compatta raggruppa ogni sequenza in una sola colonna.</small>
-        </div>
-
-        <div class="col-sm-4">
-            <label asp-for="Theme" class="form-label">Tema</label>
-            <select asp-for="Theme" class="form-select">
-                <option value="dark">Scuro</option>
-                <option value="light">Chiaro</option>
-            </select>
-            <small class="rrda-muted">Il tema viene salvato per questo browser.</small>
-        </div>
-
-        <div class="col-sm-4">
+        <div class="settings-actions">
             <button type="submit" class="btn-rrda-primary">Salva impostazioni</button>
         </div>
     </form>
