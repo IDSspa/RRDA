@@ -20,6 +20,7 @@ namespace RRDA.RepImp
         protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
+            ThemeManager.Apply(RRDA.RepImp.Properties.Settings.Default.Theme);
 
             // Impedisce la chiusura automatica dell'applicazione
             // quando la SplashScreenWindow (finestra di avvio) si chiude.

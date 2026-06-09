@@ -20,5 +20,8 @@
     <Setting Name="ImportBanList" Type="System.String" Scope="User">
       <Value Profile="(Default)">ImportBanList.xml</Value>
     </Setting>
+    <Setting Name="Theme" Type="System.String" Scope="User">
+      <Value Profile="(Default)">system</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

@@ -2,6 +2,7 @@ using Microsoft.Win32;
 using RRDA.Core.Validator;
 using System.IO;
 using System.Windows;
+using System.Windows.Controls;
 
 namespace RRDA.RepImp
 {
@@ -20,6 +21,10 @@ namespace RRDA.RepImp
             UnitMappingsTextBox.Text = Properties.Settings.Default.UnitMappings ?? string.Empty;
             ImportBanListTextBox.Text = Properties.Settings.Default.ImportBanList ?? string.Empty;
             ConnectionStringTextBox.Text = Properties.Settings.Default.ConnectionString ?? string.Empty;
+            var theme = ThemeManager.Normalize(Properties.Settings.Default.Theme);
+            ThemeComboBox.SelectedItem = ThemeComboBox.Items
+                .OfType<ComboBoxItem>()
+                .First(item => string.Equals(item.Tag?.ToString(), theme, StringComparison.OrdinalIgnoreCase));
 
             // Carica RecurseDepth (valore intero). Se non presente o non impostato, mostra 0.
             try
@@ -191,7 +196,10 @@ namespace RRDA.RepImp
             Properties.Settings.Default.ImportBanList = string.IsNullOrWhiteSpace(ImportBanListTextBox.Text) ? null : ImportBanListTextBox.Text;
             Properties.Settings.Default.ConnectionString = string.IsNullOrWhiteSpace(ConnectionStringTextBox.Text) ? null : ConnectionStringTextBox.Text;
             Properties.Settings.Default.RecurseDepth = depth;
+            Properties.Settings.Default.Theme = ThemeManager.Normalize(
+                (ThemeComboBox.SelectedItem as ComboBoxItem)?.Tag?.ToString());
             Properties.Settings.Default.Save();
+            ThemeManager.Apply(Properties.Settings.Default.Theme);
 
             MessageBox.Show(this, "Impostazioni salvate.", "Salvataggio", MessageBoxButton.OK, MessageBoxImage.Information);
             DialogResult = true;
