@@ -1105,16 +1105,20 @@ namespace RRDA.RepImp
                     importBanListPath: ConfiguredPathResolver.ResolveFile(Properties.Settings.Default.ImportBanList));
                 if (FilesListView.ItemsSource is List<RepImpFileItem> fileItems)
                 {
-                    var index = fileItems.FindIndex(item => item.FullPath == fi.FullPath);
-                    if (index >= 0)
+                    for (var index = 0; index < fileItems.Count; index++)
                     {
-                        fileItems[index] = fi with
+                        var item = fileItems[index];
+                        if (!string.Equals(item.Tipo, plugin.Name, StringComparison.OrdinalIgnoreCase))
+                            continue;
+
+                        fileItems[index] = item with
                         {
                             HasValidator = true,
                             ValidatorPath = outputFile
                         };
-                        CollectionViewSource.GetDefaultView(FilesListView.ItemsSource)?.Refresh();
                     }
+
+                    CollectionViewSource.GetDefaultView(FilesListView.ItemsSource)?.Refresh();
                 }
                 Log($"File di validazione creato in '{outputFile}' per report '{fi.Name}' utilizzando plugin '{plugin.Name}'.");
                 MessageBox.Show(this, $"File di validazione creato:{Environment.NewLine}{outputFile}", "Esporta validatore", MessageBoxButton.OK, MessageBoxImage.Information);
