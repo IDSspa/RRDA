@@ -8,7 +8,7 @@ namespace RRDA.Plugins.UDX
         public override string Name => "UDX";
         public override string Version => "1.0.0";
         public override string SupportedFileExtension => ".xlsx";
-        public override string MatchingPattern => "NCH_RSR_UDX_1_2";
+        public override string MatchingPattern => "NCH_RSR_UDX_1_"; // Same pattern for UDX _1_2 and _1_4 (_1_*)
         public override ReportSubjectKind SubjectKind => ReportSubjectKind.Component;
         public override string SubjectKeyDefinedName => "Serial";
     }
