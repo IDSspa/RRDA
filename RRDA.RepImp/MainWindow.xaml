@@ -56,6 +56,8 @@
         <Grid.RowDefinitions>
             <!-- Menu in alto -->
             <RowDefinition Height="Auto"/>
+            <!-- Barra di stato con indicatore connessione -->
+            <RowDefinition Height="Auto"/>
             <!-- Contenuto principale -->
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
@@ -69,7 +71,17 @@
             </MenuItem>
         </Menu>
 
-        <Grid Grid.Row="1">
+        <!-- Barra di stato con indicatore di connessione al database -->
+        <Border Grid.Row="1" Background="#F0F0F0" BorderThickness="0,1,0,0" BorderBrush="#D0D0D0" Padding="10,4,10,4">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <!-- LED connessione -->
+                <Ellipse x:Name="ConnectionStatusLED" Width="12" Height="12" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                <!-- Testo stato -->
+                <TextBlock x:Name="ConnectionStatusText" Text="Verifica connessione..." VerticalAlignment="Center" FontSize="11"/>
+            </StackPanel>
+        </Border>
+
+        <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>
                 <!-- Colonna sinistra: elenco cartelle + plugins -->
                 <ColumnDefinition Width="300"/>
