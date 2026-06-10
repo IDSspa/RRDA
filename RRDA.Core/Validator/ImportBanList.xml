@@ -21,6 +21,6 @@
 	<Sheets>
 		<Pattern>Evoluzione_doc</Pattern>
 		<Pattern>Note_di_collaudo</Pattern>
-		<Pattern>Fig</Pattern>
+		<Pattern>Fig*</Pattern>
 	</Sheets>
 </ImportBanList>
