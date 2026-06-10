@@ -100,6 +100,7 @@ namespace RRDA.Plugins.Common
                     + $"ma il plugin '{Name}' richiede il DefinedName '{SubjectKeyDefinedName}'.");
             }
         }
+
         /// <summary>
         /// Legge le celle (singole o range) del file Excel riferite dai DefinedNames
         /// presenti nella configurazione e restituisce le entità da persistere.
@@ -314,7 +315,7 @@ namespace RRDA.Plugins.Common
             }
         }
 
-        private static string SerializeDataType(FieldDataType dt) => dt switch
+        public static string SerializeDataType(FieldDataType dt) => dt switch
         {
             FieldDataType.Int => "int",
             FieldDataType.Double => "double",
