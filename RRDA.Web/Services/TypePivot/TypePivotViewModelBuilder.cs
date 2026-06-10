@@ -7,8 +7,7 @@ namespace RRDA.Web.Services.TypePivot;
 public sealed class TypePivotViewModelBuilder(
     RRDADbContext db,
     ITypePivotDatasetService datasetService,
-    ITypePivotOrderingService orderingService,
-    ITypePivotStatisticsService statisticsService) : ITypePivotViewModelBuilder
+    ITypePivotOrderingService orderingService) : ITypePivotViewModelBuilder
 {
     public async Task<TypePivotViewModel?> BuildAsync(
         TypePivotViewRequest request,
@@ -122,10 +121,8 @@ public sealed class TypePivotViewModelBuilder(
         }
 
         model.Rows = [.. pageFileIds.Where(rows.ContainsKey).Select(id => rows[id])];
-        model.ColumnStatistics = await statisticsService.GetAsync(
-            fileIds,
-            metadata.VisibleHeaders,
-            cancellationToken);
+        // ColumnStatistics è intenzionalmente vuoto: viene popolato in modo asincrono
+        // dal client tramite l'endpoint TypePivotColumnStats dopo il render della pagina.
         return model;
     }
 
@@ -170,4 +167,3 @@ public sealed class TypePivotViewModelBuilder(
             PlotYAxisFields = dataset.Metadata.VisibleHeaders
         };
 }
-

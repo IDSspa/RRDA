@@ -16,7 +16,9 @@ namespace RRDA.Web.Areas.Data.Controllers
         IConfiguration configuration,
         ITypePivotPlotService typePivotPlotService,
         ITypePivotViewModelBuilder typePivotViewModelBuilder,
-        ITypePivotExportService typePivotExportService) : Controller
+        ITypePivotExportService typePivotExportService,
+        ITypePivotDatasetService typePivotDatasetService,
+        ITypePivotStatisticsService typePivotStatisticsService) : Controller
     {
         private const string DecimalPlacesCookieName = "RRDA_TypePivot_DecimalPlaces";
         private const string RangeDisplayModeCookieName = "RRDA_TypePivot_RangeDisplayMode";
@@ -99,6 +101,61 @@ namespace RRDA.Web.Areas.Data.Controllers
                 cancellationToken);
 
             return model is null ? NotFound() : View(model);
+        }
+
+        /// <summary>
+        /// Restituisce le statistiche aggregate (min, max, media, dev.std) per tutte le
+        /// colonne numeriche visibili, calcolate sull'insieme di file corrispondente ai
+        /// filtri correnti. Chiamato in modo asincrono dal client dopo il render della
+        /// pagina TypePivot, solo quando l'utente espande il footer statistiche.
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> TypePivotColumnStats(
+            int reportTypeId,
+            int? batchId,
+            DateTime? lastModifiedFrom,
+            DateTime? lastModifiedTo,
+            string? filterField,
+            string? filterFrom,
+            string? filterTo,
+            string? subjectKeyFrom,
+            string? subjectKeyTo,
+            CancellationToken cancellationToken = default)
+        {
+            var dataset = await typePivotDatasetService.GetAsync(
+                CreateFilterRequest(
+                    reportTypeId,
+                    batchId,
+                    lastModifiedFrom,
+                    lastModifiedTo,
+                    filterField,
+                    filterFrom,
+                    filterTo,
+                    subjectKeyFrom,
+                    subjectKeyTo),
+                cancellationToken);
+
+            if (dataset is null)
+                return NotFound();
+
+            var statistics = await typePivotStatisticsService.GetAsync(
+                dataset.FileIds,
+                dataset.Metadata.VisibleHeaders,
+                cancellationToken);
+
+            // Proiettiamo in un formato compatto: la view non ha bisogno di Count.
+            var result = statistics.ToDictionary(
+                kv => kv.Key,
+                kv => new
+                {
+                    mean    = kv.Value.Mean,
+                    min     = kv.Value.Min,
+                    max     = kv.Value.Max,
+                    stdDev  = kv.Value.StandardDeviation
+                },
+                StringComparer.OrdinalIgnoreCase);
+
+            return Json(new { columns = result });
         }
 
         public async Task<IActionResult> TypePivotExport(

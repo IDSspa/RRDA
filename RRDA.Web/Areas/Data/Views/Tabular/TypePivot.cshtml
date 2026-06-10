@@ -80,44 +80,44 @@
         scrollbar-width: thin;
     }
 
-    .type-pivot-table-scroll::-webkit-scrollbar {
-        height: 11px;
-        width: 11px;
-    }
+        .type-pivot-table-scroll::-webkit-scrollbar {
+            height: 11px;
+            width: 11px;
+        }
 
-    .type-pivot-table-scroll::-webkit-scrollbar-track {
-        background: var(--tp-surface);
-    }
+        .type-pivot-table-scroll::-webkit-scrollbar-track {
+            background: var(--tp-surface);
+        }
 
-    .type-pivot-table-scroll::-webkit-scrollbar-thumb {
-        background: var(--tp-scroll-thumb);
-        border: 2px solid var(--tp-surface);
-        border-radius: 8px;
-    }
+        .type-pivot-table-scroll::-webkit-scrollbar-thumb {
+            background: var(--tp-scroll-thumb);
+            border: 2px solid var(--tp-surface);
+            border-radius: 8px;
+        }
 
-    .type-pivot-table-scroll::-webkit-scrollbar-thumb:hover {
-        background: var(--tp-scroll-thumb-hover);
-    }
+            .type-pivot-table-scroll::-webkit-scrollbar-thumb:hover {
+                background: var(--tp-scroll-thumb-hover);
+            }
 
-    .type-pivot-table-scroll::-webkit-scrollbar-corner {
-        background: var(--tp-surface);
-    }
+        .type-pivot-table-scroll::-webkit-scrollbar-corner {
+            background: var(--tp-surface);
+        }
 
     .type-pivot-table {
         border-collapse: separate;
         border-spacing: 0;
     }
 
-    .type-pivot-table thead {
-        position: sticky;
-        top: 0;
-        z-index: 5;
-    }
+        .type-pivot-table thead {
+            position: sticky;
+            top: 0;
+            z-index: 5;
+        }
 
-    .type-pivot-table thead th {
-        background: var(--tp-canvas);
-        box-shadow: inset 0 -1px var(--tp-border);
-    }
+            .type-pivot-table thead th {
+                background: var(--tp-canvas);
+                box-shadow: inset 0 -1px var(--tp-border);
+            }
 
     .type-pivot-sort-link {
         align-items: center;
@@ -127,10 +127,10 @@
         text-decoration: none;
     }
 
-    .type-pivot-sort-link:hover,
-    .type-pivot-sort-link:focus {
-        color: var(--tp-accent);
-    }
+        .type-pivot-sort-link:hover,
+        .type-pivot-sort-link:focus {
+            color: var(--tp-accent);
+        }
 
     .type-pivot-sort-indicator {
         color: var(--tp-accent);
@@ -143,14 +143,14 @@
         z-index: 4;
     }
 
-    .type-pivot-table tfoot th,
-    .type-pivot-table tfoot td {
-        background: var(--tp-surface);
-    }
+        .type-pivot-table tfoot th,
+        .type-pivot-table tfoot td {
+            background: var(--tp-surface);
+        }
 
-    .type-pivot-table tfoot tr:first-child > * {
-        box-shadow: inset 0 1px var(--tp-border);
-    }
+        .type-pivot-table tfoot tr:first-child > * {
+            box-shadow: inset 0 1px var(--tp-border);
+        }
 
     /* Zebra stripe styling for improved readability */
     .type-pivot-table tbody tr:nth-child(odd) {
@@ -214,32 +214,32 @@
         width: 2rem;
     }
 
-    .type-pivot-collapse-toggle::after {
-        border-bottom: 2px solid var(--tp-muted);
-        border-right: 2px solid var(--tp-muted);
-        content: "";
-        height: .55rem;
-        margin-top: -.25rem;
-        transform: rotate(45deg);
-        transition: transform .2s ease, margin-top .2s ease;
-        width: .55rem;
-    }
+        .type-pivot-collapse-toggle::after {
+            border-bottom: 2px solid var(--tp-muted);
+            border-right: 2px solid var(--tp-muted);
+            content: "";
+            height: .55rem;
+            margin-top: -.25rem;
+            transform: rotate(45deg);
+            transition: transform .2s ease, margin-top .2s ease;
+            width: .55rem;
+        }
 
-    .type-pivot-collapse-toggle[aria-expanded="true"]::after {
-        margin-top: .25rem;
-        transform: rotate(225deg);
-    }
+        .type-pivot-collapse-toggle[aria-expanded="true"]::after {
+            margin-top: .25rem;
+            transform: rotate(225deg);
+        }
 
-    .type-pivot-collapse-toggle:hover,
-    .type-pivot-collapse-toggle:focus {
-        border-color: var(--tp-accent);
-        box-shadow: none;
-    }
+        .type-pivot-collapse-toggle:hover,
+        .type-pivot-collapse-toggle:focus {
+            border-color: var(--tp-accent);
+            box-shadow: none;
+        }
 
-    .type-pivot-collapse-toggle:hover::after,
-    .type-pivot-collapse-toggle:focus::after {
-        border-color: var(--tp-accent);
-    }
+            .type-pivot-collapse-toggle:hover::after,
+            .type-pivot-collapse-toggle:focus::after {
+                border-color: var(--tp-accent);
+            }
 
     .type-pivot-collapse-body {
         border-top: 1px solid var(--tp-border);
@@ -263,9 +263,9 @@
         padding-top: calc(1.275rem + .3rem);
     }
 
-    .type-pivot-plot-action .type-pivot-form-actions {
-        flex-wrap: nowrap;
-    }
+        .type-pivot-plot-action .type-pivot-form-actions {
+            flex-wrap: nowrap;
+        }
 
     .type-pivot-plot-status {
         color: var(--tp-muted);
@@ -273,9 +273,9 @@
         margin-bottom: .75rem;
     }
 
-    .type-pivot-plot-status.is-error {
-        color: #f85149;
-    }
+        .type-pivot-plot-status.is-error {
+            color: #f85149;
+        }
 
     .type-pivot-plot-frame {
         position: relative;
@@ -341,505 +341,205 @@
         scrollbar-width: thin;
     }
 
-    .type-pivot-plot-modal .modal-body::-webkit-scrollbar { width: 9px; }
-    .type-pivot-plot-modal .modal-body::-webkit-scrollbar-track { background: var(--tp-surface); }
-    .type-pivot-plot-modal .modal-body::-webkit-scrollbar-thumb {
-        background: var(--tp-scroll-thumb);
-        border: 2px solid var(--tp-surface);
-        border-radius: 8px;
-    }
-    .type-pivot-plot-modal .modal-body::-webkit-scrollbar-thumb:hover { background: var(--tp-scroll-thumb-hover); }
+        .type-pivot-plot-modal .modal-body::-webkit-scrollbar {
+            width: 9px;
+        }
 
-    .type-pivot-range-cell { min-width: 145px; }
+        .type-pivot-plot-modal .modal-body::-webkit-scrollbar-track {
+            background: var(--tp-surface);
+        }
+
+        .type-pivot-plot-modal .modal-body::-webkit-scrollbar-thumb {
+            background: var(--tp-scroll-thumb);
+            border: 2px solid var(--tp-surface);
+            border-radius: 8px;
+        }
+
+            .type-pivot-plot-modal .modal-body::-webkit-scrollbar-thumb:hover {
+                background: var(--tp-scroll-thumb-hover);
+            }
+
+    .type-pivot-range-cell {
+        min-width: 145px;
+    }
+
     .type-pivot-range-button {
-        background: transparent; border: 1px solid var(--tp-border); border-radius: 6px; color: var(--tp-text);
-        cursor: pointer; padding: .25rem .35rem; text-align: left; width: 100%;
+        background: transparent;
+        border: 1px solid var(--tp-border);
+        border-radius: 6px;
+        color: var(--tp-text);
+        cursor: pointer;
+        padding: .25rem .35rem;
+        text-align: left;
+        width: 100%;
     }
-    .type-pivot-range-button:hover, .type-pivot-range-button:focus { border-color: var(--tp-accent); }
-    .type-pivot-range-sparkline { display: block; height: 24px; margin-bottom: .1rem; width: 104px; }
-    .type-pivot-range-sparkline polyline { fill: none; stroke: var(--tp-accent); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
-    .type-pivot-range-summary { color: var(--tp-muted); display: block; font-size: .65rem; white-space: nowrap; }
-    .type-pivot-range-modal .modal-content { background: var(--tp-surface); border: 1px solid var(--tp-border); color: var(--tp-text); }
-    .type-pivot-range-modal .modal-header { border-bottom-color: var(--tp-border); }
-    .type-pivot-range-modal .modal-body { overflow: hidden; }
+
+        .type-pivot-range-button:hover, .type-pivot-range-button:focus {
+            border-color: var(--tp-accent);
+        }
+
+    .type-pivot-range-sparkline {
+        display: block;
+        height: 24px;
+        margin-bottom: .1rem;
+        width: 104px;
+    }
+
+        .type-pivot-range-sparkline polyline {
+            fill: none;
+            stroke: var(--tp-accent);
+            stroke-width: 1.5;
+            vector-effect: non-scaling-stroke;
+        }
+
+    .type-pivot-range-summary {
+        color: var(--tp-muted);
+        display: block;
+        font-size: .65rem;
+        white-space: nowrap;
+    }
+
+    .type-pivot-range-modal .modal-content {
+        background: var(--tp-surface);
+        border: 1px solid var(--tp-border);
+        color: var(--tp-text);
+    }
+
+    .type-pivot-range-modal .modal-header {
+        border-bottom-color: var(--tp-border);
+    }
+
+    .type-pivot-range-modal .modal-body {
+        overflow: hidden;
+    }
+
     .type-pivot-range-detail-toolbar {
-        align-items: center; display: flex; gap: .75rem; justify-content: space-between; margin-bottom: .75rem;
+        align-items: center;
+        display: flex;
+        gap: .75rem;
+        justify-content: space-between;
+        margin-bottom: .75rem;
     }
-    .type-pivot-range-summary-text { color: var(--tp-muted); font-size: .78rem; margin: 0; }
-    .type-pivot-range-chart-toggle { display: flex; flex: 0 0 auto; }
-    .type-pivot-range-chart-toggle .btn {
-        border-color: var(--tp-scroll-thumb); color: var(--tp-muted); font-size: .7rem; padding: .2rem .55rem;
+
+    .type-pivot-range-summary-text {
+        color: var(--tp-muted);
+        font-size: .78rem;
+        margin: 0;
     }
-    .type-pivot-range-chart-toggle .btn-check:checked + .btn {
-        background: var(--tp-accent); border-color: var(--tp-accent); color: #fff;
+
+    .type-pivot-range-chart-toggle {
+        display: flex;
+        flex: 0 0 auto;
     }
-    .type-pivot-range-detail-grid { display: grid; gap: 1rem; grid-template-columns: minmax(0, 2fr) minmax(220px, 1fr); }
-    .type-pivot-range-detail-chart { height: 260px; min-width: 0; }
+
+        .type-pivot-range-chart-toggle .btn {
+            border-color: var(--tp-scroll-thumb);
+            color: var(--tp-muted);
+            font-size: .7rem;
+            padding: .2rem .55rem;
+        }
+
+        .type-pivot-range-chart-toggle .btn-check:checked + .btn {
+            background: var(--tp-accent);
+            border-color: var(--tp-accent);
+            color: #fff;
+        }
+
+    .type-pivot-range-detail-grid {
+        display: grid;
+        gap: 1rem;
+        grid-template-columns: minmax(0, 2fr) minmax(220px, 1fr);
+    }
+
+    .type-pivot-range-detail-chart {
+        height: 260px;
+        min-width: 0;
+    }
+
     .type-pivot-range-detail-table {
-        max-height: 260px; overflow: auto; scrollbar-color: var(--tp-scroll-thumb) var(--tp-canvas); scrollbar-width: thin;
+        max-height: 260px;
+        overflow: auto;
+        scrollbar-color: var(--tp-scroll-thumb) var(--tp-canvas);
+        scrollbar-width: thin;
     }
-    .type-pivot-range-detail-table::-webkit-scrollbar { height: 7px; width: 7px; }
-    .type-pivot-range-detail-table::-webkit-scrollbar-track { background: var(--tp-canvas); }
-    .type-pivot-range-detail-table::-webkit-scrollbar-thumb { background: var(--tp-scroll-thumb); border: 1px solid var(--tp-canvas); border-radius: 6px; }
-    .type-pivot-range-detail-table::-webkit-scrollbar-thumb:hover { background: var(--tp-scroll-thumb-hover); }
-    .type-pivot-range-detail-table table { font-size: .75rem; }
-    .type-pivot-range-detail-table td, .type-pivot-range-detail-table th { padding: .2rem .4rem; }
-    .type-pivot-range-detail-table thead { position: sticky; top: 0; z-index: 1; }
+
+        .type-pivot-range-detail-table::-webkit-scrollbar {
+            height: 7px;
+            width: 7px;
+        }
+
+        .type-pivot-range-detail-table::-webkit-scrollbar-track {
+            background: var(--tp-canvas);
+        }
+
+        .type-pivot-range-detail-table::-webkit-scrollbar-thumb {
+            background: var(--tp-scroll-thumb);
+            border: 1px solid var(--tp-canvas);
+            border-radius: 6px;
+        }
+
+            .type-pivot-range-detail-table::-webkit-scrollbar-thumb:hover {
+                background: var(--tp-scroll-thumb-hover);
+            }
+
+        .type-pivot-range-detail-table table {
+            font-size: .75rem;
+        }
+
+        .type-pivot-range-detail-table td, .type-pivot-range-detail-table th {
+            padding: .2rem .4rem;
+        }
+
+        .type-pivot-range-detail-table thead {
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
     .type-pivot-range-values-table,
     .type-pivot-range-values-table > :not(caption) > * > * {
         background: var(--tp-canvas);
         border-color: var(--tp-border);
         color: var(--tp-text);
     }
-    .type-pivot-page .btn-close { filter: invert(1) grayscale(100%) brightness(200%); }
-    html[data-theme="light"] .type-pivot-page .btn-close { filter: none; }
+
+    .type-pivot-page .btn-close {
+        filter: invert(1) grayscale(100%) brightness(200%);
+    }
+
+    html[data-theme="light"] .type-pivot-page .btn-close {
+        filter: none;
+    }
 
     @@media (max-width: 900px) {
-        .type-pivot-range-detail-toolbar { align-items: flex-start; flex-direction: column; }
-        .type-pivot-range-detail-grid { grid-template-columns: 1fr; }
-        .type-pivot-range-detail-chart { height: 220px; }
-        .type-pivot-range-detail-table { max-height: 180px; }
+        .type-pivot-range-detail-toolbar {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .type-pivot-range-detail-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .type-pivot-range-detail-chart {
+            height: 220px;
+        }
+
+        .type-pivot-range-detail-table {
+            max-height: 180px;
+        }
     }
 </style>
 
 <div class="type-pivot-page">
-<div class="d-flex align-items-center justify-content-between mb-3">
-    <h4 style="margin:0;color:#c9d1d9;font-weight:600;">Vista orizzontale per tipo report: @Model.ReportTypeKey</h4>
-    <div class="type-pivot-toolbar-actions">
-        <span style="color:#8b949e;font-size:.85rem;">File filtrati: @Model.TotalFiles · Ranged: @(Model.UseCompactRanges ? "compatti" : "espansi")</span>
-        <a asp-area="Data"
-           asp-controller="Tabular"
-           asp-action="TypePivotExport"
-           asp-route-reportTypeId="@Model.ReportTypeId"
-           asp-route-batchId="@Model.BatchId"
-           asp-route-lastModifiedFrom="@(Model.LastModifiedFrom?.ToString("yyyy-MM-dd"))"
-           asp-route-lastModifiedTo="@(Model.LastModifiedTo?.ToString("yyyy-MM-dd"))"
-           asp-route-filterField="@Model.FilterField"
-           asp-route-filterFrom="@Model.FilterFrom"
-           asp-route-filterTo="@Model.FilterTo"
-           asp-route-subjectKeyFrom="@Model.SubjectKeyFrom"
-           asp-route-subjectKeyTo="@Model.SubjectKeyTo"
-           asp-route-format="csv"
-           class="btn-rrda-primary type-pivot-action-link">Esporta CSV</a>
-        <a asp-area="Data"
-           asp-controller="Tabular"
-           asp-action="TypePivotExport"
-           asp-route-reportTypeId="@Model.ReportTypeId"
-           asp-route-batchId="@Model.BatchId"
-           asp-route-lastModifiedFrom="@(Model.LastModifiedFrom?.ToString("yyyy-MM-dd"))"
-           asp-route-lastModifiedTo="@(Model.LastModifiedTo?.ToString("yyyy-MM-dd"))"
-           asp-route-filterField="@Model.FilterField"
-           asp-route-filterFrom="@Model.FilterFrom"
-           asp-route-filterTo="@Model.FilterTo"
-           asp-route-subjectKeyFrom="@Model.SubjectKeyFrom"
-           asp-route-subjectKeyTo="@Model.SubjectKeyTo"
-           asp-route-format="excel"
-           class="btn-rrda-primary type-pivot-action-link">Esporta Excel</a>
-    </div>
-</div>
-
-<div class="rrda-card mb-2 type-pivot-filter-card type-pivot-compact-card">
-    <div class="type-pivot-toolbar">
-        <div>
-            <p class="type-pivot-toolbar-title">Filtri dati</p>
-            <div class="type-pivot-toolbar-summary">Batch, data modifica, campo misura e @Model.SubjectKeyLabel</div>
-        </div>
-        <button class="type-pivot-collapse-toggle"
-                type="button"
-                data-bs-toggle="collapse"
-                data-bs-target="#typePivotFilters"
-                aria-expanded="false"
-                aria-controls="typePivotFilters"
-                aria-label="Espandi o comprimi filtri"></button>
-    </div>
-    <div class="collapse" id="typePivotFilters">
-        <div class="type-pivot-collapse-body">
-            <form id="type-pivot-filter-form" method="get" class="row g-2 align-items-end">
-                <input type="hidden" name="reportTypeId" value="@Model.ReportTypeId" />
-                <input type="hidden" name="sortField" value="@Model.SortField" />
-                <input type="hidden" name="sortDirection" value="@Model.SortDirection" />
-
-                <div class="col-md-3">
-                    <label class="form-label">Batch</label>
-                    <select class="form-select" name="batchId">
-                        <option value="">Tutti</option>
-                        @foreach (var batch in Model.BatchOptions)
-                        {
-                            <option value="@batch.Id" selected="@(Model.BatchId == batch.Id)">@batch.Label</option>
-                        }
-                    </select>
-                </div>
-
-                <div class="col-md-2">
-                    <label class="form-label">Ultima modifica da</label>
-                    <input type="date" class="form-control" name="lastModifiedFrom" value="@(Model.LastModifiedFrom?.ToString("yyyy-MM-dd"))" />
-                </div>
-
-                <div class="col-md-2">
-                    <label class="form-label">Ultima modifica a</label>
-                    <input type="date" class="form-control" name="lastModifiedTo" value="@(Model.LastModifiedTo?.ToString("yyyy-MM-dd"))" />
-                </div>
-
-                <div class="col-md-3">
-                    <label class="form-label">Campo filtro</label>
-                    <select class="form-select" name="filterField">
-                        <option value="">--</option>
-                        @foreach (var f in Model.DynamicFilterFields)
-                        {
-                            <option value="@f" selected="@(Model.FilterField == f)">@f</option>
-                        }
-                    </select>
-                </div>
-
-                <div class="col-md-2">
-                    <label class="form-label">Campo da</label>
-                    <input class="form-control" name="filterFrom" value="@Model.FilterFrom" />
-                </div>
-
-                <div class="col-md-2">
-                    <label class="form-label">Campo a</label>
-                    <input class="form-control" name="filterTo" value="@Model.FilterTo" />
-                </div>
-
-                <div class="col-md-2">
-                    <label class="form-label">@Model.SubjectKeyLabel da</label>
-                    <input class="form-control" name="subjectKeyFrom" value="@Model.SubjectKeyFrom" />
-                </div>
-
-                <div class="col-md-2">
-                    <label class="form-label">@Model.SubjectKeyLabel a</label>
-                    <input class="form-control" name="subjectKeyTo" value="@Model.SubjectKeyTo" />
-                </div>
-
-                <div class="col-md-auto type-pivot-form-actions">
-                    <button class="btn-rrda-primary" type="submit">Applica</button>
-                    <a asp-action="TypePivot"
-                       asp-route-reportTypeId="@Model.ReportTypeId"
-                       class="btn-rrda-danger type-pivot-action-link">Azzera filtri</a>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<div class="rrda-card mb-2 type-pivot-compact-card">
-    <div class="type-pivot-toolbar">
-        <div>
-            <p class="type-pivot-toolbar-title">Parametri grafico</p>
-            <div class="type-pivot-toolbar-summary">Tipo grafico, assi, colonne e righe selezionate dalla tabella</div>
-        </div>
-        <button class="type-pivot-collapse-toggle"
-                type="button"
-                data-bs-toggle="collapse"
-                data-bs-target="#typePivotPlotParameters"
-                aria-expanded="false"
-                aria-controls="typePivotPlotParameters"
-                aria-label="Espandi o comprimi parametri grafico"></button>
-    </div>
-    <div class="collapse" id="typePivotPlotParameters">
-        <div class="type-pivot-collapse-body">
-            <form id="plot-data-form"
-                  asp-area="Data"
-                  asp-controller="Tabular"
-                  asp-action="TypePivotPlotData"
-                  method="get"
-                  class="type-pivot-plot-grid">
-                <input type="hidden" name="reportTypeId" value="@Model.ReportTypeId" />
-                <input type="hidden" name="batchId" value="@Model.BatchId" />
-                <input type="hidden" name="lastModifiedFrom" value="@(Model.LastModifiedFrom?.ToString("yyyy-MM-dd"))" />
-                <input type="hidden" name="lastModifiedTo" value="@(Model.LastModifiedTo?.ToString("yyyy-MM-dd"))" />
-                <input type="hidden" name="filterField" value="@Model.FilterField" />
-                <input type="hidden" name="filterFrom" value="@Model.FilterFrom" />
-                <input type="hidden" name="filterTo" value="@Model.FilterTo" />
-                <input type="hidden" name="subjectKeyFrom" value="@Model.SubjectKeyFrom" />
-                <input type="hidden" name="subjectKeyTo" value="@Model.SubjectKeyTo" />
-
-                <div>
-                    <label class="form-label">Tipo grafico</label>
-                    <select class="form-select" name="chartType">
-                        <option value="scatter">Scatter</option>
-                        <option value="pdf">PDF</option>
-                    </select>
-                </div>
-
-                <div>
-                    <label class="form-label" id="plot-x-field-label" for="plot-x-field">Asse X</label>
-                    <select class="form-select" id="plot-x-field" name="xField">
-                        @foreach (var field in Model.PlotXAxisFields)
-                        {
-                            var fieldLabel = field == "SubjectKey" ? Model.SubjectKeyLabel : field;
-                            <option value="@field">@fieldLabel</option>
-                        }
-                    </select>
-                </div>
-
-                <div>
-                    <label class="form-label" id="plot-series-fields-label" for="plot-series-fields">Colonne asse Y</label>
-                    <select class="form-select type-pivot-plot-y-select" id="plot-series-fields" name="seriesFields" multiple size="5">
-                        @foreach (var field in Model.PlotYAxisFields)
-                        {
-                            var label = field;
-                            if (Model.HeaderUnits.TryGetValue(field, out var unit)
-                                && !string.IsNullOrWhiteSpace(unit))
-                            {
-                                label = $"{field} [{unit}]";
-                            }
-
-                            <option value="@field">@label</option>
-                        }
-                    </select>
-                </div>
-
-                <div class="type-pivot-plot-action">
-                    <div class="type-pivot-form-actions">
-                        <button class="btn-rrda-primary" type="submit">Genera grafico</button>
-                        <button class="btn-rrda-danger" id="reset-plot-button" type="button">Reset grafico</button>
-                    </div>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="typePivotFilterLoadingModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="typePivotFilterLoadingModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content type-pivot-themed-modal">
-            <div class="modal-body" style="padding:1.5rem;">
-                <div class="d-flex align-items-center gap-3">
-                    <div class="spinner-border text-primary rrda-loading-spinner" role="status" aria-hidden="true"></div>
-                    <div>
-                        <h6 id="typePivotFilterLoadingModalLabel" style="margin:0 0 .35rem 0;color:#c9d1d9;font-weight:600;">Applicazione filtri</h6>
-                        <p style="margin:0;color:#8b949e;font-size:.875rem;">
-                            Elaborazione dei dati in corso. L'operazione puo richiedere qualche istante in base al volume dei record.
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="rrda-card mt-3 type-pivot-table-scroll">
-    @if (!Model.Rows.Any())
-    {
-        <p style="color:#8b949e;margin:0;">Nessun file disponibile per questo report type.</p>
-    }
-    else
-    {
-        <table class="table table-borderless mb-0 type-pivot-table" style="min-width:1400px;">
-            <thead>
-                <tr>
-                    <th style="font-size:.78rem;white-space:nowrap;">
-                        <input class="form-check-input" type="checkbox" id="plot-select-all" title="Seleziona tutte le righe della pagina" />
-                    </th>
-                    @* ── SubjectKey: prima colonna ── *@
-                    @if (Model.HasSubjectKey)
-                    {
-                        <th style="font-family:monospace;font-size:.78rem;white-space:nowrap;">
-                            <a class="type-pivot-sort-link"
-                               asp-action="TypePivot"
-                               asp-route-reportTypeId="@Model.ReportTypeId"
-                               asp-route-page="1"
-                               asp-route-pageSize="@Model.PageSize"
-                               asp-route-batchId="@Model.BatchId"
-                               asp-route-lastModifiedFrom="@(Model.LastModifiedFrom?.ToString("yyyy-MM-dd"))"
-                               asp-route-lastModifiedTo="@(Model.LastModifiedTo?.ToString("yyyy-MM-dd"))"
-                               asp-route-filterField="@Model.FilterField"
-                               asp-route-filterFrom="@Model.FilterFrom"
-                               asp-route-filterTo="@Model.FilterTo"
-                               asp-route-subjectKeyFrom="@Model.SubjectKeyFrom"
-                               asp-route-subjectKeyTo="@Model.SubjectKeyTo"
-                               asp-route-sortField="SubjectKey"
-                               asp-route-sortDirection="@(Model.SortField == "SubjectKey" && Model.SortDirection == "asc" ? "desc" : "asc")">
-                                @Model.SubjectKeyLabel
-                                <span class="type-pivot-sort-indicator">
-                                    @(Model.SortField == "SubjectKey" ? (Model.SortDirection == "desc" ? "▼" : "▲") : "⇅")
-                                </span>
-                            </a>
-                        </th>
-                    }
-                    @* ── Colonne statiche file ── *@
-                    <th>Batch</th>
-                    <th>Nome file</th>
-                    <th>Ultima modifica</th>
-                    @* ── Colonne di misura ── *@
-                    @foreach (var header in Model.Headers)
-                    {
-                        var headerLabel = header;
-                        if (Model.HeaderUnits.TryGetValue(header, out var unit)
-                            && !string.IsNullOrWhiteSpace(unit))
-                        {
-                            headerLabel = $"{header} [{unit}]";
-                        }
-
-                        <th style="font-family:monospace;font-size:.78rem;white-space:nowrap;">
-                            @headerLabel
-                        </th>
-                    }
-                    @foreach (var range in Model.RangeHeaders)
-                    {
-                        var rangeLabel = string.IsNullOrWhiteSpace(range.Unit) ? range.Name : $"{range.Name} [{range.Unit}]";
-                        <th style="font-family:monospace;font-size:.78rem;white-space:nowrap;">
-                            @rangeLabel
-                        </th>
-                    }
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var row in Model.Rows)
-                {
-                    <tr>
-                        <td>
-                            <input class="form-check-input plot-row-selector"
-                                   type="checkbox"
-                                   name="selectedFileIds"
-                                   value="@row.FileId"
-                                   form="plot-data-form"
-                                   title="Usa questa riga nel JSON grafico" />
-                        </td>
-                        @* ── SubjectKey: renderizzato come intero (o stringa se non numerico) ── *@
-                        @if (Model.HasSubjectKey)
-                        {
-                            <td style="font-family:monospace;font-size:.78rem;white-space:nowrap;">
-                                @{
-                                    var skRaw = row.SubjectKey;
-                                    if (!string.IsNullOrWhiteSpace(skRaw)
-                                        && long.TryParse(skRaw, NumberStyles.Any, CultureInfo.InvariantCulture, out var skLong))
-                                    {
-                                        @skLong
-                                    }
-                                    else if (!string.IsNullOrWhiteSpace(skRaw)
-                                             && double.TryParse(skRaw, NumberStyles.Any, CultureInfo.InvariantCulture, out var skDouble))
-                                    {
-                                        @((long)Math.Round(skDouble))
-                                    }
-                                    else
-                                    {
-                                        @(skRaw ?? "")
-                                    }
-                                }
-                            </td>
-                        }
-                        @* ── Colonne statiche ── *@
-
-                        <td style="font-size:.78rem;">@(row.BatchName ?? "—")</td>
-                        <td style="font-family:monospace;font-size:.78rem;">@row.FileName</td>
-                        <td style="font-size:.78rem;">@row.LastModified.ToString("yyyy-MM-dd HH:mm")</td>
-                        @* ── Valori di misura: double con decimali configurati ── *@
-                        @foreach (var header in Model.Headers)
-                        {
-                            <td style="font-family:monospace;font-size:.78rem;white-space:nowrap;">
-                                @{
-                                    if (row.Values.TryGetValue(header, out var value))
-                                    {
-                                        if (double.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out var dInv))
-                                        {
-                                            @Math.Round(dInv, Model.DecimalPlaces).ToString($"F{Model.DecimalPlaces}", CultureInfo.InvariantCulture)
-                                        }
-                                        else if (double.TryParse(value, NumberStyles.Any, CultureInfo.CurrentCulture, out var dCur))
-                                        {
-                                            @Math.Round(dCur, Model.DecimalPlaces).ToString($"F{Model.DecimalPlaces}", CultureInfo.CurrentCulture)
-                                        }
-                                        else
-                                        {
-                                            @(value ?? "")
-                                        }
-                                    }
-                                }
-                            </td>
-                        }
-                        @foreach (var range in Model.RangeHeaders)
-                        {
-                            <td class="type-pivot-range-cell">
-                                @if (row.Ranges.TryGetValue(range.Name, out var cell))
-                                {
-                                    <button type="button" class="type-pivot-range-button"
-                                            data-range-detail="@JsonSerializer.Serialize(cell)"
-                                            data-report-reference="@Model.ReportTypeKey · @row.SubjectKey"
-                                            aria-label="Apri il dettaglio del ranged @range.Name per @Model.ReportTypeKey seriale @row.SubjectKey">
-                                        <svg class="type-pivot-range-sparkline" viewBox="0 0 104 24" preserveAspectRatio="none" aria-hidden="true">
-                                            <polyline points="@SparklinePoints(cell)"></polyline>
-                                        </svg>
-                                        <span class="type-pivot-range-summary">
-                                            @cell.Points.Count elementi · @FormatStatistic(cell.Min)…@FormatStatistic(cell.Max)
-                                        </span>
-                                    </button>
-                                }
-                            </td>
-                        }
-                    
-                    </tr>
-                }
-            </tbody>
-            <tfoot>
-                <tr>
-                    <th colspan="@staticFooterColumns" style="font-size:.76rem;color:#8b949e;">Max</th>
-                    @foreach (var header in Model.Headers)
-                    {
-                        Model.ColumnStatistics.TryGetValue(header, out var stats);
-                        <td style="font-family:monospace;font-size:.76rem;white-space:nowrap;color:#c9d1d9;">
-                            @FormatStatistic(stats?.Max)
-                        </td>
-                    }
-                    @foreach (var range in Model.RangeHeaders) { <td></td> }
-                </tr>
-                <tr>
-                    <th colspan="@staticFooterColumns" style="font-size:.76rem;color:#8b949e;">Media</th>
-                    @foreach (var header in Model.Headers)
-                    {
-                        Model.ColumnStatistics.TryGetValue(header, out var stats);
-                        <td style="font-family:monospace;font-size:.76rem;white-space:nowrap;color:#c9d1d9;">
-                            @FormatStatistic(stats?.Mean)
-                        </td>
-                    }
-                    @foreach (var range in Model.RangeHeaders) { <td></td> }
-                </tr>
-                <tr>
-                    <th colspan="@staticFooterColumns" style="font-size:.76rem;color:#8b949e;">Min</th>
-                    @foreach (var header in Model.Headers)
-                    {
-                        Model.ColumnStatistics.TryGetValue(header, out var stats);
-                        <td style="font-family:monospace;font-size:.76rem;white-space:nowrap;color:#c9d1d9;">
-                            @FormatStatistic(stats?.Min)
-                        </td>
-                    }
-                    @foreach (var range in Model.RangeHeaders) { <td></td> }
-                </tr>
-@*                 <tr>
-                    <th colspan="@staticFooterColumns" style="font-size:.76rem;color:#8b949e;">Mediana</th>
-                    @foreach (var header in Model.Headers)
-                    {
-                        Model.ColumnStatistics.TryGetValue(header, out var stats);
-                        <td style="font-family:monospace;font-size:.76rem;white-space:nowrap;color:#c9d1d9;">
-                            @FormatStatistic(stats?.Median)
-                        </td>
-                    }
-                </tr> *@
-                <tr>
-                    <th colspan="@staticFooterColumns" style="font-size:.76rem;color:#8b949e;">Dev. std</th>
-                    @foreach (var header in Model.Headers)
-                    {
-                        Model.ColumnStatistics.TryGetValue(header, out var stats);
-                        <td style="font-family:monospace;font-size:.76rem;white-space:nowrap;color:#c9d1d9;">
-                            @FormatStatistic(stats?.StandardDeviation)
-                        </td>
-                    }
-                    @foreach (var range in Model.RangeHeaders) { <td></td> }
-                </tr>
-            </tfoot>
-        </table>
-    }
-</div>
-
-@if (Model.TotalPages > 1)
-{
-    <div class="d-flex gap-2 mt-3">
-        @for (int p = 1; p <= Model.TotalPages; p++)
-        {
-            <a asp-action="TypePivot"
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <h4 style="margin:0;color:#c9d1d9;font-weight:600;">Vista orizzontale per tipo report: @Model.ReportTypeKey</h4>
+        <div class="type-pivot-toolbar-actions">
+            <span style="color:#8b949e;font-size:.85rem;">File filtrati: @Model.TotalFiles · Ranged: @(Model.UseCompactRanges ? "compatti" : "espansi")</span>
+            <a asp-area="Data"
+               asp-controller="Tabular"
+               asp-action="TypePivotExport"
                asp-route-reportTypeId="@Model.ReportTypeId"
-               asp-route-page="@p"
-               asp-route-pageSize="@Model.PageSize"
                asp-route-batchId="@Model.BatchId"
                asp-route-lastModifiedFrom="@(Model.LastModifiedFrom?.ToString("yyyy-MM-dd"))"
                asp-route-lastModifiedTo="@(Model.LastModifiedTo?.ToString("yyyy-MM-dd"))"
@@ -848,85 +548,543 @@
                asp-route-filterTo="@Model.FilterTo"
                asp-route-subjectKeyFrom="@Model.SubjectKeyFrom"
                asp-route-subjectKeyTo="@Model.SubjectKeyTo"
-               asp-route-sortField="@Model.SortField"
-               asp-route-sortDirection="@Model.SortDirection"
-               style="padding:.2rem .55rem;border:1px solid #30363d;border-radius:5px; text-decoration:none;color:
-                    @(p == Model.CurrentPage ? "#58a6ff" : "#8b949e");">@p
-            </a>
+               asp-route-format="csv"
+               class="btn-rrda-primary type-pivot-action-link">Esporta CSV</a>
+            <a asp-area="Data"
+               asp-controller="Tabular"
+               asp-action="TypePivotExport"
+               asp-route-reportTypeId="@Model.ReportTypeId"
+               asp-route-batchId="@Model.BatchId"
+               asp-route-lastModifiedFrom="@(Model.LastModifiedFrom?.ToString("yyyy-MM-dd"))"
+               asp-route-lastModifiedTo="@(Model.LastModifiedTo?.ToString("yyyy-MM-dd"))"
+               asp-route-filterField="@Model.FilterField"
+               asp-route-filterFrom="@Model.FilterFrom"
+               asp-route-filterTo="@Model.FilterTo"
+               asp-route-subjectKeyFrom="@Model.SubjectKeyFrom"
+               asp-route-subjectKeyTo="@Model.SubjectKeyTo"
+               asp-route-format="excel"
+               class="btn-rrda-primary type-pivot-action-link">Esporta Excel</a>
+        </div>
+    </div>
+
+    <div class="rrda-card mb-2 type-pivot-filter-card type-pivot-compact-card">
+        <div class="type-pivot-toolbar">
+            <div>
+                <p class="type-pivot-toolbar-title">Filtri dati</p>
+                <div class="type-pivot-toolbar-summary">Batch, data modifica, campo misura e @Model.SubjectKeyLabel</div>
+            </div>
+            <button class="type-pivot-collapse-toggle"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#typePivotFilters"
+                    aria-expanded="false"
+                    aria-controls="typePivotFilters"
+                    aria-label="Espandi o comprimi filtri"></button>
+        </div>
+        <div class="collapse" id="typePivotFilters">
+            <div class="type-pivot-collapse-body">
+                <form id="type-pivot-filter-form" method="get" class="row g-2 align-items-end">
+                    <input type="hidden" name="reportTypeId" value="@Model.ReportTypeId" />
+                    <input type="hidden" name="sortField" value="@Model.SortField" />
+                    <input type="hidden" name="sortDirection" value="@Model.SortDirection" />
+
+                    <div class="col-md-3">
+                        <label class="form-label">Batch</label>
+                        <select class="form-select" name="batchId">
+                            <option value="">Tutti</option>
+                            @foreach (var batch in Model.BatchOptions)
+                            {
+                                <option value="@batch.Id" selected="@(Model.BatchId == batch.Id)">@batch.Label</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="col-md-2">
+                        <label class="form-label">Ultima modifica da</label>
+                        <input type="date" class="form-control" name="lastModifiedFrom" value="@(Model.LastModifiedFrom?.ToString("yyyy-MM-dd"))" />
+                    </div>
+
+                    <div class="col-md-2">
+                        <label class="form-label">Ultima modifica a</label>
+                        <input type="date" class="form-control" name="lastModifiedTo" value="@(Model.LastModifiedTo?.ToString("yyyy-MM-dd"))" />
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label">Campo filtro</label>
+                        <select class="form-select" name="filterField">
+                            <option value="">--</option>
+                            @foreach (var f in Model.DynamicFilterFields)
+                            {
+                                <option value="@f" selected="@(Model.FilterField == f)">@f</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="col-md-2">
+                        <label class="form-label">Campo da</label>
+                        <input class="form-control" name="filterFrom" value="@Model.FilterFrom" />
+                    </div>
+
+                    <div class="col-md-2">
+                        <label class="form-label">Campo a</label>
+                        <input class="form-control" name="filterTo" value="@Model.FilterTo" />
+                    </div>
+
+                    <div class="col-md-2">
+                        <label class="form-label">@Model.SubjectKeyLabel da</label>
+                        <input class="form-control" name="subjectKeyFrom" value="@Model.SubjectKeyFrom" />
+                    </div>
+
+                    <div class="col-md-2">
+                        <label class="form-label">@Model.SubjectKeyLabel a</label>
+                        <input class="form-control" name="subjectKeyTo" value="@Model.SubjectKeyTo" />
+                    </div>
+
+                    <div class="col-md-auto type-pivot-form-actions">
+                        <button class="btn-rrda-primary" type="submit">Applica</button>
+                        <a asp-action="TypePivot"
+                           asp-route-reportTypeId="@Model.ReportTypeId"
+                           class="btn-rrda-danger type-pivot-action-link">Azzera filtri</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="rrda-card mb-2 type-pivot-compact-card">
+        <div class="type-pivot-toolbar">
+            <div>
+                <p class="type-pivot-toolbar-title">Parametri grafico</p>
+                <div class="type-pivot-toolbar-summary">Tipo grafico, assi, colonne e righe selezionate dalla tabella</div>
+            </div>
+            <button class="type-pivot-collapse-toggle"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#typePivotPlotParameters"
+                    aria-expanded="false"
+                    aria-controls="typePivotPlotParameters"
+                    aria-label="Espandi o comprimi parametri grafico"></button>
+        </div>
+        <div class="collapse" id="typePivotPlotParameters">
+            <div class="type-pivot-collapse-body">
+                <form id="plot-data-form"
+                      asp-area="Data"
+                      asp-controller="Tabular"
+                      asp-action="TypePivotPlotData"
+                      method="get"
+                      class="type-pivot-plot-grid">
+                    <input type="hidden" name="reportTypeId" value="@Model.ReportTypeId" />
+                    <input type="hidden" name="batchId" value="@Model.BatchId" />
+                    <input type="hidden" name="lastModifiedFrom" value="@(Model.LastModifiedFrom?.ToString("yyyy-MM-dd"))" />
+                    <input type="hidden" name="lastModifiedTo" value="@(Model.LastModifiedTo?.ToString("yyyy-MM-dd"))" />
+                    <input type="hidden" name="filterField" value="@Model.FilterField" />
+                    <input type="hidden" name="filterFrom" value="@Model.FilterFrom" />
+                    <input type="hidden" name="filterTo" value="@Model.FilterTo" />
+                    <input type="hidden" name="subjectKeyFrom" value="@Model.SubjectKeyFrom" />
+                    <input type="hidden" name="subjectKeyTo" value="@Model.SubjectKeyTo" />
+
+                    <div>
+                        <label class="form-label">Tipo grafico</label>
+                        <select class="form-select" name="chartType">
+                            <option value="scatter">Scatter</option>
+                            <option value="pdf">PDF</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="form-label" id="plot-x-field-label" for="plot-x-field">Asse X</label>
+                        <select class="form-select" id="plot-x-field" name="xField">
+                            @foreach (var field in Model.PlotXAxisFields)
+                            {
+                                var fieldLabel = field == "SubjectKey" ? Model.SubjectKeyLabel : field;
+                                <option value="@field">@fieldLabel</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="form-label" id="plot-series-fields-label" for="plot-series-fields">Colonne asse Y</label>
+                        <select class="form-select type-pivot-plot-y-select" id="plot-series-fields" name="seriesFields" multiple size="5">
+                            @foreach (var field in Model.PlotYAxisFields)
+                            {
+                                var label = field;
+                                if (Model.HeaderUnits.TryGetValue(field, out var unit)
+                                    && !string.IsNullOrWhiteSpace(unit))
+                                {
+                                    label = $"{field} [{unit}]";
+                                }
+
+                                <option value="@field">@label</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="type-pivot-plot-action">
+                        <div class="type-pivot-form-actions">
+                            <button class="btn-rrda-primary" type="submit">Genera grafico</button>
+                            <button class="btn-rrda-danger" id="reset-plot-button" type="button">Reset grafico</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="typePivotFilterLoadingModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="typePivotFilterLoadingModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content type-pivot-themed-modal">
+                <div class="modal-body" style="padding:1.5rem;">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="spinner-border text-primary rrda-loading-spinner" role="status" aria-hidden="true"></div>
+                        <div>
+                            <h6 id="typePivotFilterLoadingModalLabel" style="margin:0 0 .35rem 0;color:#c9d1d9;font-weight:600;">Applicazione filtri</h6>
+                            <p style="margin:0;color:#8b949e;font-size:.875rem;">
+                                Elaborazione dei dati in corso. L'operazione puo richiedere qualche istante in base al volume dei record.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="rrda-card mt-3 type-pivot-table-scroll">
+        @if (!Model.Rows.Any())
+        {
+            <p style="color:#8b949e;margin:0;">Nessun file disponibile per questo report type.</p>
         }
-    </div>
-}
+        else
+        {
+            <table class="table table-borderless mb-0 type-pivot-table" style="min-width:1400px;">
+                <thead>
+                    <tr>
+                        <th style="font-size:.78rem;white-space:nowrap;">
+                            <input class="form-check-input" type="checkbox" id="plot-select-all" title="Seleziona tutte le righe della pagina" />
+                        </th>
+                        @* ── SubjectKey: prima colonna ── *@
+                        @if (Model.HasSubjectKey)
+                        {
+                            <th style="font-family:monospace;font-size:.78rem;white-space:nowrap;">
+                                <a class="type-pivot-sort-link"
+                                   asp-action="TypePivot"
+                                   asp-route-reportTypeId="@Model.ReportTypeId"
+                                   asp-route-page="1"
+                                   asp-route-pageSize="@Model.PageSize"
+                                   asp-route-batchId="@Model.BatchId"
+                                   asp-route-lastModifiedFrom="@(Model.LastModifiedFrom?.ToString("yyyy-MM-dd"))"
+                                   asp-route-lastModifiedTo="@(Model.LastModifiedTo?.ToString("yyyy-MM-dd"))"
+                                   asp-route-filterField="@Model.FilterField"
+                                   asp-route-filterFrom="@Model.FilterFrom"
+                                   asp-route-filterTo="@Model.FilterTo"
+                                   asp-route-subjectKeyFrom="@Model.SubjectKeyFrom"
+                                   asp-route-subjectKeyTo="@Model.SubjectKeyTo"
+                                   asp-route-sortField="SubjectKey"
+                                   asp-route-sortDirection="@(Model.SortField == "SubjectKey" && Model.SortDirection == "asc" ? "desc" : "asc")">
+                                    @Model.SubjectKeyLabel
+                                    <span class="type-pivot-sort-indicator">
+                                        @(Model.SortField == "SubjectKey" ? (Model.SortDirection == "desc" ? "▼" : "▲") : "⇅")
+                                    </span>
+                                </a>
+                            </th>
+                        }
+                        @* ── Colonne statiche file ── *@
+                        <th>Batch</th>
+                        <th>Nome file</th>
+                        <th>Ultima modifica</th>
+                        @* ── Colonne di misura ── *@
+                        @foreach (var header in Model.Headers)
+                        {
+                            var headerLabel = header;
+                            if (Model.HeaderUnits.TryGetValue(header, out var unit)
+                                && !string.IsNullOrWhiteSpace(unit))
+                            {
+                                headerLabel = $"{header} [{unit}]";
+                            }
 
+                            <th style="font-family:monospace;font-size:.78rem;white-space:nowrap;">
+                                @headerLabel
+                            </th>
+                        }
+                        @foreach (var range in Model.RangeHeaders)
+                        {
+                            var rangeLabel = string.IsNullOrWhiteSpace(range.Unit) ? range.Name : $"{range.Name} [{range.Unit}]";
+                            <th style="font-family:monospace;font-size:.78rem;white-space:nowrap;">
+                                @rangeLabel
+                            </th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in Model.Rows)
+                    {
+                        <tr>
+                            <td>
+                                <input class="form-check-input plot-row-selector"
+                                       type="checkbox"
+                                       name="selectedFileIds"
+                                       value="@row.FileId"
+                                       form="plot-data-form"
+                                       title="Usa questa riga nel JSON grafico" />
+                            </td>
+                            @* ── SubjectKey: renderizzato come intero (o stringa se non numerico) ── *@
+                            @if (Model.HasSubjectKey)
+                            {
+                                <td style="font-family:monospace;font-size:.78rem;white-space:nowrap;">
+                                    @{
+                                        var skRaw = row.SubjectKey;
+                                        if (!string.IsNullOrWhiteSpace(skRaw)
+                                            && long.TryParse(skRaw, NumberStyles.Any, CultureInfo.InvariantCulture, out var skLong))
+                                        {
+                                            @skLong
+                                        }
+                                        else if (!string.IsNullOrWhiteSpace(skRaw)
+                                                 && double.TryParse(skRaw, NumberStyles.Any, CultureInfo.InvariantCulture, out var skDouble))
+                                        {
+                                            @((long)Math.Round(skDouble))
+                                        }
+                                        else
+                                        {
+                                            @(skRaw ?? "")
+                                        }
+                                    }
+                                </td>
+                            }
+                            @* ── Colonne statiche ── *@
 
-<div class="modal fade type-pivot-range-modal" id="typePivotRangeModal" tabindex="-1" aria-labelledby="typePivotRangeModalTitle" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="typePivotRangeModalTitle">Dettaglio ranged</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Chiudi"></button>
+                            <td style="font-size:.78rem;">@(row.BatchName ?? "—")</td>
+                            <td style="font-family:monospace;font-size:.78rem;">@row.FileName</td>
+                            <td style="font-size:.78rem;">@row.LastModified.ToString("yyyy-MM-dd HH:mm")</td>
+                            @* ── Valori di misura: double con decimali configurati ── *@
+                            @foreach (var header in Model.Headers)
+                            {
+                                <td style="font-family:monospace;font-size:.78rem;white-space:nowrap;">
+                                    @{
+                                        if (row.Values.TryGetValue(header, out var value))
+                                        {
+                                            if (double.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out var dInv))
+                                            {
+                                                @Math.Round(dInv, Model.DecimalPlaces).ToString($"F{Model.DecimalPlaces}", CultureInfo.InvariantCulture)
+                                            }
+                                            else if (double.TryParse(value, NumberStyles.Any, CultureInfo.CurrentCulture, out var dCur))
+                                            {
+                                                @Math.Round(dCur, Model.DecimalPlaces).ToString($"F{Model.DecimalPlaces}", CultureInfo.CurrentCulture)
+                                            }
+                                            else
+                                            {
+                                                @(value ?? "")
+                                            }
+                                        }
+                                    }
+                                </td>
+                            }
+                            @foreach (var range in Model.RangeHeaders)
+                            {
+                                <td class="type-pivot-range-cell">
+                                    @if (row.Ranges.TryGetValue(range.Name, out var cell))
+                                    {
+                                        <button type="button" class="type-pivot-range-button"
+                                                data-range-detail="@JsonSerializer.Serialize(cell)"
+                                                data-report-reference="@Model.ReportTypeKey · @row.SubjectKey"
+                                                aria-label="Apri il dettaglio del ranged @range.Name per @Model.ReportTypeKey seriale @row.SubjectKey">
+                                            <svg class="type-pivot-range-sparkline" viewBox="0 0 104 24" preserveAspectRatio="none" aria-hidden="true">
+                                                <polyline points="@SparklinePoints(cell)"></polyline>
+                                            </svg>
+                                            <span class="type-pivot-range-summary">
+                                                @cell.Points.Count elementi · @FormatStatistic(cell.Min)…@FormatStatistic(cell.Max)
+                                            </span>
+                                        </button>
+                                    }
+                                </td>
+                            }
+
+                        </tr>
+                    }
+                </tbody>
+                <tfoot>
+                    <tr id="tp-stats-toggle-row">
+                        <td colspan="1000"
+                            style="padding:.2rem .5rem;cursor:pointer;user-select:none;"
+                            id="tp-stats-toggle-cell"
+                            title="Mostra o nascondi le statistiche di colonna">
+                            <span id="tp-stats-toggle-label"
+                                  style="font-size:.72rem;color:var(--tp-muted);display:inline-flex;align-items:center;gap:.4rem;">
+                                <span id="tp-stats-toggle-icon"
+                                      style="display:inline-block;transition:transform .2s ease;font-size:.65rem;">▶</span>
+                                Statistiche colonne
+                                <span id="tp-stats-loading-indicator"
+                                      style="display:none;font-size:.65rem;color:var(--tp-muted);">
+                                    — calcolo in corso...
+                                </span>
+                                <span id="tp-stats-error-indicator"
+                                      style="display:none;font-size:.65rem;color:#f85149;">
+                                    — errore caricamento
+                                </span>
+                            </span>
+                        </td>
+                    </tr>
+                    <%-- Righe statistiche: collassate per default, popolate via fetch al primo expand --%>
+                        <tr class="tp-stats-row" style="display:none;">
+                            <th colspan="@staticFooterColumns" style="font-size:.76rem;color:#8b949e;">Max</th>
+                            @foreach (var header in Model.Headers)
+                            {
+                                <td class="tp-stat-cell"
+                                    data-stat-column="@header"
+                                    data-stat-type="max"
+                                    style="font-family:monospace;font-size:.76rem;white-space:nowrap;color:#c9d1d9;">
+                                </td>
+                            }
+                            @foreach (var range in Model.RangeHeaders)
+                            {
+                                <td></td>
+                            }
+                        </tr>
+                        <tr class="tp-stats-row" style="display:none;">
+                            <th colspan="@staticFooterColumns" style="font-size:.76rem;color:#8b949e;">Media</th>
+                            @foreach (var header in Model.Headers)
+                            {
+                                <td class="tp-stat-cell"
+                                    data-stat-column="@header"
+                                    data-stat-type="mean"
+                                    style="font-family:monospace;font-size:.76rem;white-space:nowrap;color:#c9d1d9;">
+                                </td>
+                            }
+                            @foreach (var range in Model.RangeHeaders)
+                            {
+                                <td></td>
+                            }
+                        </tr>
+                        <tr class="tp-stats-row" style="display:none;">
+                            <th colspan="@staticFooterColumns" style="font-size:.76rem;color:#8b949e;">Min</th>
+                            @foreach (var header in Model.Headers)
+                            {
+                                <td class="tp-stat-cell"
+                                    data-stat-column="@header"
+                                    data-stat-type="min"
+                                    style="font-family:monospace;font-size:.76rem;white-space:nowrap;color:#c9d1d9;">
+                                </td>
+                            }
+                            @foreach (var range in Model.RangeHeaders)
+                            {
+                                <td></td>
+                            }
+                        </tr>
+                        <tr class="tp-stats-row" style="display:none;">
+                            <th colspan="@staticFooterColumns" style="font-size:.76rem;color:#8b949e;">Dev. std</th>
+                            @foreach (var header in Model.Headers)
+                            {
+                                <td class="tp-stat-cell"
+                                    data-stat-column="@header"
+                                    data-stat-type="stdDev"
+                                    style="font-family:monospace;font-size:.76rem;white-space:nowrap;color:#c9d1d9;">
+                                </td>
+                            }
+                            @foreach (var range in Model.RangeHeaders)
+                            {
+                                <td></td>
+                            }
+                        </tr>
+                    </tfoot>
+                </table>
+            }
+        </div>
+
+        @if (Model.TotalPages > 1)
+        {
+            <div class="d-flex gap-2 mt-3">
+                @for (int p = 1; p <= Model.TotalPages; p++)
+                {
+                    <a asp-action="TypePivot"
+                       asp-route-reportTypeId="@Model.ReportTypeId"
+                       asp-route-page="@p"
+                       asp-route-pageSize="@Model.PageSize"
+                       asp-route-batchId="@Model.BatchId"
+                       asp-route-lastModifiedFrom="@(Model.LastModifiedFrom?.ToString("yyyy-MM-dd"))"
+                       asp-route-lastModifiedTo="@(Model.LastModifiedTo?.ToString("yyyy-MM-dd"))"
+                       asp-route-filterField="@Model.FilterField"
+                       asp-route-filterFrom="@Model.FilterFrom"
+                       asp-route-filterTo="@Model.FilterTo"
+                       asp-route-subjectKeyFrom="@Model.SubjectKeyFrom"
+                       asp-route-subjectKeyTo="@Model.SubjectKeyTo"
+                       asp-route-sortField="@Model.SortField"
+                       asp-route-sortDirection="@Model.SortDirection"
+                       style="padding:.2rem .55rem;border:1px solid #30363d;border-radius:5px; text-decoration:none;color:
+                        @(p == Model.CurrentPage ? "#58a6ff" : "#8b949e");">
+                        @p
+                    </a>
+                }
             </div>
-            <div class="modal-body">
-                <div class="type-pivot-range-detail-toolbar">
-                    <p id="typePivotRangeSummary" class="type-pivot-range-summary-text"></p>
-                    <div class="btn-group type-pivot-range-chart-toggle" role="group" aria-label="Tipo grafico ranged">
-                        <input type="radio" class="btn-check" name="typePivotRangeChartType" id="typePivotRangeChartLine" value="line" autocomplete="off" checked>
-                        <label class="btn btn-outline-secondary" for="typePivotRangeChartLine">Linea</label>
-                        <input type="radio" class="btn-check" name="typePivotRangeChartType" id="typePivotRangeChartBar" value="bar" autocomplete="off">
-                        <label class="btn btn-outline-secondary" for="typePivotRangeChartBar">Barre</label>
+        }
+
+
+        <div class="modal fade type-pivot-range-modal" id="typePivotRangeModal" tabindex="-1" aria-labelledby="typePivotRangeModalTitle" aria-hidden="true">
+            <div class="modal-dialog modal-xl modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="typePivotRangeModalTitle">Dettaglio ranged</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Chiudi"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="type-pivot-range-detail-toolbar">
+                            <p id="typePivotRangeSummary" class="type-pivot-range-summary-text"></p>
+                            <div class="btn-group type-pivot-range-chart-toggle" role="group" aria-label="Tipo grafico ranged">
+                                <input type="radio" class="btn-check" name="typePivotRangeChartType" id="typePivotRangeChartLine" value="line" autocomplete="off" checked>
+                                <label class="btn btn-outline-secondary" for="typePivotRangeChartLine">Linea</label>
+                                <input type="radio" class="btn-check" name="typePivotRangeChartType" id="typePivotRangeChartBar" value="bar" autocomplete="off">
+                                <label class="btn btn-outline-secondary" for="typePivotRangeChartBar">Barre</label>
+                            </div>
+                        </div>
+                        <div class="type-pivot-range-detail-grid">
+                            <div id="typePivotRangeChart" class="type-pivot-range-detail-chart"></div>
+                            <div class="type-pivot-range-detail-table">
+                                <table class="table table-sm mb-0 type-pivot-range-values-table">
+                                    <thead><tr><th>Indice</th><th>Valore</th></tr></thead>
+                                    <tbody id="typePivotRangeValues"></tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="type-pivot-range-detail-grid">
-                    <div id="typePivotRangeChart" class="type-pivot-range-detail-chart"></div>
-                    <div class="type-pivot-range-detail-table">
-                        <table class="table table-sm mb-0 type-pivot-range-values-table">
-                            <thead><tr><th>Indice</th><th>Valore</th></tr></thead>
-                            <tbody id="typePivotRangeValues"></tbody>
-                        </table>
+            </div>
+        </div>
+
+        <div class="modal fade type-pivot-plot-modal" id="typePivotPlotModal" tabindex="-1" aria-labelledby="typePivotPlotModalTitle" aria-hidden="true">
+            <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="typePivotPlotModalTitle">Scatter</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Chiudi"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div id="typePivotPlotStatus" class="type-pivot-plot-status"></div>
+                        <div id="typePivotPlotFrame" class="type-pivot-plot-frame">
+                            <div id="typePivotPlotLoadingOverlay" class="type-pivot-plot-loading-overlay" aria-live="polite" aria-atomic="true">
+                                <div class="spinner-border text-primary" role="status" aria-hidden="true"></div>
+                                <p>Generazione del grafico in corso...</p>
+                            </div>
+                            <div id="typePivotPlot" class="type-pivot-plot-host"></div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
 
-<div class="modal fade type-pivot-plot-modal" id="typePivotPlotModal" tabindex="-1" aria-labelledby="typePivotPlotModalTitle" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="typePivotPlotModalTitle">Scatter</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Chiudi"></button>
-            </div>
-            <div class="modal-body">
-                <div id="typePivotPlotStatus" class="type-pivot-plot-status"></div>
-                <div id="typePivotPlotFrame" class="type-pivot-plot-frame">
-                    <div id="typePivotPlotLoadingOverlay" class="type-pivot-plot-loading-overlay" aria-live="polite" aria-atomic="true">
-                        <div class="spinner-border text-primary" role="status" aria-hidden="true"></div>
-                        <p>Generazione del grafico in corso...</p>
-                    </div>
-                    <div id="typePivotPlot" class="type-pivot-plot-host"></div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-</div>
-
-@section Scripts {
-    <script src="~/lib/plotly/plotly.min.js"></script>
-    <script>
-        (() => {
+    @section Scripts {
+        <script src="~/lib/plotly/plotly.min.js"></script>
+        <script>
+            (() => {
             const themeRoot = document.querySelector('.type-pivot-page');
             const getThemePalette = () => {
-                const styles = getComputedStyle(themeRoot);
-                return {
-                    surface: styles.getPropertyValue('--tp-surface').trim(),
-                    canvas: styles.getPropertyValue('--tp-canvas').trim(),
-                    border: styles.getPropertyValue('--tp-border').trim(),
-                    text: styles.getPropertyValue('--tp-text').trim(),
-                    muted: styles.getPropertyValue('--tp-muted').trim(),
-                    accent: styles.getPropertyValue('--tp-accent').trim(),
-                    accentSoft: styles.getPropertyValue('--tp-accent-soft').trim()
-                };
+            const styles = getComputedStyle(themeRoot);
+            return {
+            surface: styles.getPropertyValue('--tp-surface').trim(),
+            canvas: styles.getPropertyValue('--tp-canvas').trim(),
+            border: styles.getPropertyValue('--tp-border').trim(),
+            text: styles.getPropertyValue('--tp-text').trim(),
+            muted: styles.getPropertyValue('--tp-muted').trim(),
+            accent: styles.getPropertyValue('--tp-accent').trim(),
+            accentSoft: styles.getPropertyValue('--tp-accent-soft').trim()
+            };
             };
 
             const rangeModalElement = document.getElementById('typePivotRangeModal');
@@ -935,62 +1093,62 @@
             let activeRange = null;
 
             const renderRangeChart = () => {
-                if (!window.Plotly || !activeRange) {
-                    return;
-                }
+            if (!window.Plotly || !activeRange) {
+            return;
+            }
 
-                const range = activeRange;
-                const palette = getThemePalette();
-                const chartType = document.querySelector('input[name="typePivotRangeChartType"]:checked')?.value ?? 'line';
-                const isBar = chartType === 'bar';
-                const trace = {
-                    type: isBar ? 'bar' : 'scatter',
-                    x: range.Points.map(point => point.Index),
-                    y: range.Points.map(point => point.Value),
-                    hovertemplate: `Indice %{x}<br>Valore %{y:.${@Model.DecimalPlaces}f}${range.Unit ? ` ${range.Unit}` : ''}<extra></extra>`
-                };
+            const range = activeRange;
+            const palette = getThemePalette();
+            const chartType = document.querySelector('input[name="typePivotRangeChartType"]:checked')?.value ?? 'line';
+            const isBar = chartType === 'bar';
+            const trace = {
+            type: isBar ? 'bar' : 'scatter',
+            x: range.Points.map(point => point.Index),
+            y: range.Points.map(point => point.Value),
+            hovertemplate: `Indice %{x}<br>Valore %{y:.${@Model.DecimalPlaces}f}${range.Unit ? ` ${range.Unit}` : ''}<extra></extra>`
+            };
 
-                if (isBar) {
-                    trace.marker = { color: palette.accent, line: { color: palette.accentSoft, width: 1 } };
-                } else {
-                    trace.mode = 'lines+markers';
-                    trace.line = { color: palette.accent, width: 2 };
-                    trace.marker = { color: palette.accentSoft, size: 5 };
-                }
+            if (isBar) {
+            trace.marker = { color: palette.accent, line: { color: palette.accentSoft, width: 1 } };
+            } else {
+            trace.mode = 'lines+markers';
+            trace.line = { color: palette.accent, width: 2 };
+            trace.marker = { color: palette.accentSoft, size: 5 };
+            }
 
-                Plotly.react('typePivotRangeChart', [trace], {
-                    paper_bgcolor: palette.surface,
-                    plot_bgcolor: palette.canvas,
-                    bargap: .18,
-                    font: { color: palette.text, size: 11 },
-                    margin: { t: 8, r: 12, b: 40, l: 58 },
-                    xaxis: { title: 'Indice', gridcolor: palette.border, zerolinecolor: palette.muted },
-                    yaxis: { title: range.Unit ? `${range.Name} [${range.Unit}]` : range.Name, gridcolor: palette.border, zerolinecolor: palette.muted }
-                }, { responsive: true, displaylogo: false });
+            Plotly.react('typePivotRangeChart', [trace], {
+            paper_bgcolor: palette.surface,
+            plot_bgcolor: palette.canvas,
+            bargap: .18,
+            font: { color: palette.text, size: 11 },
+            margin: { t: 8, r: 12, b: 40, l: 58 },
+            xaxis: { title: 'Indice', gridcolor: palette.border, zerolinecolor: palette.muted },
+            yaxis: { title: range.Unit ? `${range.Name} [${range.Unit}]` : range.Name, gridcolor: palette.border, zerolinecolor: palette.muted }
+            }, { responsive: true, displaylogo: false });
             };
 
             rangeChartTypeInputs.forEach(input => input.addEventListener('change', renderRangeChart));
 
             document.querySelectorAll('[data-range-detail]').forEach(button => {
-                button.addEventListener('click', () => {
-                    const range = JSON.parse(button.dataset.rangeDetail);
-                    activeRange = range;
-                    const format = value => Number(value).toFixed(@Model.DecimalPlaces);
-                    document.getElementById('typePivotRangeModalTitle').textContent = `${range.Name} — ${button.dataset.reportReference}`;
-                    document.getElementById('typePivotRangeSummary').textContent = `${range.Points.length} elementi · min ${format(range.Min)} indice ${range.MinIndex} · max ${format(range.Max)} indice ${range.MaxIndex} · media ${format(range.Mean)} · mediana ${format(range.Median)} · dev. std ${format(range.StandardDeviation)}`;
-                    const valuesBody = document.getElementById('typePivotRangeValues');
-                    valuesBody.replaceChildren(...range.Points.map(point => {
-                        const row = document.createElement('tr');
-                        const indexCell = document.createElement('td');
-                        const valueCell = document.createElement('td');
-                        indexCell.textContent = point.Index;
-                        valueCell.textContent = `${format(point.Value)}${range.Unit ? ` ${range.Unit}` : ''}`;
-                        row.append(indexCell, valueCell);
-                        return row;
-                    }));
-                    renderRangeChart();
-                    rangeModal?.show();
-                });
+            button.addEventListener('click', () => {
+            const range = JSON.parse(button.dataset.rangeDetail);
+            activeRange = range;
+            const format = value => Number(value).toFixed(@Model.DecimalPlaces);
+            document.getElementById('typePivotRangeModalTitle').textContent = `${range.Name} — ${button.dataset.reportReference}`;
+            document.getElementById('typePivotRangeSummary').textContent = `${range.Points.length} elementi · min ${format(range.Min)} indice ${range.MinIndex} · max ${format(range.Max)} indice ${range.MaxIndex} · media ${format(range.Mean)} · mediana ${format(range.Median)} · dev. std ${format(range.StandardDeviation)}`;
+            const valuesBody = document.getElementById('typePivotRangeValues');
+            valuesBody.replaceChildren(...range.Points.map(point => {
+            const row = document.createElement('tr');
+            const indexCell = document.createElement('td');
+            const valueCell = document.createElement('td');
+            indexCell.textContent = point.Index;
+            valueCell.textContent = `${format(point.Value)}${range.Unit ? ` ${range.Unit}` : ''}`;
+            row.append(indexCell, valueCell);
+            return row;
+            }));
+            renderRangeChart();
+            rangeModal?.show();
+            });
             });
 
             const filterForm = document.getElementById('type-pivot-filter-form');
@@ -998,53 +1156,53 @@
             const tableScroll = document.querySelector('.type-pivot-table-scroll');
 
             const resizeTableScroll = () => {
-                if (!tableScroll) {
-                    return;
-                }
+            if (!tableScroll) {
+            return;
+            }
 
-                const viewportBottomMargin = 16;
-                const minimumTableHeight = 180;
-                const availableHeight = window.innerHeight
-                    - tableScroll.getBoundingClientRect().top
-                    - viewportBottomMargin;
+            const viewportBottomMargin = 16;
+            const minimumTableHeight = 180;
+            const availableHeight = window.innerHeight
+            - tableScroll.getBoundingClientRect().top
+            - viewportBottomMargin;
 
-                tableScroll.style.maxHeight = `${Math.max(minimumTableHeight, availableHeight)}px`;
+            tableScroll.style.maxHeight = `${Math.max(minimumTableHeight, availableHeight)}px`;
             };
 
             resizeTableScroll();
             window.addEventListener('resize', resizeTableScroll);
             document.querySelectorAll('#typePivotFilters, #typePivotPlotParameters')
-                .forEach(panel => {
-                    panel.addEventListener('shown.bs.collapse', resizeTableScroll);
-                    panel.addEventListener('hidden.bs.collapse', resizeTableScroll);
-                });
+            .forEach(panel => {
+            panel.addEventListener('shown.bs.collapse', resizeTableScroll);
+            panel.addEventListener('hidden.bs.collapse', resizeTableScroll);
+            });
 
             if (filterForm && filterLoadingModalElement && window.bootstrap) {
-                const filterLoadingModal = new bootstrap.Modal(filterLoadingModalElement, {
-                    backdrop: 'static',
-                    keyboard: false
-                });
+            const filterLoadingModal = new bootstrap.Modal(filterLoadingModalElement, {
+            backdrop: 'static',
+            keyboard: false
+            });
 
-                filterForm.addEventListener('submit', event => {
-                    if (event.defaultPrevented) {
-                        return;
-                    }
+            filterForm.addEventListener('submit', event => {
+            if (event.defaultPrevented) {
+            return;
+            }
 
-                    document.body.setAttribute('aria-busy', 'true');
-                    filterForm.querySelectorAll('button[type="submit"]').forEach(button => {
-                        button.setAttribute('aria-disabled', 'true');
-                        button.style.pointerEvents = 'none';
-                    });
-                    filterLoadingModal.show();
-                });
+            document.body.setAttribute('aria-busy', 'true');
+            filterForm.querySelectorAll('button[type="submit"]').forEach(button => {
+            button.setAttribute('aria-disabled', 'true');
+            button.style.pointerEvents = 'none';
+            });
+            filterLoadingModal.show();
+            });
             }
 
             const selectAll = document.getElementById('plot-select-all');
             if (selectAll) {
-                selectAll.addEventListener('change', () => {
-                    document.querySelectorAll('.plot-row-selector')
-                        .forEach(checkbox => checkbox.checked = selectAll.checked);
-                });
+            selectAll.addEventListener('change', () => {
+            document.querySelectorAll('.plot-row-selector')
+            .forEach(checkbox => checkbox.checked = selectAll.checked);
+            });
             }
 
             const form = document.getElementById('plot-data-form');
@@ -1064,208 +1222,292 @@
             let scatterXField = xFieldSelect?.value;
 
             if (!form || !plotModalElement || !plotModal || !plotFrame || !plotHost || !plotStatus
-                || !plotModalTitle || !chartTypeSelect || !xFieldSelect || !xFieldLabel || !seriesFieldsLabel) {
-                return;
+            || !plotModalTitle || !chartTypeSelect || !xFieldSelect || !xFieldLabel || !seriesFieldsLabel) {
+            return;
             }
 
             const setStatus = (message, isError = false) => {
-                plotStatus.textContent = message;
-                plotStatus.classList.toggle('is-error', isError);
+            plotStatus.textContent = message;
+            plotStatus.classList.toggle('is-error', isError);
             };
 
             const clearPlot = () => {
-                if (window.Plotly) {
-                    Plotly.purge(plotHost);
-                }
+            if (window.Plotly) {
+            Plotly.purge(plotHost);
+            }
 
-                plotHost.replaceChildren();
+            plotHost.replaceChildren();
             };
 
             const syncChartControls = () => {
-                const isPdf = chartTypeSelect?.value === 'pdf';
-                xFieldLabel.textContent = isPdf ? 'Riferimento tooltip' : 'Asse X';
-                seriesFieldsLabel.textContent = isPdf ? 'Grandezze da analizzare' : 'Colonne asse Y';
+            const isPdf = chartTypeSelect?.value === 'pdf';
+            xFieldLabel.textContent = isPdf ? 'Riferimento tooltip' : 'Asse X';
+            seriesFieldsLabel.textContent = isPdf ? 'Grandezze da analizzare' : 'Colonne asse Y';
 
-                if (isPdf) {
-                    if (!xFieldSelect.disabled) {
-                        scatterXField = xFieldSelect.value;
-                    }
+            if (isPdf) {
+            if (!xFieldSelect.disabled) {
+            scatterXField = xFieldSelect.value;
+            }
 
-                    const subjectKeyOption = Array.from(xFieldSelect.options)
-                        .find(option => option.value === 'SubjectKey');
-                    if (subjectKeyOption) {
-                        xFieldSelect.value = subjectKeyOption.value;
-                    }
+            const subjectKeyOption = Array.from(xFieldSelect.options)
+            .find(option => option.value === 'SubjectKey');
+            if (subjectKeyOption) {
+            xFieldSelect.value = subjectKeyOption.value;
+            }
 
-                    xFieldSelect.disabled = true;
-                } else {
-                    xFieldSelect.disabled = false;
-                    if (scatterXField && Array.from(xFieldSelect.options)
-                        .some(option => option.value === scatterXField)) {
-                        xFieldSelect.value = scatterXField;
-                    }
-                }
+            xFieldSelect.disabled = true;
+            } else {
+            xFieldSelect.disabled = false;
+            if (scatterXField && Array.from(xFieldSelect.options)
+            .some(option => option.value === scatterXField)) {
+            xFieldSelect.value = scatterXField;
+            }
+            }
             };
 
             chartTypeSelect.addEventListener('change', syncChartControls);
             syncChartControls();
 
             if (resetPlotButton) {
-                resetPlotButton.addEventListener('click', () => {
-                    if (activePlotRequest) {
-                        activePlotRequest.abort();
-                        activePlotRequest = null;
-                    }
+            resetPlotButton.addEventListener('click', () => {
+            if (activePlotRequest) {
+            activePlotRequest.abort();
+            activePlotRequest = null;
+            }
 
-                    plotRequestSequence++;
-                    form.reset();
-                    scatterXField = xFieldSelect.value;
-                    syncChartControls();
-                    document.querySelectorAll('.plot-row-selector')
-                        .forEach(checkbox => checkbox.checked = false);
-                    if (selectAll) {
-                        selectAll.checked = false;
-                    }
+            plotRequestSequence++;
+            form.reset();
+            scatterXField = xFieldSelect.value;
+            syncChartControls();
+            document.querySelectorAll('.plot-row-selector')
+            .forEach(checkbox => checkbox.checked = false);
+            if (selectAll) {
+            selectAll.checked = false;
+            }
 
-                    clearPlot();
-                    setStatus('');
-                    setPlotLoading(false);
-                    plotModalTitle.textContent = 'Scatter';
-                    plotModal.hide();
-                });
+            clearPlot();
+            setStatus('');
+            setPlotLoading(false);
+            plotModalTitle.textContent = 'Scatter';
+            plotModal.hide();
+            });
             }
 
             const setPlotLoading = isLoading => {
-                plotFrame.classList.toggle('is-loading', isLoading);
-                form.querySelectorAll('button, input, select').forEach(control => {
-                    control.disabled = isLoading;
-                });
-                if (!isLoading) {
-                    syncChartControls();
-                }
+            plotFrame.classList.toggle('is-loading', isLoading);
+            form.querySelectorAll('button, input, select').forEach(control => {
+            control.disabled = isLoading;
+            });
+            if (!isLoading) {
+            syncChartControls();
+            }
             };
 
             const getAxisTitleText = axis => {
-                if (!axis || !axis.title) {
-                    return '';
-                }
+            if (!axis || !axis.title) {
+            return '';
+            }
 
-                return typeof axis.title === 'string'
-                    ? axis.title
-                    : axis.title.text || '';
+            return typeof axis.title === 'string'
+            ? axis.title
+            : axis.title.text || '';
             };
 
             form.addEventListener('submit', async event => {
-                event.preventDefault();
-                plotModal.show();
-                const formData = new FormData(form);
-                const chartType = formData.get('chartType') === 'pdf' ? 'pdf' : 'scatter';
-                const chartLabel = chartType === 'pdf' ? 'PDF' : 'Scatter';
-                const requestId = ++plotRequestSequence;
-                plotModalTitle.textContent = chartLabel;
+            event.preventDefault();
+            plotModal.show();
+            const formData = new FormData(form);
+            const chartType = formData.get('chartType') === 'pdf' ? 'pdf' : 'scatter';
+            const chartLabel = chartType === 'pdf' ? 'PDF' : 'Scatter';
+            const requestId = ++plotRequestSequence;
+            plotModalTitle.textContent = chartLabel;
 
-                if (!window.Plotly) {
-                    setStatus('Plotly.js non e disponibile. Installare wwwroot/lib/plotly/plotly.min.js.', true);
-                    return;
-                }
+            if (!window.Plotly) {
+            setStatus('Plotly.js non e disponibile. Installare wwwroot/lib/plotly/plotly.min.js.', true);
+            return;
+            }
 
-                const selectedSeriesFields = form.querySelectorAll('select[name="seriesFields"] option:checked');
-                if (selectedSeriesFields.length === 0) {
-                    setStatus('Selezionare almeno una grandezza da analizzare.', true);
-                    clearPlot();
-                    return;
-                }
+            const selectedSeriesFields = form.querySelectorAll('select[name="seriesFields"] option:checked');
+            if (selectedSeriesFields.length === 0) {
+            setStatus('Selezionare almeno una grandezza da analizzare.', true);
+            clearPlot();
+            return;
+            }
 
-                if (activePlotRequest) {
-                    activePlotRequest.abort();
-                }
+            if (activePlotRequest) {
+            activePlotRequest.abort();
+            }
 
-                activePlotRequest = new AbortController();
-                clearPlot();
-                setPlotLoading(true);
-                setStatus(`Generazione ${chartLabel} in corso...`);
+            activePlotRequest = new AbortController();
+            clearPlot();
+            setPlotLoading(true);
+            setStatus(`Generazione ${chartLabel} in corso...`);
 
-                try {
-                    const response = await fetch(`${form.action}?${new URLSearchParams(formData)}`, {
-                        headers: { 'Accept': 'application/json' },
-                        signal: activePlotRequest.signal
-                    });
+            try {
+            const response = await fetch(`${form.action}?${new URLSearchParams(formData)}`, {
+            headers: { 'Accept': 'application/json' },
+            signal: activePlotRequest.signal
+            });
 
-                    const payload = await response.json();
-                    if (!response.ok) {
-                        throw new Error(payload.message || 'Errore durante la generazione del grafico.');
-                    }
+            const payload = await response.json();
+            if (!response.ok) {
+            throw new Error(payload.message || 'Errore durante la generazione del grafico.');
+            }
 
-                    if (requestId !== plotRequestSequence) {
-                        return;
-                    }
+            if (requestId !== plotRequestSequence) {
+            return;
+            }
 
-                    const palette = getThemePalette();
-                    const layout = {
-                        ...payload.layout,
-                        paper_bgcolor: palette.surface,
-                        plot_bgcolor: palette.canvas,
-                        font: { color: palette.text },
-                        margin: { l: 96, r: 32, t: 64, b: 96 },
-                        xaxis: {
-                            ...payload.layout.xaxis,
-                            automargin: true,
-                            linecolor: palette.muted,
-                            gridcolor: palette.border,
-                            zerolinecolor: palette.border,
-                            tickfont: { color: palette.text },
-                            title: {
-                                text: getAxisTitleText(payload.layout.xaxis),
-                                font: { color: palette.text, size: 14 },
-                                standoff: 22
-                            }
-                        },
-                        yaxis: {
-                            ...payload.layout.yaxis,
-                            automargin: true,
-                            linecolor: palette.muted,
-                            gridcolor: palette.border,
-                            zerolinecolor: palette.border,
-                            tickfont: { color: palette.text },
-                            title: {
-                                text: getAxisTitleText(payload.layout.yaxis),
-                                font: { color: palette.text, size: 14 },
-                                standoff: 28
-                            }
-                        },
-                        legend: {
-                            orientation: 'h',
-                            y: -0.2,
-                            font: { color: palette.text }
-                        }
-                    };
+            const palette = getThemePalette();
+            const layout = {
+            ...payload.layout,
+            paper_bgcolor: palette.surface,
+            plot_bgcolor: palette.canvas,
+            font: { color: palette.text },
+            margin: { l: 96, r: 32, t: 64, b: 96 },
+            xaxis: {
+            ...payload.layout.xaxis,
+            automargin: true,
+            linecolor: palette.muted,
+            gridcolor: palette.border,
+            zerolinecolor: palette.border,
+            tickfont: { color: palette.text },
+            title: {
+            text: getAxisTitleText(payload.layout.xaxis),
+            font: { color: palette.text, size: 14 },
+            standoff: 22
+            }
+            },
+            yaxis: {
+            ...payload.layout.yaxis,
+            automargin: true,
+            linecolor: palette.muted,
+            gridcolor: palette.border,
+            zerolinecolor: palette.border,
+            tickfont: { color: palette.text },
+            title: {
+            text: getAxisTitleText(payload.layout.yaxis),
+            font: { color: palette.text, size: 14 },
+            standoff: 28
+            }
+            },
+            legend: {
+            orientation: 'h',
+            y: -0.2,
+            font: { color: palette.text }
+            }
+            };
 
-                    await Plotly.react(plotHost, payload.traces, layout, {
-                        responsive: true,
-                        displaylogo: false
-                    });
-                    Plotly.Plots.resize(plotHost);
-                    setStatus(`${chartLabel} generato su ${payload.rowCount} righe filtrate.`);
-                } catch (error) {
-                    if (error.name === 'AbortError') {
-                        return;
-                    }
+            await Plotly.react(plotHost, payload.traces, layout, {
+            responsive: true,
+            displaylogo: false
+            });
+            Plotly.Plots.resize(plotHost);
+            setStatus(`${chartLabel} generato su ${payload.rowCount} righe filtrate.`);
+            } catch (error) {
+            if (error.name === 'AbortError') {
+            return;
+            }
 
-                    clearPlot();
-                    setStatus(error.message || 'Errore durante la generazione del grafico.', true);
-                } finally {
-                    if (requestId === plotRequestSequence) {
-                        setPlotLoading(false);
-                        activePlotRequest = null;
-                    }
-                }
+            clearPlot();
+            setStatus(error.message || 'Errore durante la generazione del grafico.', true);
+            } finally {
+            if (requestId === plotRequestSequence) {
+            setPlotLoading(false);
+            activePlotRequest = null;
+            }
+            }
             });
 
             plotModalElement.addEventListener('shown.bs.modal', () => {
-                if (window.Plotly) {
-                    Plotly.Plots.resize(plotHost);
-                }
+            if (window.Plotly) {
+            Plotly.Plots.resize(plotHost);
+            }
             });
-        })();
-    </script>
-}
+            })();
+
+
+            // ── Statistiche colonne – caricamento lazy al primo expand ──────────
+            (() => {
+            const toggleCell     = document.getElementById('tp-stats-toggle-cell');
+            const toggleIcon     = document.getElementById('tp-stats-toggle-icon');
+            const loadingBadge   = document.getElementById('tp-stats-loading-indicator');
+            const errorBadge     = document.getElementById('tp-stats-error-indicator');
+            const statsRows      = document.querySelectorAll('.tp-stats-row');
+            const statCells      = document.querySelectorAll('.tp-stat-cell');
+            const decimalPlaces  = parseInt(
+            document.querySelector('[data-decimal-places]')?.dataset.decimalPlaces ?? '4', 10);
+
+            if (!toggleCell || statsRows.length === 0) return;
+
+            // Stato: 'idle' | 'loading' | 'loaded' | 'error'
+            let state = 'idle';
+            let expanded = false;
+
+            const formatValue = value => {
+            if (value == null) return '';
+            return Number(value).toFixed(isNaN(decimalPlaces) ? 4 : decimalPlaces);
+            };
+
+            const setExpanded = show => {
+            expanded = show;
+            toggleIcon.style.transform = show ? 'rotate(90deg)' : 'rotate(0deg)';
+            statsRows.forEach(row => { row.style.display = show ? '' : 'none'; });
+            // Ricalcola max-height del contenitore tabella dopo il cambio di altezza del footer
+            if (typeof resizeTableScroll === 'function') resizeTableScroll();
+            };
+
+            const populateCells = columns => {
+            statCells.forEach(cell => {
+            const col    = cell.dataset.statColumn;
+            const type   = cell.dataset.statType;
+            const entry  = columns[col];
+            cell.textContent = entry != null && entry[type] != null
+            ? formatValue(entry[type])
+            : '';
+            });
+            };
+
+            const fetchStats = async () => {
+            if (state === 'loading' || state === 'loaded') return;
+            state = 'loading';
+            loadingBadge.style.display = '';
+            errorBadge.style.display   = 'none';
+
+            // Costruisce la query string riciclando i parametri già nel form filtri
+            const filterForm = document.getElementById('type-pivot-filter-form');
+            const params = filterForm
+            ? new URLSearchParams(new FormData(filterForm))
+            : new URLSearchParams();
+
+            // reportTypeId è un hidden nel form filtri; se non fosse presente lo
+            // recuperiamo dal data-attribute sul container della tabella.
+            if (!params.has('reportTypeId') || !params.get('reportTypeId')) {
+            const tableContainer = document.querySelector('[data-report-type-id]');
+            if (tableContainer) params.set('reportTypeId', tableContainer.dataset.reportTypeId);
+            }
+
+            try {
+            const url = `/Data/Tabular/TypePivotColumnStats?${params.toString()}`;
+            const response = await fetch(url, { headers: { Accept: 'application/json' } });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const payload = await response.json();
+            populateCells(payload.columns ?? {});
+            state = 'loaded';
+            loadingBadge.style.display = 'none';
+            } catch {
+            state = 'error';
+            loadingBadge.style.display = 'none';
+            errorBadge.style.display   = '';
+            }
+            };
+
+            toggleCell.addEventListener('click', async () => {
+            const willExpand = !expanded;
+            setExpanded(willExpand);
+            if (willExpand && state === 'idle') await fetchStats();
+            });
+            })();
+
+        </script>
+    }
