@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Win32;
 using RRDA.Core;
 using RRDA.Core.Validator;
@@ -13,6 +13,7 @@ using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
+using System.Windows.Media;
 using System.Windows.Threading;
 
 namespace RRDA.RepImp
@@ -34,6 +35,10 @@ namespace RRDA.RepImp
         private readonly IPluginService _pluginService;
         private readonly IAuditService _auditService;
         private readonly IImportResultRepository _importResultRepository;
+        
+        // Gestione stato connessione database
+        private DispatcherTimer? _connectionStatusTimer;
+        private bool _isConnectionValid = false;
 
         public MainWindow(
             IReportTypeCompatibilityChecker reportTypeCompatibilityChecker,
@@ -169,10 +174,10 @@ namespace RRDA.RepImp
 
                 FilesListView.ItemsSource = fileItems;
 
-                Log($"Caricati {fileItems.Count} file *.xlsx da '{folderPath}' " +
-                    $"(profondità ricorsione={maxDepth}). " +
-                    $"Plugin applicabili trovati per {fileItems.Count(f => !string.IsNullOrEmpty(f.Tipo))} file; " +
-                    $"validatori disponibili per {fileItems.Count(f => f.HasValidator)} file.");
+                Log($"Caricati {fileItems.Count} file *.xlsx da '{folderPath}' "
+                    + $"(profondità ricorsione={maxDepth}). "
+                    + $"Plugin applicabili trovati per {fileItems.Count(f => !string.IsNullOrEmpty(f.Tipo))} file; "
+                    + $"validatori disponibili per {fileItems.Count(f => f.HasValidator)} file.");
             }
             catch (OperationCanceledException)
             {
@@ -266,15 +271,15 @@ namespace RRDA.RepImp
                         if (result.MissingReportTypes.Count > 0)
                         {
                             Log(
-                                $"Avviso ReportTypes: {result.MissingReportTypes.Count} plugin locali non sono registrati nel catalogo gestito da RRDA.Web: " +
-                                $"{string.Join(", ", result.MissingReportTypes)}.");
+                                $"Avviso ReportTypes: {result.MissingReportTypes.Count} plugin locali non sono registrati nel catalogo gestito da RRDA.Web: "
+                                + $"{string.Join(", ", result.MissingReportTypes)}.");
                         }
 
                         foreach (var mismatch in result.SubjectKindMismatches)
                         {
                             Log(
-                                $"Avviso ReportTypes: SubjectKind non coerente per '{mismatch.ReportTypeKey}'. " +
-                                $"Database={mismatch.DatabaseSubjectKind}, plugin locale={mismatch.PluginSubjectKind}.");
+                                $"Avviso ReportTypes: SubjectKind non coerente per '{mismatch.ReportTypeKey}'. "
+                                + $"Database={mismatch.DatabaseSubjectKind}, plugin locale={mismatch.PluginSubjectKind}.");
                         }
 
                         await WriteAuditAsync(
@@ -294,6 +299,121 @@ namespace RRDA.RepImp
             {
                 // Non bloccante: se il DB non è raggiungibile, l'import può comunque proseguire
                 Log($"Avviso: impossibile verificare la compatibilita dei plugin con ReportTypes: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Controlla la connessione al database all'avvio dell'applicazione.
+        /// Se fallisce, mostra un warning bloccante con opzione per aprire le impostazioni.
+        /// </summary>
+        private async Task CheckDatabaseConnectionOnStartupAsync()
+        {
+            try
+            {
+                var connectionString = Properties.Settings.Default.ConnectionString;
+                
+                Log("Verifica della connessione al database in corso...");
+
+                if (string.IsNullOrWhiteSpace(connectionString))
+                {
+                    Log("Avviso: nessuna connection string configurata. Usare la configurazione di default.");
+                    _isConnectionValid = true; // Permette di proseguire con il default
+                    return;
+                }
+
+                var (success, message) = await DatabaseConnectionTester.TestConnectionAsync(connectionString);
+
+                if (success)
+                {
+                    Log($"✓ {message}");
+                    _isConnectionValid = true;
+                }
+                else
+                {
+                    Log($"✗ {message}");
+                    _isConnectionValid = false;
+
+                    // Mostra dialog bloccante con opzione di aprire le impostazioni
+                    var result = MessageBox.Show(
+                        this,
+                        $"Errore di connessione al database:\n\n{message}\n\nDesideri aprire le impostazioni per modificare la connection string?",
+                        "Errore connessione database",
+                        MessageBoxButton.YesNo,
+                        MessageBoxImage.Warning);
+
+                    if (result == MessageBoxResult.Yes)
+                    {
+                        OpenSettings();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"Errore durante il controllo della connessione: {ex.Message}");
+                _isConnectionValid = false;
+            }
+        }
+
+        /// <summary>
+        /// Avvia il timer per il polling periodico dello stato di connessione.
+        /// Intervallo: 5 secondi.
+        /// </summary>
+        private void StartConnectionStatusPolling()
+        {
+            _connectionStatusTimer = new DispatcherTimer()
+            {
+                Interval = TimeSpan.FromSeconds(5)
+            };
+            _connectionStatusTimer.Tick += async (s, e) => await UpdateConnectionStatusAsync();
+            _connectionStatusTimer.Start();
+            
+            Log("Polling dello stato di connessione avviato (intervallo: 5 secondi).");
+        }
+
+        /// <summary>
+        /// Aggiorna l'indicatore LED e il testo di stato della connessione.
+        /// Eseguito periodicamente dal timer.
+        /// </summary>
+        private async Task UpdateConnectionStatusAsync()
+        {
+            try
+            {
+                var connectionString = Properties.Settings.Default.ConnectionString;
+                bool connectionOk = false;
+                string statusText = "Non configurata";
+
+                if (!string.IsNullOrWhiteSpace(connectionString))
+                {
+                    var (success, message) = await DatabaseConnectionTester.TestConnectionAsync(connectionString);
+                    connectionOk = success;
+                    statusText = success ? "✓ Connesso" : "✗ Errore";
+                }
+
+                // Aggiorna UI
+                Dispatcher.Invoke(() =>
+                {
+                    // Aggiorna colore LED
+                    ConnectionStatusLED.Fill = new SolidColorBrush(
+                        connectionOk ? Colors.LimeGreen : Colors.Red);
+
+                    // Aggiorna testo
+                    ConnectionStatusText.Text = statusText;
+
+                    // Traccia il cambio di stato se diverso dal precedente
+                    if (connectionOk != _isConnectionValid)
+                    {
+                        _isConnectionValid = connectionOk;
+                        Log($"Stato connessione database: {(connectionOk ? "OK" : "ERRORE")}");
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    ConnectionStatusLED.Fill = new SolidColorBrush(Colors.Red);
+                    ConnectionStatusText.Text = "✗ Errore test";
+                });
             }
         }
 
@@ -381,7 +501,8 @@ namespace RRDA.RepImp
             var validatorPath = ResolveValidatorPath(plugin.Name);
             if (validatorPath is null)
             {
-                var message = $"Configurazione di validazione mancante per il plugin '{plugin.Name}'.";
+                var message = $"Configurazione di validazione mancante per il plugin '{plugin.Name}'.
+";
                 Log($"Import non disponibile per '{fi.Name}': {message}");
                 MessageBox.Show(this, message, "Validatore mancante", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return false;
@@ -554,9 +675,9 @@ namespace RRDA.RepImp
                                         duplicateStrategy: _duplicateStrategy,
                                         cancellationToken: ct);
 
-                                    Log($"Persistenza completata: ReportFileId={saved.ReportFileId}, " +
-                                        $"Entities={saved.EntitiesSaved}, Properties={saved.PropertiesSaved}" +
-                                        (batchId.HasValue ? $", BatchId={batchId.Value}." : "."));
+                                    Log($"Persistenza completata: ReportFileId={saved.ReportFileId}, "
+                                        + $"Entities={saved.EntitiesSaved}, Properties={saved.PropertiesSaved}"
+                                        + (batchId.HasValue ? $", BatchId={batchId.Value}." : "."));
 
                                     await WriteAuditAsync(
                                         "Report.ImportSucceeded",
@@ -642,10 +763,16 @@ namespace RRDA.RepImp
             return true;
         }
 
-        private void MainWindow_Loaded(object? sender, RoutedEventArgs e)
+        private async void MainWindow_Loaded(object? sender, RoutedEventArgs e)
         {
             try
             {
+                // Controlla la connessione al database prima di caricare i dati
+                await CheckDatabaseConnectionOnStartupAsync();
+                
+                // Avvia il polling periodico dello stato della connessione
+                StartConnectionStatusPolling();
+                
                 LoadFolders();
                 LoadPlugins();
             }
@@ -1268,6 +1395,11 @@ namespace RRDA.RepImp
         }
 
         private void OpenSettings_Click(object? sender, RoutedEventArgs e)
+        {
+            OpenSettings();
+        }
+
+        private void OpenSettings()
         {
             try
             {

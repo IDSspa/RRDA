@@ -125,6 +125,69 @@ namespace RRDA.RepImp
             }
         }
 
+        private async void TestConnectionButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var connectionString = ConnectionStringTextBox.Text;
+                
+                if (string.IsNullOrWhiteSpace(connectionString))
+                {
+                    MessageBox.Show(
+                        this,
+                        "Inserire una connection string prima di testare la connessione.",
+                        "Connection string vuota",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                    return;
+                }
+
+                // Disabilita il pulsante durante il test
+                TestConnectionButton.IsEnabled = false;
+                TestConnectionButton.Content = "Test in corso...";
+
+                try
+                {
+                    var (success, message) = await DatabaseConnectionTester.TestConnectionAsync(connectionString);
+
+                    if (success)
+                    {
+                        MessageBox.Show(
+                            this,
+                            message,
+                            "Test connessione",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Information);
+                    }
+                    else
+                    {
+                        MessageBox.Show(
+                            this,
+                            message,
+                            "Errore connessione",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Error);
+                    }
+                }
+                finally
+                {
+                    TestConnectionButton.IsEnabled = true;
+                    TestConnectionButton.Content = "Testa connessione";
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    this,
+                    $"Errore durante il test della connessione:{Environment.NewLine}{ex.Message}",
+                    "Errore",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+                TestConnectionButton.IsEnabled = true;
+                TestConnectionButton.Content = "Testa connessione";
+            }
+        }
+
         private void SaveButton_Click(object sender, RoutedEventArgs e)
         {
             // Validazione minima: accetta cartelle vuote ma verifica esistenza se valorizzate
