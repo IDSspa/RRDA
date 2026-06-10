@@ -35,9 +35,13 @@
   <Folder Name="/RRDA.Plugins/Dummy/">
     <Project Path="RRDA.Plugin.Dummy/RRDA.Plugins.Dummy.csproj" Id="dbc80d59-8e6e-4a8c-9cce-cc5dad5b1f8d" />
   </Folder>
+  <Folder Name="/RRDA.Plugins/IBASP/">
+    <Project Path="RRDA.Plugins.IBASP/RRDA.Plugins.IBASP.csproj" Id="e9e93e92-4468-427c-b9e3-1a031a3e86ae" />
+  </Folder>
   <Folder Name="/RRDA.Plugins/MAN/">
     <Project Path="Plugins.MAN_CIR/RRDA.Plugins.MAN_CIR.csproj" Id="620c02ad-3af2-4b2a-ae7d-7a99d358a3fc" />
     <Project Path="RRDA.Plugins.MAN_2LIV/RRDA.Plugins.MAN_2LIV.csproj" Id="f8a02431-5766-4912-aaed-ccfdf450e312" />
+    <Project Path="RRDA.Plugins.TC/RRDA.Plugins.TC.csproj" Id="be989ebe-9ec9-4da2-a39f-6b440e609d4e" />
   </Folder>
   <Folder Name="/RRDA.Plugins/RCB/">
     <Project Path="RRDA.Plugins.RCB/RRDA.Plugins.RCB.csproj" Id="b2ca448a-ae11-43a6-ba83-1503b1b7ca6a" />
