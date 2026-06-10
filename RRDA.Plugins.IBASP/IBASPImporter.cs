@@ -90,7 +90,7 @@ namespace RRDA.Plugins.IBASP
             if (xlsxStream.CanSeek)
                 xlsxStream.Position = 0;
         }
-        public Task<IEnumerable<ReportEntityDto>> ImportDataAsync(
+        protected override Task<IEnumerable<ReportEntityDto>> ImportDataAsync(
                 Stream xlsxStream,
                 ValidationConfig config,
                 IProgress<ImportProgress>? progress = null,

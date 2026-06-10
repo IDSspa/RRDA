@@ -5,7 +5,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-
+	<PropertyGroup>
+		<CopyToSharedArtifacts>true</CopyToSharedArtifacts>
+	</PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\RRDA.Core\RRDA.Core.csproj" />
     <ProjectReference Include="..\RRDA.Plugins.Common\RRDA.Plugins.Common.csproj" />
