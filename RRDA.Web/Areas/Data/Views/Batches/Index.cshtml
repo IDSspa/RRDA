@@ -1,0 +1,71 @@
+@model RRDA.Web.Areas.Data.Models.BatchIndexViewModel
+
+@{
+    ViewData["Title"] = "Gestione batch";
+}
+
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+        <h4 style="margin:0;color:#c9d1d9;font-weight:600;">Gestione batch</h4>
+        <div class="rrda-muted mt-1" style="font-size:.82rem;">Raggruppa e gestisci i report importati.</div>
+    </div>
+    @if (Model.CanManage)
+    {
+        <a asp-action="Create" class="btn-rrda-primary" style="text-decoration:none;padding:.4rem .9rem;">
+            + Nuovo batch
+        </a>
+    }
+</div>
+
+<div class="rrda-card">
+    @if (Model.Batches.Count == 0)
+    {
+        <p class="rrda-muted mb-0">Nessun batch presente.</p>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-borderless mb-0">
+                <thead>
+                    <tr>
+                        <th>Nome</th>
+                        <th>Descrizione</th>
+                        <th>Tipo</th>
+                        <th class="text-end">Report</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var batch in Model.Batches)
+                    {
+                        <tr>
+                            <td style="font-weight:500;">@batch.Name</td>
+                            <td class="rrda-muted">@(batch.Description ?? "—")</td>
+                            <td>
+                                @if (batch.IsMaintenance)
+                                {
+                                    <span class="badge-pill" style="background:#d2992222;color:#d29922;border:1px solid #d2992244;">Manutenzione</span>
+                                }
+                                else
+                                {
+                                    <span class="badge-pill" style="background:#388bfd22;color:#58a6ff;border:1px solid #388bfd44;">Standard</span>
+                                }
+                            </td>
+                            <td class="text-end">
+                                <a asp-area="Data" asp-controller="Files" asp-action="Index" asp-route-batchId="@batch.Id"
+                                   style="color:#58a6ff;text-decoration:none;">@batch.ReportCount</a>
+                            </td>
+                            <td class="text-end">
+                                @if (Model.CanManage)
+                                {
+                                    <a asp-action="Delete" asp-route-id="@batch.Id"
+                                       style="color:#f85149;font-size:.82rem;text-decoration:none;">Elimina</a>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

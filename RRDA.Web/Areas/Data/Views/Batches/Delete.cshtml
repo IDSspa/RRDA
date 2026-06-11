@@ -1,0 +1,42 @@
+@model RRDA.Web.Areas.Data.Models.BatchDeleteViewModel
+@using RRDA.Web.Areas.Data.Models
+
+@{
+    ViewData["Title"] = "Elimina batch";
+}
+
+<div class="d-flex align-items-center gap-3 mb-4">
+    <a asp-action="Index" class="rrda-muted" style="text-decoration:none;font-size:.85rem;">← Batch</a>
+    <h4 style="margin:0;color:#c9d1d9;font-weight:600;">Elimina batch</h4>
+</div>
+
+<div class="rrda-card" style="max-width:720px;">
+    <h5 style="color:#c9d1d9;">@Model.Name</h5>
+    <p class="rrda-muted">Il batch contiene <strong style="color:#c9d1d9;">@Model.ReportCount</strong> report. Scegli come gestirli prima di eliminare il batch.</p>
+
+    <form asp-action="Delete" method="post">
+        <input asp-for="Id" type="hidden" />
+        <div asp-validation-summary="ModelOnly" class="alert-rrda alert-rrda-danger mb-3"></div>
+
+        <div class="form-check mb-3">
+            <input asp-for="Strategy" class="form-check-input" type="radio" value="@BatchDeleteStrategy.RemoveAssociation" id="keepReports" />
+            <label class="form-check-label" for="keepReports">
+                <strong>Mantieni i report</strong><br />
+                <span class="rrda-muted">Rimuove il riferimento al batch; i report restano disponibili senza batch.</span>
+            </label>
+        </div>
+        <div class="form-check mb-4">
+            <input asp-for="Strategy" class="form-check-input" type="radio" value="@BatchDeleteStrategy.DeleteReports" id="deleteReports" />
+            <label class="form-check-label" for="deleteReports">
+                <strong style="color:#f85149;">Elimina anche tutti i report collegati</strong><br />
+                <span class="rrda-muted">Elimina definitivamente i report e tutti i dati contenuti.</span>
+            </label>
+        </div>
+        <span asp-validation-for="Strategy" style="color:#f85149;font-size:.8rem;"></span>
+
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn-rrda-danger" onclick="return confirm('Confermare la cancellazione del batch?');">Elimina batch</button>
+            <a asp-action="Index" class="rrda-muted" style="text-decoration:none;padding:.35rem .85rem;">Annulla</a>
+        </div>
+    </form>
+</div>

@@ -359,6 +359,11 @@
         <span class="icon">📄</span> File importati
     </a>
 
+    <a class="sidebar-link @ActiveIf("Data", "Batches")"
+       asp-area="Data" asp-controller="Batches" asp-action="Index">
+        <span class="icon">▣</span> Batch
+    </a>
+
     <div class="sidebar-divider"></div>
 
     <!-- ── Amministrazione (solo Admin) ── -->

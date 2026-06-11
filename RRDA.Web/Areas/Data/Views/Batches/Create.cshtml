@@ -1,0 +1,38 @@
+@model RRDA.Web.Areas.Data.Models.BatchCreateViewModel
+
+@{
+    ViewData["Title"] = "Nuovo batch";
+}
+
+<div class="d-flex align-items-center gap-3 mb-4">
+    <a asp-action="Index" class="rrda-muted" style="text-decoration:none;font-size:.85rem;">← Batch</a>
+    <h4 style="margin:0;color:#c9d1d9;font-weight:600;">Nuovo batch</h4>
+</div>
+
+<div class="rrda-card" style="max-width:650px;">
+    <form asp-action="Create" method="post">
+        <div asp-validation-summary="ModelOnly" class="alert-rrda alert-rrda-danger mb-3"></div>
+        <div class="mb-3">
+            <label asp-for="Name" class="form-label">Nome</label>
+            <input asp-for="Name" class="form-control" autocomplete="off" />
+            <span asp-validation-for="Name" style="color:#f85149;font-size:.8rem;"></span>
+        </div>
+        <div class="mb-3">
+            <label asp-for="Description" class="form-label">Descrizione (opzionale)</label>
+            <textarea asp-for="Description" class="form-control" rows="4"></textarea>
+            <span asp-validation-for="Description" style="color:#f85149;font-size:.8rem;"></span>
+        </div>
+        <div class="form-check mb-4">
+            <input asp-for="IsMaintenance" class="form-check-input" />
+            <label asp-for="IsMaintenance" class="form-check-label">Batch di manutenzione</label>
+        </div>
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn-rrda-primary">Crea batch</button>
+            <a asp-action="Index" class="rrda-muted" style="text-decoration:none;padding:.35rem .85rem;">Annulla</a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
