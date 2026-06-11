@@ -1427,7 +1427,7 @@
             })();
 
 
-            // ── Statistiche colonne – caricamento lazy al primo expand ──────────
+            // ── Statistiche colonne – precaricamento asincrono a pagina caricata ─
             (() => {
             const toggleCell     = document.getElementById('tp-stats-toggle-cell');
             const toggleIcon     = document.getElementById('tp-stats-toggle-icon');
@@ -1505,8 +1505,12 @@
             toggleCell.addEventListener('click', async () => {
             const willExpand = !expanded;
             setExpanded(willExpand);
-            if (willExpand && state === 'idle') await fetchStats();
+            if (willExpand && state !== 'loading' && state !== 'loaded') await fetchStats();
             });
+
+            window.addEventListener('load', () => {
+            void fetchStats();
+            }, { once: true });
             })();
 
         </script>
