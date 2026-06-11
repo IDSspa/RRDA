@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Win32;
 using RRDA.Core;
 using RRDA.Core.Validator;
@@ -35,10 +36,13 @@ namespace RRDA.RepImp
         private readonly IPluginService _pluginService;
         private readonly IAuditService _auditService;
         private readonly IImportResultRepository _importResultRepository;
-        
+        private readonly MemoryCache _cache = new(new MemoryCacheOptions());
+        private readonly Dictionary<string, FileSystemWatcher> _watchers = [];
+
         // Gestione stato connessione database
         private DispatcherTimer? _connectionStatusTimer;
         private bool _isConnectionValid = false;
+        private readonly IFileScanService _fileScanService = new FileScanService();
 
         public MainWindow(
             IReportTypeCompatibilityChecker reportTypeCompatibilityChecker,
@@ -61,6 +65,37 @@ namespace RRDA.RepImp
             ApplySettings();
 
             Loaded += MainWindow_Loaded;
+            Closing += MainWindow_Closing;
+        }
+
+        private void MainWindow_Closing(object? sender, CancelEventArgs e)
+        {
+            _watchers.Values.ToList().ForEach(w => w.Dispose());
+        }
+
+        private void SetupWatcher(string folderPath, string cacheKey)
+        {
+            if (_watchers.ContainsKey(folderPath)) return;
+
+            var watcher = new FileSystemWatcher(folderPath)
+            {
+                NotifyFilter = NotifyFilters.FileName | NotifyFilters.LastWrite | NotifyFilters.Size,
+                IncludeSubdirectories = true,
+                EnableRaisingEvents = true
+            };
+
+            // Eventi che invalidano la cache
+            watcher.Changed += (s, e) => InvalidateCache(folderPath, cacheKey);
+            watcher.Created += (s, e) => InvalidateCache(folderPath, cacheKey);
+            watcher.Deleted += (s, e) => InvalidateCache(folderPath, cacheKey);
+
+            _watchers[folderPath] = watcher;
+        }
+
+        private void InvalidateCache(string folderPath, string cacheKey)
+        {
+            _cache.Remove(cacheKey);
+            // Eventualmente notifica l'utente o forza il refresh della UI
         }
 
         private void ApplySettings()
@@ -100,8 +135,6 @@ namespace RRDA.RepImp
             if (folders.Count > 0)
                 FoldersListBox.SelectedIndex = 0;
         }
-
-        private readonly IFileScanService _fileScanService = new FileScanService();
 
         private async Task LoadFiles(string folderPath)
         {
@@ -149,35 +182,51 @@ namespace RRDA.RepImp
                     }
                 });
 
-                var scannedFiles = await _fileScanService.ScanAsync(
-                    new FileScanRequest(folderPath, "*.xlsx", maxDepth),
-                    _plugins,
-                    progress,
-                    Log,
-                    cts.Token);
+                string cacheKey = $"{folderPath}_{Properties.Settings.Default.RecurseDepth}";
 
-                var fileItems = scannedFiles
-                    .Select(f =>
-                    {
-                        var reportType = f.ReportType ?? string.Empty;
-                        var validatorPath = ResolveValidatorPath(reportType);
-                        return new RepImpFileItem(
-                            f.Name,
-                            f.Length,
-                            f.LastWriteTime,
-                            reportType,
-                            f.FullPath,
-                            validatorPath is not null,
-                            validatorPath);
-                    })
-                    .ToList();
+                if (!_cache.TryGetValue(cacheKey, out List<RepImpFileItem> files))
+                {
+                    var scannedFiles = await _fileScanService.ScanAsync(
+                        new FileScanRequest(folderPath, "*.xlsx", maxDepth),
+                        _plugins,
+                        progress,
+                        Log,
+                        cts.Token);
 
-                FilesListView.ItemsSource = fileItems;
+                        files = [.. scannedFiles
+                        .Select(f =>
+                        {
+                            var reportType = f.ReportType ?? string.Empty;
+                            var validatorPath = ResolveValidatorPath(reportType);
+                            return new RepImpFileItem(
+                                f.Name,
+                                f.Length,
+                                f.LastWriteTime,
+                                reportType,
+                                f.FullPath,
+                                validatorPath is not null,
+                                validatorPath);
+                        })];
 
-                Log($"Caricati {fileItems.Count} file *.xlsx da '{folderPath}' "
+                    var cacheEntryOptions = new MemoryCacheEntryOptions()
+                                    .SetSlidingExpiration(TimeSpan.FromMinutes(10)); // Opzionale: scade se inutilizzata
+
+                    _cache.Set(cacheKey, files, cacheEntryOptions);
+
+                    // Configura il Watcher per invalidare la cache al cambio file
+                    SetupWatcher(folderPath, cacheKey);
+                }
+                else
+                {
+                    Log($"Usati dati in cache per '{folderPath}'");
+                }
+
+                FilesListView.ItemsSource = files;
+
+                Log($"Caricati {files.Count} file *.xlsx da '{folderPath}' "
                     + $"(profondità ricorsione={maxDepth}). "
-                    + $"Plugin applicabili trovati per {fileItems.Count(f => !string.IsNullOrEmpty(f.Tipo))} file; "
-                    + $"validatori disponibili per {fileItems.Count(f => f.HasValidator)} file.");
+                    + $"Plugin applicabili trovati per {files.Count(f => !string.IsNullOrEmpty(f.Type))} file; "
+                    + $"validatori disponibili per {files.Count(f => f.HasValidator)} file.");
             }
             catch (OperationCanceledException)
             {
@@ -362,12 +411,12 @@ namespace RRDA.RepImp
         {
             _connectionStatusTimer = new DispatcherTimer()
             {
-                Interval = TimeSpan.FromSeconds(5)
+                Interval = TimeSpan.FromSeconds(Properties.Settings.Default.DBCheckInterval)
             };
             _connectionStatusTimer.Tick += async (s, e) => await UpdateConnectionStatusAsync();
             _connectionStatusTimer.Start();
             
-            Log("Polling dello stato di connessione avviato (intervallo: 5 secondi).");
+            Log($"Polling dello stato di connessione avviato (intervallo: {Properties.Settings.Default.DBCheckInterval} secondi).");
         }
 
         /// <summary>
@@ -407,7 +456,7 @@ namespace RRDA.RepImp
                     }
                 });
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 Dispatcher.Invoke(() =>
                 {
@@ -484,25 +533,25 @@ namespace RRDA.RepImp
                                               int? batchId = null,
                                               CancellationToken ct = default)
         {
-            if (string.IsNullOrWhiteSpace(fi.Tipo))
+            if (string.IsNullOrWhiteSpace(fi.Type))
             {
                 MessageBox.Show(this, "Nessun plugin associato a questo file.", "Import non disponibile", MessageBoxButton.OK, MessageBoxImage.Information);
                 return false;
             }
 
-            var plugin = _plugins.FirstOrDefault(p => string.Equals(p.Name, fi.Tipo, StringComparison.OrdinalIgnoreCase));
+            var plugin = _plugins.FirstOrDefault(p => string.Equals(p.Name, fi.Type, StringComparison.OrdinalIgnoreCase));
             if (plugin == null)
             {
-                Log($"Nessun plugin caricato con nome '{fi.Tipo}' per importare il file '{fi.Name}'.");
-                MessageBox.Show(this, $"Plugin '{fi.Tipo}' non trovato fra i plugin caricati.", "Plugin mancante", MessageBoxButton.OK, MessageBoxImage.Warning);
+                Log($"Nessun plugin caricato con nome '{fi.Type}' per importare il file '{fi.Name}'.");
+                MessageBox.Show(this, $"Plugin '{fi.Type}' non trovato fra i plugin caricati.", "Plugin mancante", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return false;
             }
 
             var validatorPath = ResolveValidatorPath(plugin.Name);
             if (validatorPath is null)
             {
-                var message = $"Configurazione di validazione mancante per il plugin '{plugin.Name}'.
-";
+                var message = $"Configurazione di validazione mancante per il plugin '{plugin.Name}'.";
+
                 Log($"Import non disponibile per '{fi.Name}': {message}");
                 MessageBox.Show(this, message, "Validatore mancante", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return false;
@@ -875,14 +924,17 @@ namespace RRDA.RepImp
             if (e.OriginalSource is not GridViewColumnHeader headerClicked || headerClicked.Column == null)
                 return;
 
-            if (headerClicked.Column != TypeColumn)
+            if (headerClicked.Column != TypeColumn && 
+                headerClicked.Column != SizeColumn && 
+                headerClicked.Column != NameColumn &&
+                headerClicked.Column != LastModifiedColumn)
             {
                 return;
             }
 
             ListSortDirection direction;
 
-            // Gestione della direzione dell'ordinamento[cite: 2]
+            // Gestione della direzione dell'ordinamento
             if (_lastHeaderClicked != headerClicked)
             {
                 direction = ListSortDirection.Ascending;
@@ -895,18 +947,27 @@ namespace RRDA.RepImp
             }
 
             ICollectionView dataView = CollectionViewSource.GetDefaultView(FilesListView.ItemsSource);
+
             if (dataView != null)
             {
                 dataView.SortDescriptions.Clear();
-                // Usiamo "Tipo" come proprietà di ordinamento (definita nel Binding della colonna)[cite: 3]
-                dataView.SortDescriptions.Add(new SortDescription("Tipo", direction));
+
+                if (headerClicked.Column == TypeColumn)
+                    dataView.SortDescriptions.Add(new SortDescription("Type", direction));
+                else if (headerClicked.Column == SizeColumn)
+                    dataView.SortDescriptions.Add(new SortDescription("Size", direction));
+                else if (headerClicked.Column == NameColumn)
+                    dataView.SortDescriptions.Add(new SortDescription("Name", direction));
+                else if (headerClicked.Column == LastModifiedColumn)
+                    dataView.SortDescriptions.Add(new SortDescription("LastWriteTime", direction));
+                
                 dataView.Refresh();
             }
 
             // Imposta il Tag per attivare i DataTrigger del SortableHeaderTemplate
             headerClicked.Tag = direction.ToString();
 
-            // Salva lo stato per il prossimo clic[cite: 2]
+            // Salva lo stato per il prossimo clic
             _lastHeaderClicked = headerClicked;
             _lastDirection = direction;
         }
@@ -915,7 +976,7 @@ namespace RRDA.RepImp
         {
             if (FilesListView.SelectedItem is RepImpFileItem fi)
             {
-                Log($"File selezionato: {fi.Name} ({fi.Length} byte) - Tipo: {fi.Tipo} - Validatore: {fi.ValidatorStatus}");
+                Log($"File selezionato: {fi.Name} ({fi.Size} byte) - Tipo: {fi.Type} - Validatore: {fi.ValidatorStatus}");
             }
             else if (FilesListView.SelectedItem is FileInfo ffi)
             {
@@ -941,11 +1002,11 @@ namespace RRDA.RepImp
 
                 FileImportMenuItem.IsEnabled = selectedFiles.Count > 0
                     && selectedFiles.All(file =>
-                        !string.IsNullOrWhiteSpace(file.Tipo)
-                        && ResolveValidatorPath(file.Tipo) is not null);
+                        !string.IsNullOrWhiteSpace(file.Type)
+                        && ResolveValidatorPath(file.Type) is not null);
 
                 if (firstSelectedFile != null && selectedFiles.Count == 1)
-                    FileExportValidatorMenuItem.IsEnabled = (_plugins.FirstOrDefault(p => string.Equals(p.Name, firstSelectedFile.Tipo, StringComparison.OrdinalIgnoreCase)) != null);
+                    FileExportValidatorMenuItem.IsEnabled = (_plugins.FirstOrDefault(p => string.Equals(p.Name, firstSelectedFile.Type, StringComparison.OrdinalIgnoreCase)) != null);
                 else
                     FileExportValidatorMenuItem.IsEnabled = false;
             }
@@ -1024,7 +1085,7 @@ namespace RRDA.RepImp
             }
 
             var unavailableFiles = selectedItems
-                .Where(file => string.IsNullOrWhiteSpace(file.Tipo) || ResolveValidatorPath(file.Tipo) is null)
+                .Where(file => string.IsNullOrWhiteSpace(file.Type) || ResolveValidatorPath(file.Type) is null)
                 .Select(file => file.Name)
                 .ToList();
             if (unavailableFiles.Count > 0)
@@ -1165,17 +1226,17 @@ namespace RRDA.RepImp
                 return;
             }
 
-            if (string.IsNullOrWhiteSpace(fi.Tipo))
+            if (string.IsNullOrWhiteSpace(fi.Type))
             {
                 MessageBox.Show(this, "Nessun plugin associato al file selezionato.", "Esporta validatore non disponibile", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
-            var plugin = _plugins.FirstOrDefault(p => string.Equals(p.Name, fi.Tipo, StringComparison.OrdinalIgnoreCase));
+            var plugin = _plugins.FirstOrDefault(p => string.Equals(p.Name, fi.Type, StringComparison.OrdinalIgnoreCase));
             if (plugin == null)
             {
-                Log($"Plugin '{fi.Tipo}' non trovato fra i plugin caricati.");
-                MessageBox.Show(this, $"Plugin '{fi.Tipo}' non caricato.", "Plugin mancante", MessageBoxButton.OK, MessageBoxImage.Warning);
+                Log($"Plugin '{fi.Type}' non trovato fra i plugin caricati.");
+                MessageBox.Show(this, $"Plugin '{fi.Type}' non caricato.", "Plugin mancante", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -1235,7 +1296,7 @@ namespace RRDA.RepImp
                     for (var index = 0; index < fileItems.Count; index++)
                     {
                         var item = fileItems[index];
-                        if (!string.Equals(item.Tipo, plugin.Name, StringComparison.OrdinalIgnoreCase))
+                        if (!string.Equals(item.Type, plugin.Name, StringComparison.OrdinalIgnoreCase))
                             continue;
 
                         fileItems[index] = item with

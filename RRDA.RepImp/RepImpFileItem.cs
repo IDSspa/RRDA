@@ -4,17 +4,17 @@ namespace RRDA.RepImp;
 
 public sealed record RepImpFileItem(
     string Name,
-    long Length,
+    long Size,
     DateTime LastWriteTime,
-    string Tipo,
+    string Type,
     string FullPath,
     bool HasValidator,
     string? ValidatorPath)
 {
-    public string ValidatorStatus => string.IsNullOrWhiteSpace(Tipo)
+    public string ValidatorStatus => string.IsNullOrWhiteSpace(Type)
         ? "Non applicabile"
         : HasValidator ? "Presente" : "Mancante";
 
     public ImportFileItem ToDataFileItem() =>
-        new(Name, Length, LastWriteTime, Tipo, FullPath);
+        new(Name, Size, LastWriteTime, Type, FullPath);
 }

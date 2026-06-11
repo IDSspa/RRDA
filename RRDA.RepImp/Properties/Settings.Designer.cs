@@ -72,6 +72,7 @@ namespace RRDA.RepImp.Properties {
                 this["RecurseDepth"] = value;
             }
         }
+        
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("UnitMappings.xml")]
@@ -83,6 +84,7 @@ namespace RRDA.RepImp.Properties {
                 this["UnitMappings"] = value;
             }
         }
+        
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("ImportBanList.xml")]
@@ -94,6 +96,7 @@ namespace RRDA.RepImp.Properties {
                 this["ImportBanList"] = value;
             }
         }
+        
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("system")]
@@ -103,6 +106,18 @@ namespace RRDA.RepImp.Properties {
             }
             set {
                 this["Theme"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("5")]
+        public int DBCheckInterval {
+            get {
+                return ((int)(this["DBCheckInterval"]));
+            }
+            set {
+                this["DBCheckInterval"] = value;
             }
         }
     }

@@ -1,6 +1,7 @@
 <Window x:Class="RRDA.RepImp.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:converters="clr-namespace:RRDA.RepImp"
         Title="RRDA RepImp" 
         Height="600" 
         Width="900"
@@ -8,8 +9,8 @@
         MinWidth="780">
 
     <Window.Resources>
-
         <!-- Template header con freccia ordinamento -->
+
         <DataTemplate x:Key="SortableHeaderTemplate">
             <DockPanel LastChildFill="True">
                 <TextBlock Text="{Binding}" VerticalAlignment="Center"/>
@@ -28,7 +29,7 @@
                              Value="Ascending">
                     <Setter TargetName="SortArrow"
                             Property="Text"
-                            Value="?"/>
+                            Value="▲"/>
                     <Setter TargetName="SortArrow"
                             Property="Visibility"
                             Value="Visible"/>
@@ -40,7 +41,7 @@
                              Value="Descending">
                     <Setter TargetName="SortArrow"
                             Property="Text"
-                            Value="?"/>
+                            Value="▼"/>
                     <Setter TargetName="SortArrow"
                             Property="Visibility"
                             Value="Visible"/>
@@ -49,6 +50,7 @@
             </DataTemplate.Triggers>
         </DataTemplate>
 
+        <converters:FileSizeConverter x:Key="FileSizeConverter" />
     </Window.Resources>
 
 
@@ -167,7 +169,7 @@
 
                     <!-- Parte superiore: file -->
                     <DockPanel Grid.Row="0">
-                        <TextBlock Text="File nella cartella selezionata" FontWeight="Bold" DockPanel.Dock="Top" Margin="0,0,0,6"/>
+                        <TextBlock Text="File(s) nella cartella selezionata" FontWeight="Bold" DockPanel.Dock="Top" Margin="0,0,0,6"/>
 
                         <ListView x:Name="FilesListView"
                                   SelectionChanged="FilesListView_SelectionChanged"
@@ -185,12 +187,12 @@
                             </ListView.ContextMenu>
                             <ListView.View>
                                 <GridView>
-                                    <GridViewColumn x:Name="NameColumn" Header="Nome" Width="300" DisplayMemberBinding="{Binding Name}"/>
-                                    <GridViewColumn x:Name="TypeColumn" Header="Tipo" Width="200" DisplayMemberBinding="{Binding Tipo}" HeaderTemplate="{StaticResource SortableHeaderTemplate}"/>
+                                    <GridViewColumn x:Name="NameColumn" Header="Nome" Width="300" DisplayMemberBinding="{Binding Name}" HeaderTemplate="{StaticResource SortableHeaderTemplate}"/>
+                                    <GridViewColumn x:Name="TypeColumn" Header="Tipo" Width="200" DisplayMemberBinding="{Binding Type}" HeaderTemplate="{StaticResource SortableHeaderTemplate}"/>
                                     <GridViewColumn x:Name="ValidatorColumn" Header="Validatore" Width="120" DisplayMemberBinding="{Binding ValidatorStatus}"/>
                                     <GridViewColumn x:Name="PathColumn" Header="Percorso" Width="400" DisplayMemberBinding="{Binding FullPath}"/>
-                                    <GridViewColumn x:Name="SizeColumn" Header="Dimensione" Width="100" DisplayMemberBinding="{Binding Length}"/>
-                                    <GridViewColumn x:Name="LastModifiedColumn" Header="Ultima modifica" Width="180" DisplayMemberBinding="{Binding LastWriteTime}"/>
+                                    <GridViewColumn x:Name="SizeColumn" Header="Dimensione" Width="100" DisplayMemberBinding="{Binding Size, Converter={StaticResource FileSizeConverter}}" HeaderTemplate="{StaticResource SortableHeaderTemplate}"/>
+                                    <GridViewColumn x:Name="LastModifiedColumn" Header="Ultima modifica" Width="180" DisplayMemberBinding="{Binding LastWriteTime}" HeaderTemplate="{StaticResource SortableHeaderTemplate}"/>
                                 </GridView>
                             </ListView.View>
                         </ListView>
