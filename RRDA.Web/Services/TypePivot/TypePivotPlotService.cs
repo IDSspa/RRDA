@@ -197,8 +197,20 @@ public sealed class TypePivotPlotService(
                 binStart,
                 binEnd + binWidth,
                 binWidth);
+            var selectedValues = valuesByFileId
+                .Where(x => selectedFileIdSet.Contains(x.FileId))
+                .Select(x => new
+                {
+                    x.FileId,
+                    Value = x.Value!.Value,
+                    Density = NormalPdf(x.Value.Value, mean, stdDev),
+                    SubjectKey = subjectKeysByFileId.TryGetValue(x.FileId, out var subjectKey)
+                        ? FormatSubjectKeyValue(subjectKey)
+                        : null
+                })
+                .ToList();
             var seriesMaxDensity = Math.Max(
-                curveY.Count == 0 ? 0 : curveY.Max(),
+                selectedValues.Count == 0 || curveY.Count == 0 ? 0 : curveY.Max(),
                 histogramBins.Count == 0 ? 0 : histogramBins.Max(b => b.Density));
             maxDensity = Math.Max(maxDensity, seriesMaxDensity);
             var displayName = FormatHeaderLabel(field, dataset.Metadata.HeaderUnits);
@@ -215,36 +227,24 @@ public sealed class TypePivotPlotService(
                 marker = new { color = ToRgba(color, 0.55), line = new { color, width = 1 } },
                 hovertemplate = $"Intervallo: %{{customdata[0]}}<br>Campioni: %{{customdata[1]}}<br>{dataset.Metadata.SubjectKeyLabel}: %{{customdata[2]}}<br>Densita: %{{y}}<extra>%{{fullData.name}}</extra>"
             });
-            traces.Add(new
-            {
-                name = $"{displayName} gaussiana",
-                type = "scatter",
-                mode = "lines",
-                x = curveX,
-                y = curveY,
-                line = new { color, width = 2 },
-                hovertemplate = "Valore: %{x}<br>Densita: %{y}<extra>%{fullData.name}</extra>"
-            });
 
             var lineHeight = seriesMaxDensity * 1.1;
             traces.Add(BuildVerticalLine($"{displayName} media", mean, lineHeight, color, 3, null, $"Media: {mean:G6}"));
             foreach (var sigmaValue in new[] { mean - stdDev, mean + stdDev })
                 traces.Add(BuildVerticalLine($"{displayName} sigma", sigmaValue, lineHeight, color, 2, "dash", $"Sigma: {sigmaValue:G6}"));
 
-            var selectedValues = valuesByFileId
-                .Where(x => selectedFileIdSet.Contains(x.FileId))
-                .Select(x => new
-                {
-                    x.FileId,
-                    Value = x.Value!.Value,
-                    Density = NormalPdf(x.Value.Value, mean, stdDev),
-                    SubjectKey = subjectKeysByFileId.TryGetValue(x.FileId, out var subjectKey)
-                        ? FormatSubjectKeyValue(subjectKey)
-                        : null
-                })
-                .ToList();
             if (selectedValues.Count > 0)
             {
+                traces.Add(new
+                {
+                    name = $"{displayName} gaussiana",
+                    type = "scatter",
+                    mode = "lines",
+                    x = curveX,
+                    y = curveY,
+                    line = new { color, width = 2 },
+                    hovertemplate = "Valore: %{x}<br>Densita: %{y}<extra>%{fullData.name}</extra>"
+                });
                 traces.Add(new
                 {
                     name = $"{displayName} selezionati",
