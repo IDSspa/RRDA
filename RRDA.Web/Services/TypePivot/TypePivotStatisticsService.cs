@@ -55,6 +55,7 @@ public sealed class TypePivotStatisticsService(
             .Select(TryParseDouble)
             .Where(value => value.HasValue)
             .Select(value => value!.Value)
+            .Where(double.IsFinite)
             .OrderBy(value => value)
             .ToList();
 

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using RRDA.Data;
 using RRDA.Web.Areas.Data.Controllers;
+using RRDA.Web.Services;
 
 namespace RRDA.Web.Services.TypePivot;
 
@@ -100,6 +101,8 @@ public sealed class TypePivotViewModelBuilder(
                 row.Values[pair.Key] = pair.Value;
         }
 
+        await PopulateReferenceTargetsAsync(rows, loadedFileIds, cancellationToken);
+
         if (request.UseCompactRanges)
         {
             foreach (var fileGroup in pairs.Where(pair => pair.IsRange && !pair.IsSubjectKey && !string.IsNullOrWhiteSpace(pair.RangeName))
@@ -126,6 +129,64 @@ public sealed class TypePivotViewModelBuilder(
         return model;
     }
 
+    private async Task PopulateReferenceTargetsAsync(
+        Dictionary<int, TypePivotRow> rows,
+        List<int> sourceFileIds,
+        CancellationToken cancellationToken)
+    {
+        var references = await db.ReportReferences
+            .AsNoTracking()
+            .Where(reference => sourceFileIds.Contains(reference.SourceReportFileId)
+                && reference.Origin == ReportReferenceOrigin.Imported)
+            .Include(reference => reference.SourceReportEntity)
+            .Include(reference => reference.TargetReportType)
+            .ToListAsync(cancellationToken);
+        references = references
+            .Where(reference => reference.SourceReportEntity is not null
+                && reference.TargetReportType is not null
+                && !string.IsNullOrWhiteSpace(reference.TargetKeyField)
+                && !string.IsNullOrWhiteSpace(reference.TargetKeyValue))
+            .ToList();
+        if (references.Count == 0)
+            return;
+
+        var targetTypeIds = references
+            .Select(reference => reference.TargetReportType!.Id)
+            .Distinct()
+            .ToList();
+        var targetFields = references
+            .Select(reference => reference.TargetKeyField)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        var candidates = await db.ReportEntities
+            .AsNoTracking()
+            .Where(entity => targetTypeIds.Contains(entity.ReportFile.ReportTypeId)
+                && targetFields.Contains(entity.Key))
+            .SelectMany(entity => entity.Properties
+                .Where(property => property.Name == "value")
+                .Select(property => new
+                {
+                    entity.ReportFileId,
+                    entity.ReportFile.ReportTypeId,
+                    entity.ReportFile.UploadedAt,
+                    Field = entity.Key,
+                    property.Value
+                }))
+            .ToListAsync(cancellationToken);
+
+        foreach (var reference in references)
+        {
+            var target = candidates
+                .Where(candidate => candidate.ReportTypeId == reference.TargetReportType!.Id
+                    && string.Equals(candidate.Field, reference.TargetKeyField, StringComparison.OrdinalIgnoreCase)
+                    && ReportReferenceKeyComparer.Equals(candidate.Value, reference.TargetKeyValue))
+                .OrderByDescending(candidate => candidate.UploadedAt)
+                .FirstOrDefault();
+            if (target is not null && rows.TryGetValue(reference.SourceReportFileId, out var row))
+                row.ReferenceTargetFileIds[reference.SourceReportEntity!.Key] = target.ReportFileId;
+        }
+    }
+
     private static TypePivotViewModel CreateBaseModel(
         TypePivotViewRequest request,
         TypePivotDataset dataset,
@@ -144,6 +205,7 @@ public sealed class TypePivotViewModelBuilder(
             RangeHeaders = request.UseCompactRanges ? dataset.Metadata.RangeHeaders : [],
             UseCompactRanges = request.UseCompactRanges,
             HeaderUnits = dataset.Metadata.HeaderUnits,
+            ReferenceHeaders = dataset.Metadata.ReferenceHeaders,
             DynamicFilterFields = dataset.Metadata.AllMeasureHeaders,
             BatchId = request.Filter.BatchId,
             LastModifiedFrom = request.Filter.LastModifiedFrom,
@@ -164,6 +226,6 @@ public sealed class TypePivotViewModelBuilder(
             HasSubjectKey = dataset.Metadata.HasSubjectKey,
             SubjectKeyLabel = dataset.Metadata.SubjectKeyLabel,
             PlotXAxisFields = dataset.Metadata.PlotXAxisFields,
-            PlotYAxisFields = dataset.Metadata.VisibleHeaders
+            PlotYAxisFields = dataset.Metadata.StatisticalHeaders
         };
 }

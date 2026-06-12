@@ -40,6 +40,7 @@ namespace RRDA.Data
                 var reportType = await db.ReportTypes
                                          .AsTracking()
                                          .FirstOrDefaultAsync(rt => rt.Key == importResult.ReportTypeKey, cancellationToken) ?? throw new InvalidOperationException($"ReportType con chiave '{importResult.ReportTypeKey}' non trovato in ReportTypes.");
+                var importedEntities = importResult.Entities?.ToList() ?? [];
 
                 // -- Gestione duplicato --
                 var existingFiles = await db.ReportFiles
@@ -60,6 +61,12 @@ namespace RRDA.Data
                             // DELETE in cascata di tutti i ReportFile esistenti per questo
                             // nome file + ReportType. Il cascade su ReportEntities e
                             // ReportProperties è configurato in OnModelCreating.
+                            var existingFileIds = existingFiles.Select(existing => existing.Id).ToList();
+                            var incomingManualReferences = await db.ReportReferences
+                                .Where(reference => reference.TargetReportFileId.HasValue
+                                    && existingFileIds.Contains(reference.TargetReportFileId.Value))
+                                .ToListAsync(cancellationToken);
+                            db.ReportReferences.RemoveRange(incomingManualReferences);
                             db.ReportFiles.RemoveRange(existingFiles);
                             await db.SaveChangesAsync(cancellationToken);
                             logger?.Invoke(
@@ -87,12 +94,32 @@ namespace RRDA.Data
                     FileLastModify = file.LastWriteTime
                 };
 
+                var referencedTypeKeys = importedEntities
+                    .Where(dto => dto.Reference is not null)
+                    .Select(dto => dto.Reference!.TargetReportTypeKey)
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+                var referencedTypes = await db.ReportTypes
+                    .Where(type => referencedTypeKeys.Contains(type.Key))
+                    .ToListAsync(cancellationToken);
+                var referencedTypesByKey = referencedTypes
+                    .ToDictionary(type => type.Key, StringComparer.OrdinalIgnoreCase);
+                var missingReferencedTypes = referencedTypeKeys
+                    .Where(key => !referencedTypesByKey.ContainsKey(key))
+                    .ToList();
+                if (missingReferencedTypes.Count > 0)
+                {
+                    throw new InvalidDataException(
+                        "I riferimenti importati indicano ReportTypes non registrati: "
+                        + string.Join(", ", missingReferencedTypes));
+                }
+
                 var entitiesSaved = 0;
                 var propertiesSaved = 0;
 
-                if (importResult.Entities != null && importResult.Entities.Any())
+                if (importedEntities.Count > 0)
                 {
-                    foreach (var dto in importResult.Entities)
+                    foreach (var dto in importedEntities)
                     {
                         var entity = new ReportEntity
                         {
@@ -139,6 +166,22 @@ namespace RRDA.Data
                         }
 
                         reportFile.Entities.Add(entity);
+                        if (dto.Reference is not null)
+                        {
+                            db.ReportReferences.Add(new ReportReference
+                            {
+                                SourceReportFile = reportFile,
+                                SourceReportEntity = entity,
+                                TargetReportType = referencedTypesByKey[dto.Reference.TargetReportTypeKey],
+                                TargetKeyField = dto.Reference.TargetKeyField,
+                                TargetKeyValue = string.IsNullOrWhiteSpace(dto.Reference.TargetKeyValue)
+                                    ? null
+                                    : dto.Reference.TargetKeyValue.Trim(),
+                                Origin = ReportReferenceOrigin.Imported,
+                                CreatedAtUtc = DateTime.UtcNow,
+                                CreatedBy = user
+                            });
+                        }
                         entitiesSaved++;
                     }
                 }

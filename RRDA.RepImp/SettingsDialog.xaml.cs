@@ -18,6 +18,8 @@ namespace RRDA.RepImp
         {
             ReportsFolderTextBox.Text = Properties.Settings.Default.ReportsFolder ?? string.Empty;
             PluginsFolderTextBox.Text = Properties.Settings.Default.PluginsFolder ?? string.Empty;
+            ValidatorsFolderTextBox.Text = ConfiguredPathResolver.ResolveValidatorsFolder(
+                Properties.Settings.Default.ValidatorsFolder);
             UnitMappingsTextBox.Text = Properties.Settings.Default.UnitMappings ?? string.Empty;
             ImportBanListTextBox.Text = Properties.Settings.Default.ImportBanList ?? string.Empty;
             ConnectionStringTextBox.Text = Properties.Settings.Default.ConnectionString ?? string.Empty;
@@ -71,6 +73,27 @@ namespace RRDA.RepImp
                 if (dlg.ShowDialog() == true && !string.IsNullOrWhiteSpace(dlg.FolderName))
                 {
                     PluginsFolderTextBox.Text = dlg.FolderName;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, $"Impossibile selezionare la cartella:{Environment.NewLine}{ex.Message}", "Errore", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void BrowseValidatorsButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var dlg = new OpenFolderDialog
+                {
+                    FolderName = ValidatorsFolderTextBox.Text,
+                    Title = "Seleziona cartella Validatori"
+                };
+
+                if (dlg.ShowDialog() == true && !string.IsNullOrWhiteSpace(dlg.FolderName))
+                {
+                    ValidatorsFolderTextBox.Text = dlg.FolderName;
                 }
             }
             catch (Exception ex)
@@ -255,6 +278,7 @@ namespace RRDA.RepImp
 
             Properties.Settings.Default.ReportsFolder = string.IsNullOrWhiteSpace(ReportsFolderTextBox.Text) ? null : ReportsFolderTextBox.Text;
             Properties.Settings.Default.PluginsFolder = string.IsNullOrWhiteSpace(PluginsFolderTextBox.Text) ? null : PluginsFolderTextBox.Text;
+            Properties.Settings.Default.ValidatorsFolder = string.IsNullOrWhiteSpace(ValidatorsFolderTextBox.Text) ? null : ValidatorsFolderTextBox.Text;
             Properties.Settings.Default.UnitMappings = string.IsNullOrWhiteSpace(UnitMappingsTextBox.Text) ? null : UnitMappingsTextBox.Text;
             Properties.Settings.Default.ImportBanList = string.IsNullOrWhiteSpace(ImportBanListTextBox.Text) ? null : ImportBanListTextBox.Text;
             Properties.Settings.Default.ConnectionString = string.IsNullOrWhiteSpace(ConnectionStringTextBox.Text) ? null : ConnectionStringTextBox.Text;

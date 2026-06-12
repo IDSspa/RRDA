@@ -2,6 +2,7 @@ using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Spreadsheet;
 using RRDA.Core.Validator;
+using RRDA.Core;
 using System.Xml.Linq;
 using Xunit;
 
@@ -92,6 +93,48 @@ public sealed class ValidationFileCreatorTests
             .Single(element => element.Attribute("definedName")?.Value == "Generic_Measurement");
 
         Assert.Null(field.Attribute("unit"));
+    }
+
+    [Fact]
+    public void CreateFromStream_AppliesPluginReferenceDefinition()
+    {
+        using var workbookStream = CreateWorkbookWithSharedString("SN_ALI", "12345");
+        using var output = new MemoryStream();
+
+        ValidationFileCreator.CreateFromStream(
+            workbookStream,
+            output,
+            "Serial",
+            referenceDefinitions:
+            [
+                new ReportReferenceDefinition("SN_ALI", "ALI", "Serial")
+            ]);
+
+        output.Position = 0;
+        var field = XDocument.Load(output).Descendants("Field")
+            .Single(element => element.Attribute("definedName")?.Value == "SN_ALI");
+
+        Assert.Equal("ALI", field.Attribute("referenceReportType")?.Value);
+        Assert.Equal("Serial", field.Attribute("referenceKeyField")?.Value);
+    }
+
+    [Fact]
+    public void CreateFromStream_RejectsMissingPluginReferenceDefinedName()
+    {
+        using var workbookStream = CreateWorkbookWithSharedString("Measurement", "1.5");
+        using var output = new MemoryStream();
+
+        var exception = Assert.Throws<InvalidDataException>(() =>
+            ValidationFileCreator.CreateFromStream(
+                workbookStream,
+                output,
+                "Serial",
+                referenceDefinitions:
+                [
+                    new ReportReferenceDefinition("SN_ALI", "ALI", "Serial")
+                ]));
+
+        Assert.Contains("SN_ALI", exception.Message);
     }
 
     [Theory]

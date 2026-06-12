@@ -97,25 +97,30 @@ public sealed class TypePivotDatasetService(RRDADbContext db) : ITypePivotDatase
         var measurePairs = pairs.Where(p => !p.IsSubjectKey).ToList();
         var scalarPairs = measurePairs.Where(p => !p.IsRange).ToList();
         var rangePairs = measurePairs.Where(p => p.IsRange).ToList();
-        var visibleHeaders = scalarPairs
-            .Where(p => IsNumericDataType(p.DataType))
+        var referenceHeaders = fileIds.Count == 0
+            ? []
+            : await db.ReportReferences
+                .AsNoTracking()
+                .Where(reference => fileIds.Contains(reference.SourceReportFileId)
+                    && reference.SourceReportEntityId.HasValue)
+                .Select(reference => reference.SourceReportEntity!.Key)
+                .Distinct()
+                .OrderBy(key => key)
+                .ToListAsync(cancellationToken);
+        var referenceHeaderSet = referenceHeaders.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var statisticalHeaders = scalarPairs
+            .Where(p => IsNumericDataType(p.DataType) && !referenceHeaderSet.Contains(p.Key))
             .Select(p => p.Key)
             .Where(k => !string.IsNullOrWhiteSpace(k))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .OrderBy(k => k, StringComparer.OrdinalIgnoreCase)
             .ToList();
-        var rangeHeaders = rangePairs
-            .Where(p => IsNumericDataType(p.DataType) && !string.IsNullOrWhiteSpace(p.RangeName))
-            .GroupBy(p => p.RangeName!, StringComparer.OrdinalIgnoreCase)
-            .Select(group => new TypePivotRangeDescriptor
-            {
-                Name = group.Key,
-                Unit = group.Select(p => p.Unit).FirstOrDefault(unit => !string.IsNullOrWhiteSpace(unit)),
-                ExpandedHeaders = group.OrderBy(TypePivotRangeAggregator.GetIndex)
-                    .Select(p => p.Key).Distinct(StringComparer.OrdinalIgnoreCase).ToList()
-            })
-            .OrderBy(range => range.Name, StringComparer.OrdinalIgnoreCase)
+        var visibleHeaders = statisticalHeaders
+            .Concat(referenceHeaders)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
+        var rangeHeaders = TypePivotRangeAggregator.BuildDescriptors(
+            rangePairs.Where(p => IsNumericDataType(p.DataType)));
         var plotXAxisFields = new List<string> { "FileName", "LastModified", "Batch" };
         if (subjectKeyPairs.Count > 0)
             plotXAxisFields.Insert(0, "SubjectKey");
@@ -123,16 +128,19 @@ public sealed class TypePivotDatasetService(RRDADbContext db) : ITypePivotDatase
         return new TypePivotMetadata
         {
             AllMeasureHeaders = scalarPairs
+                .Where(p => !referenceHeaderSet.Contains(p.Key))
                 .Select(p => p.Key)
                 .Where(k => !string.IsNullOrWhiteSpace(k))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .OrderBy(k => k, StringComparer.OrdinalIgnoreCase)
                 .ToList(),
             VisibleHeaders = visibleHeaders,
+            ReferenceHeaders = referenceHeaders,
+            StatisticalHeaders = statisticalHeaders,
             ExpandedRangeHeaders = rangeHeaders.SelectMany(range => range.ExpandedHeaders).ToList(),
             RangeHeaders = rangeHeaders,
             HeaderUnits = measurePairs
-                .Where(p => IsNumericDataType(p.DataType))
+                .Where(p => IsNumericDataType(p.DataType) && !referenceHeaderSet.Contains(p.Key))
                 .GroupBy(p => p.Key, StringComparer.OrdinalIgnoreCase)
                 .ToDictionary(
                     g => g.Key,

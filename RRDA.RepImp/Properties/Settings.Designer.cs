@@ -34,6 +34,18 @@ namespace RRDA.RepImp.Properties {
                 this["PluginsFolder"] = value;
             }
         }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string ValidatorsFolder {
+            get {
+                return ((string)(this["ValidatorsFolder"]));
+            }
+            set {
+                this["ValidatorsFolder"] = value;
+            }
+        }
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]

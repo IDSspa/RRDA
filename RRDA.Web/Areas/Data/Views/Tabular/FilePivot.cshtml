@@ -1,46 +1,141 @@
-﻿@model RRDA.Web.Areas.Data.Controllers.FilePivotViewModel
+@using System.Globalization
+@model RRDA.Web.Areas.Data.Controllers.FilePivotViewModel
 @{
     ViewData["Title"] = $"Pivot file #{Model.FileId}";
+
+    string FormatValue(string header)
+    {
+        if (!Model.Row.Values.TryGetValue(header, out var value)
+            || string.IsNullOrWhiteSpace(value)
+            || Model.ReferenceHeaders.Contains(header, StringComparer.OrdinalIgnoreCase))
+            return value ?? string.Empty;
+
+        if (double.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out var invariantValue)
+            && double.IsFinite(invariantValue))
+            return invariantValue.ToString($"F{Model.DecimalPlaces}", CultureInfo.InvariantCulture);
+
+        if (double.TryParse(value, NumberStyles.Any, CultureInfo.CurrentCulture, out var currentValue)
+            && double.IsFinite(currentValue))
+            return currentValue.ToString($"F{Model.DecimalPlaces}", CultureInfo.CurrentCulture);
+
+        return value;
+    }
+
+    string FormatSubjectKey()
+    {
+        var value = Model.Row.SubjectKey;
+        if (!string.IsNullOrWhiteSpace(value)
+            && long.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out var integer))
+            return integer.ToString(CultureInfo.InvariantCulture);
+        if (!string.IsNullOrWhiteSpace(value)
+            && double.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out var number))
+            return ((long)Math.Round(number)).ToString(CultureInfo.InvariantCulture);
+        return value ?? string.Empty;
+    }
 }
 
-<div class="d-flex align-items-center gap-3 mb-4">
-    <a asp-area="Data" asp-controller="Files" asp-action="Details" asp-route-id="@Model.FileId"
-       style="color:#8b949e;text-decoration:none;font-size:.85rem;">
-        ← Dettaglio file
-    </a>
-    <h4 style="margin:0;color:#c9d1d9;font-weight:600;">Vista orizzontale (Pivot)</h4>
+<style>
+    .file-pivot-table-scroll {
+        overflow: auto;
+        padding: 0;
+    }
+
+    .file-pivot-table {
+        border-collapse: separate;
+        border-spacing: 0;
+        min-width: 1400px;
+    }
+
+    .file-pivot-table td,
+    .file-pivot-table th {
+        padding: .25rem .5rem;
+    }
+
+    .file-pivot-table thead th {
+        background: var(--rrda-surface, #0d1117);
+        position: sticky;
+        top: 0;
+        z-index: 2;
+    }
+
+    .file-pivot-range-summary {
+        color: #8b949e;
+        font-size: .72rem;
+        white-space: nowrap;
+    }
+</style>
+
+<div class="d-flex align-items-center justify-content-between mb-3">
+    <div class="d-flex align-items-center gap-3">
+        <a asp-area="Data" asp-controller="Tabular" asp-action="TypePivot" asp-route-reportTypeId="@Model.ReportTypeId"
+           style="color:#8b949e;text-decoration:none;font-size:.85rem;">
+            ← Vista per tipo report
+        </a>
+        <h4 style="margin:0;color:#c9d1d9;font-weight:600;">
+            Vista orizzontale per file: @Model.ReportTypeKey
+        </h4>
+    </div>
+    <span style="color:#8b949e;font-size:.85rem;">1 file</span>
 </div>
 
-<div class="rrda-card mb-3">
-    <div><strong>FileId:</strong> @Model.FileId</div>
-    <div><strong>File:</strong> <span style="font-family:monospace;">@Model.FileName</span></div>
-    <div><strong>ReportType:</strong> @Model.ReportTypeKey</div>
-</div>
-
-<div class="rrda-card" style="overflow:auto;">
-    @if (!Model.Headers.Any())
+<div class="rrda-card file-pivot-table-scroll">
+    @if (!Model.Headers.Any() && !Model.RangeHeaders.Any())
     {
-        <p style="color:#8b949e;margin:0;">Nessuna KEY disponibile per questo file.</p>
+        <p style="color:#8b949e;margin:0;">Nessun dato disponibile per questo file.</p>
     }
     else
     {
-        <table class="table table-borderless mb-0" style="min-width:1200px;">
+        <table class="table table-borderless mb-0 file-pivot-table">
             <thead>
                 <tr>
-                    <th>FileId</th>
+                    @if (Model.HasSubjectKey)
+                    {
+                        <th style="font-family:monospace;font-size:.78rem;white-space:nowrap;">@Model.SubjectKeyLabel</th>
+                    }
+                    <th>Batch</th>
+                    <th>Nome file</th>
+                    <th>Ultima modifica</th>
                     @foreach (var header in Model.Headers)
                     {
-                        <th style="font-family:monospace;font-size:.78rem;">@header</th>
+                        var label = header;
+                        if (Model.HeaderUnits.TryGetValue(header, out var unit)
+                            && !string.IsNullOrWhiteSpace(unit))
+                        {
+                            label = $"{header} [{unit}]";
+                        }
+                        <th style="font-family:monospace;font-size:.78rem;white-space:nowrap;">@label</th>
+                    }
+                    @foreach (var range in Model.RangeHeaders)
+                    {
+                        var label = string.IsNullOrWhiteSpace(range.Unit) ? range.Name : $"{range.Name} [{range.Unit}]";
+                        <th style="font-family:monospace;font-size:.78rem;white-space:nowrap;">@label</th>
                     }
                 </tr>
             </thead>
             <tbody>
                 <tr>
-                    <td>@Model.FileId</td>
+                    @if (Model.HasSubjectKey)
+                    {
+                        <td style="font-family:monospace;font-size:.78rem;white-space:nowrap;">@FormatSubjectKey()</td>
+                    }
+                    <td style="font-size:.78rem;">@(Model.Row.BatchName ?? "—")</td>
+                    <td style="font-family:monospace;font-size:.78rem;">@Model.Row.FileName</td>
+                    <td style="font-size:.78rem;">@Model.Row.LastModified.ToString("yyyy-MM-dd HH:mm")</td>
                     @foreach (var header in Model.Headers)
                     {
-                        <td style="font-family:monospace;font-size:.78rem;white-space:nowrap;">
-                            @(Model.Row.TryGetValue(header, out var value) ? value : "")
+                        <td style="font-family:monospace;font-size:.78rem;white-space:nowrap;">@FormatValue(header)</td>
+                    }
+                    @foreach (var range in Model.RangeHeaders)
+                    {
+                        <td>
+                            @if (Model.Row.Ranges.TryGetValue(range.Name, out var cell))
+                            {
+                                <span class="file-pivot-range-summary">
+                                    @cell.Points.Count elementi ·
+                                    @cell.Min.ToString($"F{Model.DecimalPlaces}", CultureInfo.InvariantCulture)…
+                                    @cell.Max.ToString($"F{Model.DecimalPlaces}", CultureInfo.InvariantCulture)
+                                </span>
+                            }
                         </td>
                     }
                 </tr>

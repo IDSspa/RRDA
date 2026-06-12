@@ -6,5 +6,6 @@
         public required string Key { get; set; }
         public Dictionary<string, string> Properties { get; set; } = [];
         public Dictionary<string, string> PropertyDataTypes { get; set; } = [];
+        public ReportReferenceDto? Reference { get; set; }
     }
 }

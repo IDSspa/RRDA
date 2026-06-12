@@ -12,5 +12,7 @@
         public string? Format { get; set; } // es: yyyy-MM-dd
         public string? Unit { get; set; }
         public Range? Range { get; set; }
+        public string? ReferenceReportType { get; set; }
+        public string? ReferenceKeyField { get; set; }
     }
 }

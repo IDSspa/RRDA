@@ -29,36 +29,91 @@ namespace RRDA.Web.Areas.Data.Controllers
         {
             var file = await db.ReportFiles
                 .Include(f => f.ReportType)
+                .Include(f => f.ReportBatch)
                 .FirstOrDefaultAsync(f => f.Id == fileId);
 
             if (file is null) return NotFound();
 
-            var entries = await db.ReportEntities
+            var useCompactRanges = ResolveCompactRangeDisplay();
+            var dataset = await typePivotDatasetService.GetAsync(
+                CreateFilterRequest(file.ReportTypeId, null, null, null, null, null, null, null, null));
+            if (dataset is null) return NotFound();
+
+            var pairs = await db.ReportEntities
                 .AsNoTracking()
                 .Where(e => e.ReportFileId == fileId)
                 .SelectMany(e => e.Properties
                     .Where(p => p.Name == "value")
-                    .Select(p => new { e.Key, p.Value }))
+                    .Select(p => new PivotPair
+                    {
+                        FileId = e.ReportFileId,
+                        Key = e.Key,
+                        Value = p.Value,
+                        IsSubjectKey = p.IsSubjectKey,
+                        DataType = p.DataType,
+                        Unit = p.Unit,
+                        RangeName = e.Properties.Where(x => x.Name == "name").Select(x => x.Value).FirstOrDefault(),
+                        RowIndex = e.Properties.Where(x => x.Name == "row_index").Select(x => x.Value).FirstOrDefault(),
+                        ColIndex = e.Properties.Where(x => x.Name == "col_index").Select(x => x.Value).FirstOrDefault()
+                    }))
                 .ToListAsync();
 
-            var headers = entries
-                .Select(x => x.Key)
-                .Where(k => !string.IsNullOrWhiteSpace(k))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .OrderBy(k => k, StringComparer.OrdinalIgnoreCase)
-                .ToList();
+            var row = new TypePivotRow
+            {
+                FileId = file.Id,
+                FileName = file.FileName,
+                LastModified = file.FileLastModify,
+                BatchId = file.ReportBatchId,
+                BatchName = file.ReportBatch?.Name
+            };
+            foreach (var pair in pairs)
+            {
+                if (pair.IsSubjectKey)
+                    row.SubjectKey = pair.Value;
+                else if (!pair.IsRange || !useCompactRanges)
+                    row.Values[pair.Key] = pair.Value;
+            }
+            if (useCompactRanges)
+            {
+                foreach (var rangeGroup in pairs
+                    .Where(pair => pair.IsRange && !pair.IsSubjectKey && !string.IsNullOrWhiteSpace(pair.RangeName))
+                    .GroupBy(pair => pair.RangeName!, StringComparer.OrdinalIgnoreCase))
+                {
+                    var cell = TypePivotRangeAggregator.Build(
+                        rangeGroup.Key,
+                        rangeGroup.Select(pair => pair.Unit).FirstOrDefault(unit => !string.IsNullOrWhiteSpace(unit)),
+                        rangeGroup);
+                    if (cell is not null)
+                        row.Ranges[rangeGroup.Key] = cell;
+                }
+            }
 
-            var row = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
-            foreach (var entry in entries)
-                row[entry.Key] = entry.Value;
+            var fileRangePairs = pairs
+                .Where(pair => pair.IsRange && !pair.IsSubjectKey)
+                .ToList();
+            var fileRangeHeaders = TypePivotRangeAggregator.BuildDescriptors(fileRangePairs);
+            var headerUnits = new Dictionary<string, string?>(
+                dataset.Metadata.HeaderUnits,
+                StringComparer.OrdinalIgnoreCase);
+            foreach (var pair in fileRangePairs.Where(pair => !string.IsNullOrWhiteSpace(pair.Unit)))
+                headerUnits[pair.Key] = pair.Unit;
 
             var model = new FilePivotViewModel
             {
                 FileId = file.Id,
+                ReportTypeId = file.ReportTypeId,
                 FileName = file.FileName,
                 ReportTypeKey = file.ReportType?.Key ?? string.Empty,
-                Headers = headers,
-                Row = row
+                Headers = useCompactRanges
+                    ? dataset.Metadata.VisibleHeaders
+                    : [.. dataset.Metadata.VisibleHeaders, .. fileRangeHeaders.SelectMany(range => range.ExpandedHeaders)],
+                RangeHeaders = useCompactRanges ? fileRangeHeaders : [],
+                HeaderUnits = headerUnits,
+                ReferenceHeaders = dataset.Metadata.ReferenceHeaders,
+                HasSubjectKey = dataset.Metadata.HasSubjectKey,
+                SubjectKeyLabel = dataset.Metadata.SubjectKeyLabel,
+                Row = row,
+                DecimalPlaces = ResolveDecimalPlaces()
             };
 
             return View(model);
@@ -140,7 +195,7 @@ namespace RRDA.Web.Areas.Data.Controllers
 
             var statistics = await typePivotStatisticsService.GetAsync(
                 dataset.FileIds,
-                dataset.Metadata.VisibleHeaders,
+                dataset.Metadata.StatisticalHeaders,
                 cancellationToken);
 
             // Proiettiamo in un formato compatto: la view non ha bisogno di Count.

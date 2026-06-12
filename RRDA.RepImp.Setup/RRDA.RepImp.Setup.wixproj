@@ -33,10 +33,12 @@
     <PluginProject Include="..\RRDA.Plugins.DIG_PM\RRDA.Plugins.DIG_PM.csproj" />
     <PluginProject Include="..\RRDA.Plugins.DRS_UDX_MAN\RRDA.Plugins.DRS_UDX_MAN.csproj" />
     <PluginProject Include="..\RRDA.Plugins.DRX\RRDA.Plugins.DRX.csproj" />
+    <PluginProject Include="..\RRDA.Plugins.IBASP\RRDA.Plugins.IBASP.csproj" />
     <PluginProject Include="..\RRDA.Plugins.MAN_2LIV\RRDA.Plugins.MAN_2LIV.csproj" />
     <PluginProject Include="..\RRDA.Plugins.RCB\RRDA.Plugins.RCB.csproj" />
     <PluginProject Include="..\RRDA.Plugins.SBS\RRDA.Plugins.SBS.csproj" />
     <PluginProject Include="..\RRDA.Plugins.SBX\RRDA.Plugins.SBX.csproj" />
+    <PluginProject Include="..\RRDA.Plugins.TC\RRDA.Plugins.TC.csproj" />
     <PluginProject Include="..\RRDA.Plugins.UDX\RRDA.Plugins.UDX.csproj" />
   </ItemGroup>
 

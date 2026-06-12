@@ -5,6 +5,25 @@ namespace RRDA.Web.Services.TypePivot;
 
 public static class TypePivotRangeAggregator
 {
+    public static List<TypePivotRangeDescriptor> BuildDescriptors(IEnumerable<PivotPair> pairs)
+    {
+        return pairs
+            .Where(pair => pair.IsRange && !string.IsNullOrWhiteSpace(pair.RangeName))
+            .GroupBy(pair => pair.RangeName!, StringComparer.OrdinalIgnoreCase)
+            .Select(group => new TypePivotRangeDescriptor
+            {
+                Name = group.Key,
+                Unit = group.Select(pair => pair.Unit).FirstOrDefault(unit => !string.IsNullOrWhiteSpace(unit)),
+                ExpandedHeaders = group
+                    .OrderBy(GetIndex)
+                    .Select(pair => pair.Key)
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList()
+            })
+            .OrderBy(range => range.Name, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
     public static TypePivotRangeCell? Build(string name, string? unit, IEnumerable<PivotPair> pairs)
     {
         var points = pairs

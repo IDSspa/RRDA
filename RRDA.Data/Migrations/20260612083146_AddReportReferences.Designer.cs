@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using RRDA.Data;
 
@@ -11,9 +12,11 @@ using RRDA.Data;
 namespace RRDA.Data.Migrations
 {
     [DbContext(typeof(RRDADbContext))]
-    partial class RRDADbContextModelSnapshot : ModelSnapshot
+    [Migration("20260612083146_AddReportReferences")]
+    partial class AddReportReferences
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

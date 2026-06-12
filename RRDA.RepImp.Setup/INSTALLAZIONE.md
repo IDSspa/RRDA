@@ -31,6 +31,7 @@ C:\Program Files\IDS\RRDA RepImp
 |---|---|
 | Applicazione e file XML comuni | `C:\Program Files\IDS\RRDA RepImp` |
 | Plugin | `C:\Program Files\IDS\RRDA RepImp\plugins` |
+| Validatori creati dall'utente | `%LOCALAPPDATA%\IDS\RRDA RepImp\validators` |
 | Script database | `C:\Program Files\IDS\RRDA RepImp\Database\RRDA.Db.Migrations.sql` |
 
 ### UnitMappings.xml
@@ -96,6 +97,9 @@ Aprire **Impostazioni** e verificare:
   intero maggiore per includere sottocartelle;
 - **Cartella Plugins**: lasciare vuota per usare la sottocartella `plugins`
   installata dall'MSI;
+- **Cartella Validatori**: il valore predefinito è
+  `%LOCALAPPDATA%\IDS\RRDA RepImp\validators`; scegliere un'altra cartella per
+  modificare la destinazione dei file XML generati;
 - **Mapping unità**: lasciare `UnitMappings.xml`, salvo personalizzazioni;
 - **Banlist importazione**: lasciare `ImportBanList.xml`, salvo personalizzazioni;
 - **ConnectionString**: stringa di connessione al database RRDA.

@@ -861,7 +861,24 @@
                                     @{
                                         if (row.Values.TryGetValue(header, out var value))
                                         {
-                                            if (double.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out var dInv))
+                                            if (Model.ReferenceHeaders.Contains(header, StringComparer.OrdinalIgnoreCase))
+                                            {
+                                                if (row.ReferenceTargetFileIds.TryGetValue(header, out var targetFileId))
+                                                {
+                                                    <a asp-area="Data"
+                                                       asp-controller="Tabular"
+                                                       asp-action="FilePivot"
+                                                       asp-route-fileId="@targetFileId"
+                                                       style="color:#58a6ff;text-decoration:none;">
+                                                        @(value ?? "")
+                                                    </a>
+                                                }
+                                                else
+                                                {
+                                                    @(value ?? "")
+                                                }
+                                            }
+                                            else if (double.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out var dInv))
                                             {
                                                 @Math.Round(dInv, Model.DecimalPlaces).ToString($"F{Model.DecimalPlaces}", CultureInfo.InvariantCulture)
                                             }
@@ -922,16 +939,22 @@
                             </span>
                         </td>
                     </tr>
-                    <%-- Righe statistiche: collassate per default, popolate via fetch al primo expand --%>
                         <tr class="tp-stats-row" style="display:none;">
                             <th colspan="@staticFooterColumns" style="font-size:.76rem;color:#8b949e;">Max</th>
                             @foreach (var header in Model.Headers)
                             {
-                                <td class="tp-stat-cell"
-                                    data-stat-column="@header"
-                                    data-stat-type="max"
-                                    style="font-family:monospace;font-size:.76rem;white-space:nowrap;color:#c9d1d9;">
-                                </td>
+                                if (Model.ReferenceHeaders.Contains(header, StringComparer.OrdinalIgnoreCase))
+                                {
+                                    <td></td>
+                                }
+                                else
+                                {
+                                    <td class="tp-stat-cell"
+                                        data-stat-column="@header"
+                                        data-stat-type="max"
+                                        style="font-family:monospace;font-size:.76rem;white-space:nowrap;color:#c9d1d9;">
+                                    </td>
+                                }
                             }
                             @foreach (var range in Model.RangeHeaders)
                             {
@@ -942,11 +965,18 @@
                             <th colspan="@staticFooterColumns" style="font-size:.76rem;color:#8b949e;">Media</th>
                             @foreach (var header in Model.Headers)
                             {
-                                <td class="tp-stat-cell"
-                                    data-stat-column="@header"
-                                    data-stat-type="mean"
-                                    style="font-family:monospace;font-size:.76rem;white-space:nowrap;color:#c9d1d9;">
-                                </td>
+                                if (Model.ReferenceHeaders.Contains(header, StringComparer.OrdinalIgnoreCase))
+                                {
+                                    <td></td>
+                                }
+                                else
+                                {
+                                    <td class="tp-stat-cell"
+                                        data-stat-column="@header"
+                                        data-stat-type="mean"
+                                        style="font-family:monospace;font-size:.76rem;white-space:nowrap;color:#c9d1d9;">
+                                    </td>
+                                }
                             }
                             @foreach (var range in Model.RangeHeaders)
                             {
@@ -957,11 +987,18 @@
                             <th colspan="@staticFooterColumns" style="font-size:.76rem;color:#8b949e;">Min</th>
                             @foreach (var header in Model.Headers)
                             {
-                                <td class="tp-stat-cell"
-                                    data-stat-column="@header"
-                                    data-stat-type="min"
-                                    style="font-family:monospace;font-size:.76rem;white-space:nowrap;color:#c9d1d9;">
-                                </td>
+                                if (Model.ReferenceHeaders.Contains(header, StringComparer.OrdinalIgnoreCase))
+                                {
+                                    <td></td>
+                                }
+                                else
+                                {
+                                    <td class="tp-stat-cell"
+                                        data-stat-column="@header"
+                                        data-stat-type="min"
+                                        style="font-family:monospace;font-size:.76rem;white-space:nowrap;color:#c9d1d9;">
+                                    </td>
+                                }
                             }
                             @foreach (var range in Model.RangeHeaders)
                             {
@@ -972,11 +1009,18 @@
                             <th colspan="@staticFooterColumns" style="font-size:.76rem;color:#8b949e;">Dev. std</th>
                             @foreach (var header in Model.Headers)
                             {
-                                <td class="tp-stat-cell"
-                                    data-stat-column="@header"
-                                    data-stat-type="stdDev"
-                                    style="font-family:monospace;font-size:.76rem;white-space:nowrap;color:#c9d1d9;">
-                                </td>
+                                if (Model.ReferenceHeaders.Contains(header, StringComparer.OrdinalIgnoreCase))
+                                {
+                                    <td></td>
+                                }
+                                else
+                                {
+                                    <td class="tp-stat-cell"
+                                        data-stat-column="@header"
+                                        data-stat-type="stdDev"
+                                        style="font-family:monospace;font-size:.76rem;white-space:nowrap;color:#c9d1d9;">
+                                    </td>
+                                }
                             }
                             @foreach (var range in Model.RangeHeaders)
                             {

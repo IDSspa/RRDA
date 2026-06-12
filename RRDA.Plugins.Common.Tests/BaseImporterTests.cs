@@ -1,3 +1,6 @@
+using DocumentFormat.OpenXml;
+using DocumentFormat.OpenXml.Packaging;
+using DocumentFormat.OpenXml.Spreadsheet;
 using RRDA.Core;
 using RRDA.Core.Validator;
 using Xunit;
@@ -73,6 +76,35 @@ public sealed class BaseImporterTests
             error.Contains("non dichiara", StringComparison.OrdinalIgnoreCase));
     }
 
+    [Fact]
+    public async Task ImportAsync_PropagatesReferenceMetadataAndValue()
+    {
+        var importer = new ReferenceImporter();
+        var config = new ValidationConfig
+        {
+            SubjectKeyField = importer.SubjectKeyDefinedName,
+            Sheets = [new Sheet { Name = "Procedura" }],
+            FieldRules =
+            [
+                new FieldRule
+                {
+                    DefinedName = "SN_ALI",
+                    ReferenceReportType = "ALI",
+                    ReferenceKeyField = "Serial"
+                }
+            ]
+        };
+        using var workbook = CreateWorkbook("SN_ALI", "12345");
+
+        var result = await importer.ImportAsync(workbook, config);
+
+        var reference = Assert.Single(result.Entities!).Reference;
+        Assert.NotNull(reference);
+        Assert.Equal("ALI", reference.TargetReportTypeKey);
+        Assert.Equal("Serial", reference.TargetKeyField);
+        Assert.Equal("12345", reference.TargetKeyValue);
+    }
+
     private class CustomImporter : BaseImporter
     {
         public override string Name => "CUSTOM";
@@ -126,5 +158,61 @@ public sealed class BaseImporterTests
     private sealed class MissingSubjectKeyImporter : CustomImporter
     {
         public override string SubjectKeyDefinedName => string.Empty;
+    }
+
+    private sealed class ReferenceImporter : BaseImporter
+    {
+        public override string Name => "RADAR";
+        public override string Version => "1.0.0";
+        public override string SupportedFileExtension => ".xlsx";
+        public override string MatchingPattern => "RADAR";
+        public override ReportSubjectKind SubjectKind => ReportSubjectKind.Radar;
+        public override string SubjectKeyDefinedName => "Serial";
+    }
+
+    private static MemoryStream CreateWorkbook(string definedName, string value)
+    {
+        var stream = new MemoryStream();
+        using (var document = SpreadsheetDocument.Create(
+                   stream,
+                   SpreadsheetDocumentType.Workbook,
+                   autoSave: true))
+        {
+            var workbookPart = document.AddWorkbookPart();
+            workbookPart.Workbook = new Workbook();
+            var sharedStringsPart = workbookPart.AddNewPart<SharedStringTablePart>();
+            sharedStringsPart.SharedStringTable = new SharedStringTable(
+                new SharedStringItem(new Text(value)));
+            var worksheetPart = workbookPart.AddNewPart<WorksheetPart>();
+            worksheetPart.Worksheet = new Worksheet(
+                new SheetData(
+                    new Row(
+                        new Cell
+                        {
+                            CellReference = "A1",
+                            DataType = CellValues.SharedString,
+                            CellValue = new CellValue("0")
+                        },
+                        new Cell
+                        {
+                            CellReference = "A2",
+                            DataType = CellValues.Number,
+                            CellValue = new CellValue("1")
+                        })));
+
+            workbookPart.Workbook.Append(new Sheets(
+                new Sheet
+                {
+                    Id = workbookPart.GetIdOfPart(worksheetPart),
+                    SheetId = 1,
+                    Name = "Procedura"
+                }));
+            workbookPart.Workbook.Append(new DefinedNames(
+                new DefinedName { Name = definedName, Text = "Procedura!$A$1" },
+                new DefinedName { Name = "Serial", Text = "Procedura!$A$2" }));
+        }
+
+        stream.Position = 0;
+        return stream;
     }
 }

@@ -46,6 +46,11 @@ msbuild RRDA.RepImp.Setup\RRDA.RepImp.Setup.wixproj /p:Configuration=Release /p:
 
 - L'installer è per-machine e installa l'applicazione in `Program Files\IDS\RRDA RepImp`.
 - I plugin vengono installati nella sottocartella `Program Files\IDS\RRDA RepImp\plugins`.
+- I validatori creati dall'applicazione vengono salvati in
+  `%LOCALAPPDATA%\IDS\RRDA RepImp\validators`, scrivibile dall'utente standard.
+  La destinazione può essere modificata nelle impostazioni di RepImp.
+- L'MSI supporta l'aggiornamento e la reinstallazione anche quando il numero di
+  versione del nuovo pacchetto coincide con quello già installato.
 - Lo script SQL viene installato nella sottocartella `Program Files\IDS\RRDA RepImp\Database`.
 - `UnitMappings.xml` e `ImportBanList.xml` vengono installati nella cartella principale dell'applicazione.
 - Vengono creati collegamenti nel menu Start e sul desktop.

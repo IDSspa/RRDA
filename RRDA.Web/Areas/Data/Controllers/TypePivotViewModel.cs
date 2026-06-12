@@ -5,6 +5,7 @@
         public int ReportTypeId { get; set; }
         public string ReportTypeKey { get; set; } = string.Empty;
         public List<string> Headers { get; set; } = [];
+        public List<string> ReferenceHeaders { get; set; } = [];
         public List<TypePivotRangeDescriptor> RangeHeaders { get; set; } = [];
         public bool UseCompactRanges { get; set; } = true;
         public List<TypePivotRow> Rows { get; set; } = [];

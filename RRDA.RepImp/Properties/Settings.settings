@@ -5,6 +5,9 @@
     <Setting Name="PluginsFolder" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
     </Setting>
+    <Setting Name="ValidatorsFolder" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
     <Setting Name="ReportsFolder" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
     </Setting>

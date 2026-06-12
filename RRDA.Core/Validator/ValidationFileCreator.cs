@@ -1,5 +1,6 @@
 ﻿using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Spreadsheet;
+using RRDA.Core;
 using System.Globalization;
 using System.Xml.Linq;
 
@@ -28,14 +29,15 @@ namespace RRDA.Core.Validator
             string? unitMappingsPath = null,
             bool failOnError = true,
             string? culture = null,
-            string? importBanListPath = null)
+            string? importBanListPath = null,
+            IReadOnlyList<ReportReferenceDefinition>? referenceDefinitions = null)
         {
             if (string.IsNullOrWhiteSpace(xlsxPath)) throw new ArgumentNullException(nameof(xlsxPath));
             if (string.IsNullOrWhiteSpace(outputXmlPath)) throw new ArgumentNullException(nameof(outputXmlPath));
 
             using var inFs = File.OpenRead(xlsxPath);
             using var outFs = File.Create(outputXmlPath);
-            CreateFromStream(inFs, outFs, subjectKeyDefinedName, unitMappingsPath, failOnError, culture, importBanListPath);
+            CreateFromStream(inFs, outFs, subjectKeyDefinedName, unitMappingsPath, failOnError, culture, importBanListPath, referenceDefinitions);
         }
         /// <summary>
         /// Crea il file di validazione scrivendo l'XML su uno stream di output.
@@ -55,13 +57,15 @@ namespace RRDA.Core.Validator
             string? unitMappingsPath = null,
             bool failOnError = true,
             string? culture = null,
-            string? importBanListPath = null)
+            string? importBanListPath = null,
+            IReadOnlyList<ReportReferenceDefinition>? referenceDefinitions = null)
         {
             ArgumentNullException.ThrowIfNull(xlsxStream);
             ArgumentNullException.ThrowIfNull(outputXmlStream);
             ArgumentException.ThrowIfNullOrWhiteSpace(subjectKeyDefinedName);
             var unitMappings = UnitMappingResolver.Load(unitMappingsPath);
             var importBanList = ImportBanListResolver.Load(importBanListPath);
+            var referencesByDefinedName = ValidateReferenceDefinitions(referenceDefinitions);
 
             // SpreadsheetDocument richiede uno stream seekable: copiamo se necessario
             Stream input = xlsxStream;
@@ -114,6 +118,19 @@ namespace RRDA.Core.Validator
 
                     throw new InvalidDataException(
                         $"Il DefinedName SubjectKey '{subjectKeyDefinedName}' dichiarato dal plugin non è presente nel workbook.");
+                }
+
+                var missingReferences = referencesByDefinedName.Keys
+                    .Where(referenceName => !definedNames.Any(dn => string.Equals(
+                        dn.Name?.Value,
+                        referenceName,
+                        StringComparison.OrdinalIgnoreCase)))
+                    .ToList();
+                if (missingReferences.Count > 0)
+                {
+                    throw new InvalidDataException(
+                        $"I DefinedNames di riferimento dichiarati dal plugin non sono presenti nel workbook: "
+                        + string.Join(", ", missingReferences));
                 }
 
                 // root conforme a ValidationConfig.xsd
@@ -180,6 +197,12 @@ namespace RRDA.Core.Validator
                             fieldEl.SetAttributeValue("unit", inferredUnit);
                     }
 
+                    if (referencesByDefinedName.TryGetValue(dnName, out var reference))
+                    {
+                        fieldEl.SetAttributeValue("referenceReportType", reference.TargetReportTypeKey);
+                        fieldEl.SetAttributeValue("referenceKeyField", reference.TargetKeyField);
+                    }
+
                     fieldsEl.Add(fieldEl);
                 }
                 // anche se non ci sono defined names, Fields deve esistere (XSD non lo rende opzionale)
@@ -233,6 +256,26 @@ namespace RRDA.Core.Validator
         }
         private static bool IsNumericType(string inferredType)
             => inferredType is "int" or "double";
+
+        private static Dictionary<string, ReportReferenceDefinition> ValidateReferenceDefinitions(
+            IReadOnlyList<ReportReferenceDefinition>? definitions)
+        {
+            var result = new Dictionary<string, ReportReferenceDefinition>(StringComparer.OrdinalIgnoreCase);
+            foreach (var definition in definitions ?? [])
+            {
+                ArgumentException.ThrowIfNullOrWhiteSpace(definition.DefinedName);
+                ArgumentException.ThrowIfNullOrWhiteSpace(definition.TargetReportTypeKey);
+                ArgumentException.ThrowIfNullOrWhiteSpace(definition.TargetKeyField);
+
+                if (!result.TryAdd(definition.DefinedName, definition))
+                {
+                    throw new InvalidDataException(
+                        $"Il DefinedName di riferimento '{definition.DefinedName}' è dichiarato più volte.");
+                }
+            }
+
+            return result;
+        }
 
         private static string ReadCellText(Cell cell, SharedStringTable? sharedStrings)
         {

@@ -61,6 +61,94 @@
     </div>
 </div>
 
+<!-- Correlazioni -->
+<div class="rrda-card mb-3">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 style="margin:0;color:#c9d1d9;font-weight:600;">Correlazioni</h6>
+        <span style="color:#8b949e;font-size:.78rem;">@Model.References.Count</span>
+    </div>
+
+    @if (Model.References.Count == 0)
+    {
+        <p style="color:#8b949e;font-size:.85rem;margin:0 0 1rem;">Nessuna correlazione presente.</p>
+    }
+    else
+    {
+        <table class="table table-borderless mb-3">
+            <thead>
+                <tr>
+                    <th>Origine</th>
+                    <th>Direzione</th>
+                    <th>Campo</th>
+                    <th>Report correlato</th>
+                    <th>Stato</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var reference in Model.References)
+                {
+                    <tr>
+                        <td>@reference.Origin</td>
+                        <td>@(reference.IsIncoming ? "In ingresso" : "In uscita")</td>
+                        <td style="font-family:monospace;">@(reference.SourceField ?? "—")</td>
+                        <td>
+                            <span style="font-family:monospace;">@reference.TargetReportTypeKey</span>
+                            @if (!string.IsNullOrWhiteSpace(reference.TargetKeyValue))
+                            {
+                                <span style="color:#8b949e;"> · @reference.TargetKeyValue</span>
+                            }
+                        </td>
+                        <td>
+                            @if (reference.Targets.Count == 0)
+                            {
+                                <span style="color:#d29922;">Non risolto</span>
+                            }
+                            else
+                            {
+                                @foreach (var target in reference.Targets)
+                                {
+                                    <a asp-action="Details" asp-route-id="@target.FileId"
+                                       style="color:#58a6ff;text-decoration:none;margin-right:.5rem;">
+                                        @target.FileName
+                                    </a>
+                                }
+                            }
+                        </td>
+                        <td>
+                            @if (Model.CanManageReferences
+                                && !reference.IsIncoming
+                                && reference.Origin == RRDA.Data.ReportReferenceOrigin.Manual)
+                            {
+                                <form asp-action="DeleteManualReference" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@reference.Id" />
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">Rimuovi</button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+
+    @if (Model.CanManageReferences && Model.ManualReferenceTargets.Count > 0)
+    {
+        <form asp-action="AddManualReference" method="post" class="d-flex gap-2 align-items-end">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="sourceReportFileId" value="@Model.File.Id" />
+            <div style="min-width:320px;">
+                <label class="form-label">Aggiungi collegamento manuale</label>
+                <select class="form-select" name="targetReportFileId" asp-items="Model.ManualReferenceTargets"></select>
+            </div>
+            <button type="submit" class="btn-rrda-primary" style="border-radius:6px;padding:.45rem .9rem;">
+                Collega
+            </button>
+        </form>
+    }
+</div>
+
 <!-- ── Entità per tipo ── -->
 <div class="rrda-card mb-3">
     <div class="d-flex justify-content-between align-items-center mb-3">

@@ -9,6 +9,7 @@
         public string? BatchName { get; set; }
         public string? SubjectKey { get; set; }
         public Dictionary<string, string?> Values { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+        public Dictionary<string, int> ReferenceTargetFileIds { get; set; } = new(StringComparer.OrdinalIgnoreCase);
         public Dictionary<string, TypePivotRangeCell> Ranges { get; set; } = new(StringComparer.OrdinalIgnoreCase);
     }
 }

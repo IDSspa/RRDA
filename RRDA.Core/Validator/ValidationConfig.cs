@@ -142,10 +142,26 @@ namespace RRDA.Core.Validator
                     fr.MaxLength = ml;
 
                 fr.Unit = (string?)f.Attribute("unit");
+                fr.ReferenceReportType = (string?)f.Attribute("referenceReportType");
+                fr.ReferenceKeyField = (string?)f.Attribute("referenceKeyField");
+
+                if (string.IsNullOrWhiteSpace(fr.ReferenceReportType)
+                    != string.IsNullOrWhiteSpace(fr.ReferenceKeyField))
+                {
+                    throw new InvalidDataException(
+                        $"Il campo '{fr.DefinedName}' deve dichiarare entrambi gli attributi "
+                        + "'referenceReportType' e 'referenceKeyField'.");
+                }
 
                 var rangeNode = f.Element("Range");
                 if (rangeNode != null)
                 {
+                    if (!string.IsNullOrWhiteSpace(fr.ReferenceReportType))
+                    {
+                        throw new InvalidDataException(
+                            $"Il campo di riferimento '{fr.DefinedName}' non può essere un range.");
+                    }
+
                     fr.Range = new Range
                     {
                         row_count = (int?)rangeNode.Attribute("rowCount") ?? 0,

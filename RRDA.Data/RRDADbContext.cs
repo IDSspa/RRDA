@@ -11,6 +11,7 @@ namespace RRDA.Data
         public DbSet<ReportBatch> ReportBatches { get; set; } = null!;
         public DbSet<AppUser> AppUsers { get; set; } = null!;
         public DbSet<AuditEvent> AuditEvents { get; set; } = null!;
+        public DbSet<ReportReference> ReportReferences { get; set; } = null!;
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<AuditEvent>(b =>
@@ -199,6 +200,62 @@ namespace RRDA.Data
                 b.Property(x => x.LastLoginAt)
                     .HasColumnType("datetime2");
 
+            });
+
+            modelBuilder.Entity<ReportReference>(b =>
+            {
+                b.ToTable("ReportReferences", table =>
+                {
+                    table.HasCheckConstraint(
+                        "CK_ReportReferences_ImportedShape",
+                        "[Origin] <> 0 OR ([SourceReportEntityId] IS NOT NULL AND [TargetReportTypeId] IS NOT NULL AND [TargetReportFileId] IS NULL AND [TargetKeyField] IS NOT NULL)");
+                    table.HasCheckConstraint(
+                        "CK_ReportReferences_ManualShape",
+                        "[Origin] <> 1 OR ([SourceReportEntityId] IS NULL AND [TargetReportFileId] IS NOT NULL AND [TargetReportTypeId] IS NULL AND [TargetKeyField] IS NULL AND [TargetKeyValue] IS NULL)");
+                });
+                b.HasKey(x => x.Id);
+
+                b.Property(x => x.Origin)
+                    .HasConversion<int>()
+                    .IsRequired();
+                b.Property(x => x.TargetKeyField)
+                    .HasMaxLength(200);
+                b.Property(x => x.TargetKeyValue)
+                    .HasMaxLength(400);
+                b.Property(x => x.CreatedAtUtc)
+                    .HasColumnType("datetime2")
+                    .IsRequired();
+                b.Property(x => x.CreatedBy)
+                    .HasMaxLength(256);
+
+                b.HasOne(x => x.SourceReportFile)
+                    .WithMany(x => x.OutgoingReferences)
+                    .HasForeignKey(x => x.SourceReportFileId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                b.HasOne(x => x.SourceReportEntity)
+                    .WithMany()
+                    .HasForeignKey(x => x.SourceReportEntityId)
+                    .OnDelete(DeleteBehavior.NoAction);
+
+                b.HasOne(x => x.TargetReportFile)
+                    .WithMany(x => x.IncomingManualReferences)
+                    .HasForeignKey(x => x.TargetReportFileId)
+                    .OnDelete(DeleteBehavior.NoAction);
+
+                b.HasOne(x => x.TargetReportType)
+                    .WithMany()
+                    .HasForeignKey(x => x.TargetReportTypeId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                b.HasIndex(x => x.SourceReportFileId);
+                b.HasIndex(x => x.SourceReportEntityId)
+                    .IsUnique()
+                    .HasFilter("[SourceReportEntityId] IS NOT NULL");
+                b.HasIndex(x => new { x.TargetReportTypeId, x.TargetKeyValue });
+                b.HasIndex(x => new { x.SourceReportFileId, x.TargetReportFileId })
+                    .IsUnique()
+                    .HasFilter("[TargetReportFileId] IS NOT NULL");
             });
 
             base.OnModelCreating(modelBuilder);

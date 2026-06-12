@@ -45,6 +45,8 @@ public sealed class TypePivotMetadata
 {
     public List<string> AllMeasureHeaders { get; init; } = [];
     public List<string> VisibleHeaders { get; init; } = [];
+    public List<string> ReferenceHeaders { get; init; } = [];
+    public List<string> StatisticalHeaders { get; init; } = [];
     public List<string> ExpandedRangeHeaders { get; init; } = [];
     public List<TypePivotRangeDescriptor> RangeHeaders { get; init; } = [];
     public Dictionary<string, string?> HeaderUnits { get; init; } = new(StringComparer.OrdinalIgnoreCase);

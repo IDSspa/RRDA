@@ -4,7 +4,7 @@ using RRDA.Core.Validator;
 
 namespace RRDA.Plugins.Common
 {
-    public abstract class BaseImporter : IReportImporter
+    public abstract class BaseImporter : IReportImporter, IReportReferenceProvider
     {
         // ------------------------------------------------------------------ //
         //  Proprietà identitarie — override obbligatorio nel plugin concreto  //
@@ -15,6 +15,7 @@ namespace RRDA.Plugins.Common
         public abstract string MatchingPattern { get; }
         public abstract ReportSubjectKind SubjectKind { get; }
         public abstract string SubjectKeyDefinedName { get; }
+        public virtual IReadOnlyList<ReportReferenceDefinition> ReferenceDefinitions => [];
         /// <summary>
         /// Check if fileName can be imported by the implemented plugin class
         /// </summary>
@@ -240,7 +241,8 @@ namespace RRDA.Plugins.Common
                                 ["col_index"] = "-1",
                                 ["is_subject_key"] = isSubjectKey ? "1" : "0",
                                 ["data_type"] = SerializeDataType(rule.DataType)
-                            }
+                            },
+                            Reference = CreateReference(rule, cellValue)
                         });
                     }
                     else
@@ -312,7 +314,28 @@ namespace RRDA.Plugins.Common
                     throw new InvalidDataException(
                         $"L'entità importata '{entity.Key}' non contiene la proprietà obbligatoria 'value'.");
                 }
+
+                if (entity.Reference is not null
+                    && (string.IsNullOrWhiteSpace(entity.Reference.TargetReportTypeKey)
+                        || string.IsNullOrWhiteSpace(entity.Reference.TargetKeyField)))
+                {
+                    throw new InvalidDataException(
+                        $"Il riferimento importato dall'entità '{entity.Key}' è incompleto.");
+                }
             }
+        }
+
+        private static ReportReferenceDto? CreateReference(FieldRule rule, string? value)
+        {
+            if (string.IsNullOrWhiteSpace(rule.ReferenceReportType))
+                return null;
+
+            return new ReportReferenceDto
+            {
+                TargetReportTypeKey = rule.ReferenceReportType,
+                TargetKeyField = rule.ReferenceKeyField!,
+                TargetKeyValue = value
+            };
         }
 
         public static string SerializeDataType(FieldDataType dt) => dt switch

@@ -71,6 +71,112 @@ public sealed class ImportResultRepositoryTests
         Assert.Single(verificationDb.ReportFiles);
     }
 
+    [Fact]
+    public async Task SaveAsync_PersistsImportedReferenceWithoutResolvedTargetFile()
+    {
+        var factory = CreateDbContextFactory();
+        await using (var db = factory.CreateDbContext())
+        {
+            db.ReportTypes.Add(CreateReportType("RADAR"));
+            db.ReportTypes.Add(CreateReportType("ALI"));
+            await db.SaveChangesAsync();
+        }
+
+        IImportResultRepository repository = new ImportResultRepository(factory);
+        var result = new ImportResult
+        {
+            ReportTypeKey = "RADAR",
+            Success = true,
+            Entities =
+            [
+                new ReportEntityDto
+                {
+                    EntityKind = "Composizione",
+                    Key = "SN_ALI",
+                    Properties = new Dictionary<string, string>
+                    {
+                        ["value"] = "12345",
+                        ["data_type"] = "string"
+                    },
+                    Reference = new ReportReferenceDto
+                    {
+                        TargetReportTypeKey = "ALI",
+                        TargetKeyField = "Serial",
+                        TargetKeyValue = "12345"
+                    }
+                }
+            ]
+        };
+
+        await repository.SaveAsync(
+            new ImportFileItem(
+                "radar.xlsx",
+                100,
+                DateTime.UtcNow,
+                "RADAR",
+                @"C:\reports\radar.xlsx"),
+            result);
+
+        await using var verificationDb = factory.CreateDbContext();
+        var reference = await verificationDb.ReportReferences
+            .Include(item => item.TargetReportType)
+            .SingleAsync();
+        Assert.Equal(ReportReferenceOrigin.Imported, reference.Origin);
+        Assert.Equal("ALI", reference.TargetReportType!.Key);
+        Assert.Equal("Serial", reference.TargetKeyField);
+        Assert.Equal("12345", reference.TargetKeyValue);
+        Assert.Null(reference.TargetReportFileId);
+    }
+
+    [Fact]
+    public async Task SaveAsync_ReplaceRemovesManualReferencesToReplacedFile()
+    {
+        var factory = CreateDbContextFactory();
+        await using (var db = factory.CreateDbContext())
+        {
+            var targetType = CreateReportType();
+            var sourceType = CreateReportType("RADAR");
+            var target = CreateReportFile(targetType, @"C:\old\report.xlsx");
+            var source = new ReportFile
+            {
+                FileName = "radar.xlsx",
+                FullPath = @"C:\radar.xlsx",
+                UploadedAt = DateTime.UtcNow,
+                ReportType = sourceType,
+                Entities = [],
+                FileLastModify = DateTime.UtcNow
+            };
+            db.ReportReferences.Add(new ReportReference
+            {
+                SourceReportFile = source,
+                TargetReportFile = target,
+                Origin = ReportReferenceOrigin.Manual,
+                CreatedAtUtc = DateTime.UtcNow
+            });
+            await db.SaveChangesAsync();
+        }
+
+        IImportResultRepository repository = new ImportResultRepository(factory);
+        await repository.SaveAsync(
+            new ImportFileItem(
+                "report.xlsx",
+                100,
+                DateTime.UtcNow,
+                "TEST",
+                @"C:\new\report.xlsx"),
+            new ImportResult
+            {
+                ReportTypeKey = "TEST",
+                Success = true,
+                Entities = []
+            },
+            duplicateStrategy: DuplicateImportStrategy.Replace);
+
+        await using var verificationDb = factory.CreateDbContext();
+        Assert.Empty(verificationDb.ReportReferences);
+        Assert.Single(verificationDb.ReportFiles.Where(file => file.ReportType.Key == "TEST"));
+    }
+
     private static IDbContextFactory<RRDADbContext> CreateDbContextFactory()
     {
         var options = new DbContextOptionsBuilder<RRDADbContext>()
@@ -80,11 +186,11 @@ public sealed class ImportResultRepositoryTests
         return new TestDbContextFactory(options);
     }
 
-    private static ReportType CreateReportType() =>
+    private static ReportType CreateReportType(string key = "TEST") =>
         new()
         {
-            Key = "TEST",
-            Name = "Test",
+            Key = key,
+            Name = key,
             Files = []
         };
 

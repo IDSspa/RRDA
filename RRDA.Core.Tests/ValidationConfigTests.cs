@@ -48,6 +48,41 @@ public sealed class ValidationConfigTests
     }
 
     [Fact]
+    public void Load_ReadsReferenceMetadata()
+    {
+        using var stream = Xml("""
+            <ValidationConfig subjectKeyField="Serial">
+              <FieldRules>
+                <Field definedName="SN_ALI"
+                       referenceReportType="ALI"
+                       referenceKeyField="Serial" />
+              </FieldRules>
+            </ValidationConfig>
+            """);
+
+        var rule = Assert.Single(ValidationConfig.Load(stream).FieldRules);
+
+        Assert.Equal("ALI", rule.ReferenceReportType);
+        Assert.Equal("Serial", rule.ReferenceKeyField);
+    }
+
+    [Fact]
+    public void Load_RejectsIncompleteReferenceMetadata()
+    {
+        using var stream = Xml("""
+            <ValidationConfig subjectKeyField="Serial">
+              <FieldRules>
+                <Field definedName="SN_ALI" referenceReportType="ALI" />
+              </FieldRules>
+            </ValidationConfig>
+            """);
+
+        var exception = Assert.Throws<InvalidDataException>(() => ValidationConfig.Load(stream));
+
+        Assert.Contains("entrambi", exception.Message);
+    }
+
+    [Fact]
     public void Load_RejectsDtd()
     {
         using var stream = Xml("""

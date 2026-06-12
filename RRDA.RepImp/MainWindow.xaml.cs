@@ -282,7 +282,9 @@ namespace RRDA.RepImp
             if (string.IsNullOrWhiteSpace(pluginName))
                 return null;
 
-            var path = Path.Combine(ResolvePluginsFolder(), $"{pluginName}.xml");
+            var path = Path.Combine(
+                ConfiguredPathResolver.ResolveValidatorsFolder(Properties.Settings.Default.ValidatorsFolder),
+                $"{pluginName}.xml");
             return File.Exists(path) ? path : null;
         }
 
@@ -1240,34 +1242,9 @@ namespace RRDA.RepImp
                 return;
             }
 
-            // Determina la cartella del plugin (dove salvare l'xml). Se non disponibile, fallback a impostazione PluginsFolder.
-            string? pluginFolder = null;
-            try
-            {
-                var asmLocation = plugin.GetType().Assembly.Location;
-                if (!string.IsNullOrWhiteSpace(asmLocation))
-                {
-                    pluginFolder = Path.GetDirectoryName(asmLocation);
-                }
-            }
-            catch
-            {
-                pluginFolder = null;
-            }
-
-            if (string.IsNullOrWhiteSpace(pluginFolder))
-            {
-                pluginFolder = ResolvePluginsFolder();
-            }
-
-            if (!Directory.Exists(pluginFolder))
-            {
-                Log($"Cartella plugin inesistente: {pluginFolder}");
-                MessageBox.Show(this, $"Cartella plugin non trovata: {pluginFolder}", "Errore", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            var outputFile = Path.Combine(pluginFolder, $"{plugin.Name}.xml");
+            var validatorsFolder = ConfiguredPathResolver.ResolveValidatorsFolder(
+                Properties.Settings.Default.ValidatorsFolder);
+            var outputFile = Path.Combine(validatorsFolder, $"{plugin.Name}.xml");
 
             if (File.Exists(outputFile))
             {
@@ -1285,12 +1262,16 @@ namespace RRDA.RepImp
 
             try
             {
+                Directory.CreateDirectory(validatorsFolder);
                 ValidationFileCreator.CreateFromFile(
                     fi.FullPath,
                     outputFile,
                     plugin.SubjectKeyDefinedName,
                     ConfiguredPathResolver.ResolveFile(Properties.Settings.Default.UnitMappings),
-                    importBanListPath: ConfiguredPathResolver.ResolveFile(Properties.Settings.Default.ImportBanList));
+                    importBanListPath: ConfiguredPathResolver.ResolveFile(Properties.Settings.Default.ImportBanList),
+                    referenceDefinitions: plugin is IReportReferenceProvider referenceProvider
+                        ? referenceProvider.ReferenceDefinitions
+                        : []);
                 if (FilesListView.ItemsSource is List<RepImpFileItem> fileItems)
                 {
                     for (var index = 0; index < fileItems.Count; index++)

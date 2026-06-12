@@ -55,6 +55,8 @@
 									<xs:attribute name="maxLength" type="xs:integer" use="optional"/>
 									<xs:attribute name="table" type="xs:string" use="optional"/>
 									<xs:attribute name="column" type="xs:string" use="optional"/>
+									<xs:attribute name="referenceReportType" type="xs:string" use="optional"/>
+									<xs:attribute name="referenceKeyField" type="xs:string" use="optional"/>
 								</xs:complexType>
 							</xs:element>
 						</xs:sequence>

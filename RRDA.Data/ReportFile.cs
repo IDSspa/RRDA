@@ -31,5 +31,7 @@
         // Data dell'ultima modifica del file (secondo il filesystem)
         public required DateTime FileLastModify { get; set; }
 
+        public ICollection<ReportReference> OutgoingReferences { get; set; } = [];
+        public ICollection<ReportReference> IncomingManualReferences { get; set; } = [];
     }
 }

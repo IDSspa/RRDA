@@ -7,7 +7,8 @@
            Scope="perMachine"
            UpgradeCode="b05e7967-17ea-434c-b1ff-e7dfa749a5f3">
 
-    <MajorUpgrade DowngradeErrorMessage="Una versione piu recente di [ProductName] e gia installata." />
+    <MajorUpgrade AllowSameVersionUpgrades="yes"
+                  DowngradeErrorMessage="Una versione piu recente di [ProductName] e gia installata." />
     <MediaTemplate EmbedCab="yes" />
 
     <Icon Id="RepImpIcon" SourceFile="..\RRDA.RepImp\Assets\RepImp.ico" />

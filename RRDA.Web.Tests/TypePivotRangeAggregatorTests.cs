@@ -45,8 +45,26 @@ public sealed class TypePivotRangeAggregatorTests
         Assert.Equal([10d, 20d], result.Points.Select(point => point.Value));
     }
 
-    private static PivotPair Pair(string value, string row, string col) => new()
+    [Fact]
+    public void BuildDescriptors_ProvidesExpandedHeadersFromFilePairs()
     {
+        var pairs = new[]
+        {
+            Pair("30", "0", "2", "range_3"),
+            Pair("10", "0", "0", "range_1"),
+            Pair("20", "0", "1", "range_2")
+        };
+
+        var result = TypePivotRangeAggregator.BuildDescriptors(pairs);
+
+        var range = Assert.Single(result);
+        Assert.Equal("Range", range.Name);
+        Assert.Equal(["range_1", "range_2", "range_3"], range.ExpandedHeaders);
+    }
+
+    private static PivotPair Pair(string value, string row, string col, string key = "") => new()
+    {
+        Key = key,
         Value = value,
         RowIndex = row,
         ColIndex = col,
