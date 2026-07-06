@@ -97,6 +97,24 @@ public sealed class ValidationConfigTests
         Assert.Throws<InvalidDataException>(() => ValidationConfig.Load(stream));
     }
 
+    [Fact]
+    public void Load_IgnoresExternalSchemaLocationAndUsesEmbeddedSchema()
+    {
+        using var stream = Xml("""
+            <ValidationConfig xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                              xsi:noNamespaceSchemaLocation="missing/ValidationConfig.xsd"
+                              subjectKeyField="Serial">
+              <FieldRules>
+                <Field definedName="Serial" type="int" />
+              </FieldRules>
+            </ValidationConfig>
+            """);
+
+        var config = ValidationConfig.Load(stream);
+
+        Assert.Equal("Serial", config.SubjectKeyField);
+    }
+
     private static MemoryStream Xml(string value) =>
         new(Encoding.UTF8.GetBytes(value));
 }

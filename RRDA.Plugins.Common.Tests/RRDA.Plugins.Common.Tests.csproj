@@ -18,7 +18,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\RRDA.Plugin.Dummy\RRDA.Plugins.Dummy.csproj" />
+    <ProjectReference Include="..\RRDA.Plugins.ALI\RRDA.Plugins.ALI.csproj"
+                      AdditionalProperties="CopyToSharedArtifacts=false" />
     <ProjectReference Include="..\RRDA.Plugins.Common\RRDA.Plugins.Common.csproj" />
   </ItemGroup>
 

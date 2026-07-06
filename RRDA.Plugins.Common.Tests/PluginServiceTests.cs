@@ -1,5 +1,5 @@
 using RRDA.Plugins.Common;
-using RRDA.Plugins.Dummy;
+using RRDA.Plugins.ALI;
 using Xunit;
 
 namespace RRDA.Plugins.Common.Tests;
@@ -35,13 +35,13 @@ public sealed class PluginServiceTests
     public void LoadPlugins_ContinuesAfterInvalidAssembly()
     {
         using var directory = new TemporaryDirectory();
-        CopyDummyPlugin(directory.Path, "RRDA.Plugins.Dummy.dll");
+        CopyTestPlugin(directory.Path, "RRDA.Plugins.ALI.dll");
         File.WriteAllText(Path.Combine(directory.Path, "RRDA.Plugins.Invalid.dll"), "not an assembly");
 
         var result = _service.LoadPlugins(directory.Path);
 
         var plugin = Assert.Single(result.Plugins);
-        Assert.Equal("Dummy", plugin.Name);
+        Assert.Equal("ALI", plugin.Name);
         Assert.Single(result.Errors);
         Assert.EndsWith("RRDA.Plugins.Invalid.dll", result.Errors[0].Source);
     }
@@ -50,8 +50,8 @@ public sealed class PluginServiceTests
     public void LoadPlugins_KeepsFirstPluginWhenNamesAreDuplicated()
     {
         using var directory = new TemporaryDirectory();
-        CopyDummyPlugin(directory.Path, "RRDA.Plugins.Dummy.First.dll");
-        CopyDummyPlugin(directory.Path, "RRDA.Plugins.Dummy.Second.dll");
+        CopyTestPlugin(directory.Path, "RRDA.Plugins.ALI.First.dll");
+        CopyTestPlugin(directory.Path, "RRDA.Plugins.ALI.Second.dll");
 
         var result = _service.LoadPlugins(directory.Path);
 
@@ -60,10 +60,10 @@ public sealed class PluginServiceTests
         Assert.Contains("duplicato", error.Message, StringComparison.OrdinalIgnoreCase);
     }
 
-    private static void CopyDummyPlugin(string targetFolder, string fileName)
+    private static void CopyTestPlugin(string targetFolder, string fileName)
     {
         File.Copy(
-            typeof(DummyImporter).Assembly.Location,
+            typeof(ALIImporter).Assembly.Location,
             Path.Combine(targetFolder, fileName));
     }
 
@@ -93,15 +93,15 @@ public sealed class PluginCatalogTests
     {
         using var directory = new TemporaryDirectory();
         File.Copy(
-            typeof(DummyImporter).Assembly.Location,
-            Path.Combine(directory.Path, "RRDA.Plugins.Dummy.dll"));
+            typeof(ALIImporter).Assembly.Location,
+            Path.Combine(directory.Path, "RRDA.Plugins.ALI.dll"));
         var catalog = new PluginCatalog(new PluginService());
 
         var result = catalog.Reload(directory.Path, directory.Path);
 
         Assert.Same(result, catalog.Current);
         Assert.Equal(directory.Path, result.Folder);
-        Assert.Equal("Dummy", Assert.Single(result.Plugins).Name);
+        Assert.Equal("ALI", Assert.Single(result.Plugins).Name);
         Assert.Empty(result.Errors);
         Assert.NotEqual(DateTime.MinValue, result.LoadedAtUtc);
     }
