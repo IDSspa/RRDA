@@ -43,8 +43,8 @@ Sostituire i valori di esempio con quelli approvati per l'ambiente:
 | Parametro | Valore consigliato/esempio |
 |---|---|
 | Nome VM | `RRDA` |
-| FQDN interno del sito | `rrda.example.local` |
-| URL intranet | `https://rrda.example.local` |
+| FQDN interno del sito | `pcvrrda.ids.intranet` |
+| URL intranet | `https://pcvrrda.ids.intranet` |
 | Application pool | `RRDA.Web` |
 | Sito IIS | `RRDA.Web` |
 | Istanza SQL | `.\SQLEXPRESS` |
@@ -57,7 +57,7 @@ Sostituire i valori di esempio con quelli approvati per l'ambiente:
 | Primo amministratore | `DOMINIO\nomeutente` |
 
 Usare preferibilmente il nome DNS canonico interno della VM, per esempio
-`rrda.example.local`, e un certificato TLS emesso dalla CA aziendale per tale
+`pcvrrda.ids.intranet`, e un certificato TLS emesso dalla CA aziendale per tale
 nome. Il record DNS deve esistere soltanto nel DNS interno. Evitare di pubblicare
 il sito tramite indirizzo IP o nome temporaneo. Se si usa un alias DNS diverso
 dal nome canonico della VM, fare registrare e verificare dagli amministratori di

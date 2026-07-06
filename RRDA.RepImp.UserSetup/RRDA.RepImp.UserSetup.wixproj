@@ -1,9 +1,9 @@
 <Project Sdk="WixToolset.Sdk/7.0.0">
 
   <PropertyGroup>
-	<AcceptEula>wix7</AcceptEula>
+    <AcceptEula>wix7</AcceptEula>
     <OutputType>Package</OutputType>
-    <OutputName>RRDA.RepImp.Setup</OutputName>
+    <OutputName>RRDA.RepImp.UserSetup</OutputName>
     <Configuration Condition="'$(Configuration)' == ''">Release</Configuration>
     <Platform Condition="'$(Platform)' == ''">x64</Platform>
     <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">win-x64</RuntimeIdentifier>
@@ -14,10 +14,10 @@
     <DatabaseDir>$(MSBuildThisFileDirectory)..\artifacts\database\$(Configuration)\</DatabaseDir>
     <DatabaseScript>$(DatabaseDir)RRDA.Db.Migrations.sql</DatabaseScript>
     <DefineConstants>PublishDir=$(PublishDir);PluginsDir=$(PluginsDir);DatabaseDir=$(DatabaseDir);InstallerVersion=$(InstallerVersion)</DefineConstants>
+    <SuppressIces>ICE38;ICE61;ICE64;ICE91</SuppressIces>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\RRDA.RepImp\RRDA.RepImp.csproj" ReferenceOutputAssembly="false" />
     <PackageReference Include="WixToolset.UI.wixext" Version="7.0.0" />
   </ItemGroup>
 
@@ -49,15 +49,21 @@
   <Target Name="PublishRepImp">
     <MSBuild Projects="..\RRDA.RepImp\RRDA.RepImp.csproj"
              Targets="Restore"
-             Properties="Configuration=$(Configuration);RuntimeIdentifier=$(RuntimeIdentifier);SelfContained=$(SelfContained);PublishSingleFile=false;EnableWindowsTargeting=true" />
+             Properties="Configuration=$(Configuration);RuntimeIdentifier=$(RuntimeIdentifier);SelfContained=$(SelfContained);PublishSingleFile=false;EnableWindowsTargeting=true;RestoreUseStaticGraphEvaluation=true"
+             Condition="'$(BuildingInsideVisualStudio)' != 'true'" />
     <MSBuild Projects="..\RRDA.RepImp\RRDA.RepImp.csproj"
              Targets="Publish"
-             Properties="Configuration=$(Configuration);RuntimeIdentifier=$(RuntimeIdentifier);SelfContained=$(SelfContained);PublishSingleFile=false;EnableWindowsTargeting=true;PublishDir=$(PublishDir)" />
+             Properties="Configuration=$(Configuration);RuntimeIdentifier=$(RuntimeIdentifier);SelfContained=$(SelfContained);PublishSingleFile=false;EnableWindowsTargeting=true;RestoreUseStaticGraphEvaluation=true;PublishDir=$(PublishDir)" />
   </Target>
 
   <Target Name="BuildPlugins">
     <MSBuild Projects="@(PluginProject)"
-             Targets="Restore;Build"
+             Targets="Restore"
+             BuildInParallel="false"
+             Properties="Configuration=$(Configuration);Platform=AnyCPU;SolutionDir=$(MSBuildThisFileDirectory)..\;RestoreUseStaticGraphEvaluation=true"
+             Condition="'$(BuildingInsideVisualStudio)' != 'true'" />
+    <MSBuild Projects="@(PluginProject)"
+             Targets="Build"
              BuildInParallel="false"
              Properties="Configuration=$(Configuration);Platform=AnyCPU;SolutionDir=$(MSBuildThisFileDirectory)..\" />
   </Target>
