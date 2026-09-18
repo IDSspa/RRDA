@@ -21,6 +21,8 @@
     <ProjectReference Include="..\RRDA.Plugins.ALI\RRDA.Plugins.ALI.csproj"
                       AdditionalProperties="CopyToSharedArtifacts=false" />
     <ProjectReference Include="..\RRDA.Plugins.Common\RRDA.Plugins.Common.csproj" />
+    <ProjectReference Include="..\RRDA.Plugins.MAN_2LIV\RRDA.Plugins.MAN_2LIV.csproj"
+                      AdditionalProperties="CopyToSharedArtifacts=false" />
   </ItemGroup>
 
 </Project>

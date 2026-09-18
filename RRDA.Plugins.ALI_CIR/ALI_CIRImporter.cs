@@ -8,7 +8,7 @@ namespace RRDA.Plugins.ALI_CIR
         public override string Name => "ALI_CIR";
         public override string Version => "1.0.0";
         public override string SupportedFileExtension => ".xlsx";
-        public override string MatchingPattern => "NCH_2023_005_10_LXOD-RS_ALI_CIR";
+        public override IReadOnlyList<string> MatchingPatterns => ["NCH_2023_005_10_LXOD-RS_ALI_CIR"];
         public override ReportSubjectKind SubjectKind => ReportSubjectKind.Component;
         public override string SubjectKeyDefinedName => "Serial";
     }

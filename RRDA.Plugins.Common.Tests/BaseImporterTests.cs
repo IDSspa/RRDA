@@ -3,6 +3,7 @@ using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Spreadsheet;
 using RRDA.Core;
 using RRDA.Core.Validator;
+using RRDA.Plugins.MAN_2Liv;
 using Xunit;
 
 namespace RRDA.Plugins.Common.Tests;
@@ -46,6 +47,23 @@ public sealed class BaseImporterTests
 
         Assert.True(await importer.CanImportAsync("special.input"));
         Assert.False(await importer.CanImportAsync("ordinary.xlsx"));
+    }
+
+    [Theory]
+    [InlineData("NCH_PAIPL_MAN_2Liv_test.xlsx", true)]
+    [InlineData("NCH_PAIPL_MAN_VERDE_2Liv_test.xlsx", true)]
+    [InlineData("nch_paipl_man_verde_2liv_test.xlsx", true)]
+    [InlineData("NCH_PAIPL_MAN_1Liv_test.xlsx", false)]
+    [InlineData("NCH_PAIPL_MAN_VERDE_2Liv_test.xls", false)]
+    public async Task CanImportAsync_RecognizesAllMan2LivFileNamePatterns(
+        string fileName,
+        bool expected)
+    {
+        var importer = new Man2LivImporter();
+
+        var result = await importer.CanImportAsync(fileName);
+
+        Assert.Equal(expected, result);
     }
 
     [Fact]
@@ -110,7 +128,7 @@ public sealed class BaseImporterTests
         public override string Name => "CUSTOM";
         public override string Version => "1.0.0";
         public override string SupportedFileExtension => ".input";
-        public override string MatchingPattern => "unused";
+        public override IReadOnlyList<string> MatchingPatterns => ["unused"];
         public override ReportSubjectKind SubjectKind => ReportSubjectKind.Component;
         public override string SubjectKeyDefinedName => "Serial";
 
@@ -165,7 +183,7 @@ public sealed class BaseImporterTests
         public override string Name => "RADAR";
         public override string Version => "1.0.0";
         public override string SupportedFileExtension => ".xlsx";
-        public override string MatchingPattern => "RADAR";
+        public override IReadOnlyList<string> MatchingPatterns => ["RADAR"];
         public override ReportSubjectKind SubjectKind => ReportSubjectKind.Radar;
         public override string SubjectKeyDefinedName => "Serial";
     }

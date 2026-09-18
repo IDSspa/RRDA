@@ -13,7 +13,7 @@ namespace RRDA.Plugins.IBASP
         public override string Name => "IBASP";
         public override string Version => "1.0.0";
         public override string SupportedFileExtension => ".xlsx";
-        public override string MatchingPattern => "IBASP";
+        public override IReadOnlyList<string> MatchingPatterns => ["IBASP"];
         public override ReportSubjectKind SubjectKind => ReportSubjectKind.Component;
         public override string SubjectKeyDefinedName => "Serial";       
         private static void Sanitize(Stream xlsxStream)

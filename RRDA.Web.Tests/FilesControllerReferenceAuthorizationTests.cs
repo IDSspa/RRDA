@@ -11,7 +11,8 @@ public sealed class FilesControllerReferenceAuthorizationTests
     [Theory]
     [InlineData(nameof(FilesController.AddManualReference))]
     [InlineData(nameof(FilesController.DeleteManualReference))]
-    public void ManualReferenceActions_RequireSupervisorAndAntiForgeryToken(string actionName)
+    [InlineData(nameof(FilesController.ChangeBatch))]
+    public void ProtectedPostActions_RequireSupervisorAndAntiForgeryToken(string actionName)
     {
         var method = Assert.Single(
             typeof(FilesController).GetMethods(),

@@ -63,9 +63,6 @@
     <Project Path="RRDA.RepImp.Setup/RRDA.RepImp.Setup.wixproj" Id="41fd7e2a-79d2-427c-8671-abed99ea5aa2" Type="b7dd6f7e-def8-4e67-b5b7-07ef123db6f0">
       <Platform Project="x64" />
     </Project>
-    <Project Path="RRDA.RepImp.UserSetup/RRDA.RepImp.UserSetup.wixproj" Id="b1a4d7a6-3014-4675-9edc-c3bb241e4215" Type="b7dd6f7e-def8-4e67-b5b7-07ef123db6f0">
-      <Platform Project="x64" />
-    </Project>
   </Folder>
   <Project Path="RRDA.Web.Tests/RRDA.Web.Tests.csproj" />
   <Project Path="RRDA.Web/RRDA.Web.csproj" />

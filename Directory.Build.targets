@@ -22,7 +22,7 @@
       SkipUnchangedFiles="true" />
 
     <!-- log sintetico per diagnostica -->
-    <WriteLinesToFile File="$(SharedPluginsArtifactDir)postbuild.log"
+    <WriteLinesToFile File="$(SharedPluginsArtifactDir)postbuild.$(MSBuildProjectName).log"
                       Lines="Built $(MSBuildProjectName) | Configuration=$(Configuration) | Framework=$(TargetFramework)"
                       Overwrite="false" />
   </Target>

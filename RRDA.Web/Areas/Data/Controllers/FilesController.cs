@@ -551,6 +551,60 @@ namespace RRDA.Web.Areas.Data.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        [HttpPost, ValidateAntiForgeryToken]
+        [Authorize(Policy = Policies.AtLeastSupervisor)]
+        public async Task<IActionResult> ChangeBatch(List<int>? selectedIds, int? batchId)
+        {
+            var ids = selectedIds?.Distinct().ToList() ?? [];
+            if (ids.Count == 0)
+            {
+                TempData["Warning"] = "Selezionare almeno un file per cambiare batch.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            if (!batchId.HasValue)
+            {
+                TempData["Warning"] = "Selezionare il nuovo batch.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var batch = await db.ReportBatches
+                .AsNoTracking()
+                .SingleOrDefaultAsync(item => item.Id == batchId.Value);
+            if (batch is null)
+            {
+                TempData["Warning"] = "Il batch selezionato non esiste più.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var files = await db.ReportFiles
+                .Where(file => ids.Contains(file.Id))
+                .ToListAsync();
+            if (files.Count == 0)
+            {
+                TempData["Warning"] = "Nessuno dei file selezionati è stato trovato.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var changedFiles = files
+                .Select(file => new { file.Id, file.FileName, PreviousBatchId = file.ReportBatchId })
+                .ToArray();
+
+            foreach (var file in files)
+                file.ReportBatchId = batch.Id;
+
+            await db.SaveChangesAsync();
+            await auditService.WriteAsync(
+                "Report.BulkBatchChanged",
+                "Success",
+                entityType: "ReportFile",
+                description: $"Assegnato il batch '{batch.Name}' a {files.Count} file importati.",
+                details: new { BatchId = batch.Id, BatchName = batch.Name, Count = files.Count, Files = changedFiles });
+
+            TempData["Success"] = $"Assegnato il batch '{batch.Name}' a {files.Count} file importati.";
+            return RedirectToAction(nameof(Index));
+        }
+
         private async Task<IActionResult> ImportViewAsync(SingleReportImportViewModel model)
         {
             model.BatchOptions = await GetImportOptionsAsync(model.BatchId);

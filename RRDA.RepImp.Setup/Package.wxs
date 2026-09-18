@@ -4,7 +4,7 @@
   <Package Name="RRDA RepImp"
            Manufacturer="IDS"
            Version="$(var.InstallerVersion)"
-           Scope="perMachine"
+           Scope="perUserOrMachine"
            UpgradeCode="b05e7967-17ea-434c-b1ff-e7dfa749a5f3">
 
     <MajorUpgrade AllowSameVersionUpgrades="yes"
@@ -14,7 +14,9 @@
     <Icon Id="RepImpIcon" SourceFile="..\RRDA.RepImp\Assets\RepImp.ico" />
     <Property Id="ARPPRODUCTICON" Value="RepImpIcon" />
 
-    <ui:WixUI Id="WixUI_InstallDir" InstallDirectory="INSTALLFOLDER" />
+    <Property Id="ApplicationFolderName" Value="RRDA RepImp" />
+    <Property Id="WixAppFolder" Value="WixPerMachineFolder" />
+    <ui:WixUI Id="WixUI_Advanced" />
     <WixVariable Id="WixUILicenseRtf" Value="License.rtf" />
 
     <Feature Id="MainFeature" Title="RRDA RepImp" Level="1">
@@ -25,13 +27,17 @@
     </Feature>
 
     <StandardDirectory Id="ProgramFiles64Folder">
-      <Directory Id="IDSFOLDER" Name="IDS">
-        <Directory Id="INSTALLFOLDER" Name="RRDA RepImp">
-          <Directory Id="PLUGINSFOLDER" Name="plugins" />
-          <Directory Id="DATABASEFOLDER" Name="Database" />
-        </Directory>
-      </Directory>
+      <Directory Id="WixPerMachineFolder" Name="IDS" />
     </StandardDirectory>
+
+    <StandardDirectory Id="LocalAppDataFolder">
+      <Directory Id="WixPerUserFolder" Name="IDS" />
+    </StandardDirectory>
+
+    <Directory Id="INSTALLFOLDER" Name="RRDA RepImp">
+      <Directory Id="PLUGINSFOLDER" Name="plugins" />
+      <Directory Id="DATABASEFOLDER" Name="Database" />
+    </Directory>
 
     <StandardDirectory Id="ProgramMenuFolder">
       <Directory Id="ApplicationProgramsFolder" Name="RRDA RepImp" />
@@ -61,6 +67,7 @@
                   Target="[INSTALLFOLDER]RRDA.RepImp.exe"
                   WorkingDirectory="INSTALLFOLDER" />
         <RemoveFolder Id="ApplicationProgramsFolder" On="uninstall" />
+        <RemoveFolder Id="RemovePerUserFolder" Directory="WixPerUserFolder" On="uninstall" />
         <RegistryValue Root="HKCU"
                        Key="Software\IDS\RRDA\RepImp"
                        Name="StartMenuShortcut"

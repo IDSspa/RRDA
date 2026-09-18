@@ -470,7 +470,9 @@ namespace RRDA.RepImp
 
         private void Log(string message)
         {
-            var ts = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+            var ts = DateTime.Now.ToString(
+                "yyyy-MM-dd HH:mm:ss",
+                System.Globalization.CultureInfo.InvariantCulture);
             var line = $"[{ts}] {message}{Environment.NewLine}";
 
             // Garantisce aggiornamento thread-safe dell'UI
@@ -1136,14 +1138,30 @@ namespace RRDA.RepImp
                         return;
                     }
 
-                    selectedBatchId = batchDlg.SelectedBatchId;
+                    if (batchDlg.NewBatch is { } newBatch)
+                    {
+                        var batch = new ReportBatch
+                        {
+                            Name = newBatch.Name,
+                            Description = newBatch.Description,
+                            IsMaintenance = newBatch.IsMaintenance
+                        };
+                        dbForBatches.ReportBatches.Add(batch);
+                        await dbForBatches.SaveChangesAsync();
+                        selectedBatchId = batch.Id;
+                        Log($"Creato nuovo batch sul server: Id={batch.Id}, Nome='{batch.Name}'.");
+                    }
+                    else
+                    {
+                        selectedBatchId = batchDlg.SelectedBatchId;
+                    }
                 }
             }
             catch (Exception ex)
             {
-                Log($"Errore caricamento batch: {ex.Message}");
+                Log($"Errore durante la selezione o creazione del batch: {ex.Message}");
                 MessageBox.Show(this,
-                    $"Impossibile caricare i batch dal database:{Environment.NewLine}{ex.Message}",
+                    $"Impossibile selezionare o creare il batch nel database:{Environment.NewLine}{ex.Message}",
                     "Errore", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }

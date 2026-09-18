@@ -108,7 +108,7 @@ public sealed class ReportTypeCompatibilityCheckerTests
         public string Name => name;
         public string Version => "1.0.0";
         public string SupportedFileExtension => ".test";
-        public string MatchingPattern => "*";
+        public IReadOnlyList<string> MatchingPatterns => ["*"];
         public ReportSubjectKind SubjectKind => subjectKind;
         public string SubjectKeyDefinedName => "Serial";
 

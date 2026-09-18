@@ -192,7 +192,7 @@
                                     <GridViewColumn x:Name="ValidatorColumn" Header="Validatore" Width="120" DisplayMemberBinding="{Binding ValidatorStatus}"/>
                                     <GridViewColumn x:Name="PathColumn" Header="Percorso" Width="400" DisplayMemberBinding="{Binding FullPath}"/>
                                     <GridViewColumn x:Name="SizeColumn" Header="Dimensione" Width="100" DisplayMemberBinding="{Binding Size, Converter={StaticResource FileSizeConverter}}" HeaderTemplate="{StaticResource SortableHeaderTemplate}"/>
-                                    <GridViewColumn x:Name="LastModifiedColumn" Header="Ultima modifica" Width="180" DisplayMemberBinding="{Binding LastWriteTime}" HeaderTemplate="{StaticResource SortableHeaderTemplate}"/>
+                                    <GridViewColumn x:Name="LastModifiedColumn" Header="Ultima modifica" Width="180" DisplayMemberBinding="{Binding LastWriteTime, StringFormat={}{0:yyyy-MM-dd HH:mm:ss}}" HeaderTemplate="{StaticResource SortableHeaderTemplate}"/>
                                 </GridView>
                             </ListView.View>
                         </ListView>

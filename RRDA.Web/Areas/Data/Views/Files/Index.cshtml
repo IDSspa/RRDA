@@ -13,6 +13,10 @@
         <span style="color:#8b949e;font-size:.82rem;">@Model.TotalCount risultati</span>
         @if (isSupervisor)
         {
+            <button type="button" id="change-batch-selected" class="btn-rrda-primary" disabled
+                    data-bs-toggle="modal" data-bs-target="#change-batch-modal">
+                Cambia batch
+            </button>
             <button type="submit" form="bulk-delete-form" id="delete-selected"
                     class="btn-rrda-danger" disabled>
                 Elimina selezionati
@@ -23,6 +27,39 @@
         }
     </div>
 </div>
+
+@if (isSupervisor)
+{
+    <div class="modal fade" id="change-batch-modal" tabindex="-1" aria-labelledby="change-batch-modal-title" aria-hidden="true">
+        <div class="modal-dialog">
+            <form id="change-batch-form" asp-action="ChangeBatch" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-content" style="background:#161b22;border-color:#30363d;color:#c9d1d9;">
+                    <div class="modal-header" style="border-color:#30363d;">
+                        <h5 class="modal-title" id="change-batch-modal-title">Cambia batch</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Chiudi"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="rrda-muted mb-3">Il nuovo batch verrà assegnato a <strong id="change-batch-selected-count" style="color:#c9d1d9;">0</strong> file selezionati.</p>
+                        <label for="new-batch-id" class="form-label">Nuovo batch</label>
+                        <select id="new-batch-id" name="batchId" class="form-select" required>
+                            <option value="">— Seleziona un batch —</option>
+                            @foreach (var batch in Model.BatchOptions)
+                            {
+                                <option value="@batch.Value">@batch.Text</option>
+                            }
+                        </select>
+                        <div id="change-batch-selected-ids"></div>
+                    </div>
+                    <div class="modal-footer" style="border-color:#30363d;">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                        <button type="submit" class="btn-rrda-primary">Conferma cambio batch</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+}
 
 <!-- ── Filtri ── -->
 <div class="rrda-card mb-3">
@@ -188,14 +225,18 @@
             const selectAll = document.getElementById('select-all');
             const selectors = Array.from(document.querySelectorAll('.row-selector'));
             const deleteButton = document.getElementById('delete-selected');
+            const changeBatchButton = document.getElementById('change-batch-selected');
+            const changeBatchCount = document.getElementById('change-batch-selected-count');
+            const changeBatchIds = document.getElementById('change-batch-selected-ids');
 
-            if (!selectAll || !deleteButton) {
+            if (!selectAll || !deleteButton || !changeBatchButton) {
                 return;
             }
 
             const updateState = () => {
                 const selectedCount = selectors.filter(selector => selector.checked).length;
                 deleteButton.disabled = selectedCount === 0;
+                changeBatchButton.disabled = selectedCount === 0;
                 selectAll.checked = selectedCount > 0 && selectedCount === selectors.length;
                 selectAll.indeterminate = selectedCount > 0 && selectedCount < selectors.length;
             };
@@ -206,6 +247,17 @@
             });
 
             selectors.forEach(selector => selector.addEventListener('change', updateState));
+            changeBatchButton.addEventListener('click', () => {
+                const selectedIds = selectors.filter(selector => selector.checked).map(selector => selector.value);
+                changeBatchCount.textContent = selectedIds.length;
+                changeBatchIds.replaceChildren(...selectedIds.map(id => {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'selectedIds';
+                    input.value = id;
+                    return input;
+                }));
+            });
             updateState();
         })();
     </script>

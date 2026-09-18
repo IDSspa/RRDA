@@ -8,7 +8,7 @@ namespace RRDA.Plugins.SBX
         public override string Name => "SBX";
         public override string Version => "1.0.0";
         public override string SupportedFileExtension => ".xlsx";
-        public override string MatchingPattern => "NCH_2022_004_1_3_LXOD-RS_SBX";
+        public override IReadOnlyList<string> MatchingPatterns => ["NCH_2022_004_1_3_LXOD-RS_SBX"];
         public override ReportSubjectKind SubjectKind => ReportSubjectKind.Component;
         public override string SubjectKeyDefinedName => "Serial";
     }

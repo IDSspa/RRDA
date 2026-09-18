@@ -12,7 +12,7 @@ namespace RRDA.Plugins.Common
         public abstract string Name { get; }
         public abstract string Version { get; }
         public abstract string SupportedFileExtension { get; }
-        public abstract string MatchingPattern { get; }
+        public abstract IReadOnlyList<string> MatchingPatterns { get; }
         public abstract ReportSubjectKind SubjectKind { get; }
         public abstract string SubjectKeyDefinedName { get; }
         public virtual IReadOnlyList<ReportReferenceDefinition> ReferenceDefinitions => [];
@@ -37,9 +37,10 @@ namespace RRDA.Plugins.Common
             if (!string.Equals(ext, SupportedFileExtension, StringComparison.OrdinalIgnoreCase))
                 return Task.FromResult(false);
 
-            // Controlla se il nome (senza estensione) contiene il pattern definito (case-insensitive)
+            // Controlla se il nome (senza estensione) contiene almeno uno dei pattern definiti (case-insensitive)
             var nameWithoutExt = Path.GetFileNameWithoutExtension(actualFileName) ?? string.Empty;
-            var matches = nameWithoutExt.Contains(MatchingPattern, StringComparison.OrdinalIgnoreCase);
+            var matches = MatchingPatterns.Any(pattern =>
+                nameWithoutExt.Contains(pattern, StringComparison.OrdinalIgnoreCase));
 
             return Task.FromResult(matches);
         }

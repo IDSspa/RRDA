@@ -7,7 +7,7 @@ namespace RRDA.Core
         string Name { get; }            // es: "RadTest_v1"
         string Version { get; }
         string SupportedFileExtension { get; } // ".xlsx"
-        string MatchingPattern { get; }
+        IReadOnlyList<string> MatchingPatterns { get; }
         ReportSubjectKind SubjectKind { get; }
         /// <summary>
         /// DefinedName del workbook che identifica univocamente il soggetto del report.

@@ -16,6 +16,12 @@ namespace RRDA.RepImp
         public int? SelectedBatchId { get; private set; }
 
         /// <summary>
+        /// Dati del batch da creare. Valorizzati quando l'utente sceglie
+        /// "Nuovo batch..."; il chiamante provvede al salvataggio sul DB remoto.
+        /// </summary>
+        public NewBatchRequest? NewBatch { get; private set; }
+
+        /// <summary>
         /// true  → il dialog è stato confermato (OK o "Nessun batch").
         /// false → l'utente ha annullato: il chiamante deve interrompere l'import.
         /// </summary>
@@ -74,10 +80,26 @@ namespace RRDA.RepImp
             DialogResult = true;
         }
 
+        private void NewBatchButton_Click(object sender, RoutedEventArgs e)
+        {
+            var createDialog = new BatchCreationDialog { Owner = this };
+            if (createDialog.ShowDialog() != true)
+                return;
+
+            NewBatch = new NewBatchRequest(
+                createDialog.BatchName,
+                createDialog.Description,
+                createDialog.IsMaintenance);
+            Confirmed = true;
+            DialogResult = true;
+        }
+
         private void CancelButton_Click(object sender, RoutedEventArgs e)
         {
             Confirmed = false;
             DialogResult = false;
         }
     }
+
+    public sealed record NewBatchRequest(string Name, string? Description, bool IsMaintenance);
 }
