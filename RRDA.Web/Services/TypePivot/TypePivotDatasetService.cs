@@ -35,16 +35,18 @@ public sealed class TypePivotDatasetService(RRDADbContext db) : ITypePivotDatase
         if (request.LastModifiedTo.HasValue)
             filesQuery = filesQuery.Where(f => f.FileLastModify <= request.LastModifiedTo.Value);
 
-        var fileIds = await filesQuery
+        var baseFileIds = await filesQuery
             .OrderByDescending(f => f.FileLastModify)
             .Select(f => f.Id)
             .ToListAsync(cancellationToken);
+
+        var filteredFileIds = baseFileIds;
 
         if (!string.IsNullOrWhiteSpace(request.FilterField)
             && (!string.IsNullOrWhiteSpace(request.FilterFrom) || !string.IsNullOrWhiteSpace(request.FilterTo)))
         {
             var pairs = await LoadPairsAsync(
-                fileIds,
+                baseFileIds,
                 isSubjectKey: false,
                 entityKey: request.FilterField,
                 cancellationToken);
@@ -52,14 +54,14 @@ public sealed class TypePivotDatasetService(RRDADbContext db) : ITypePivotDatase
                 .Where(p => IsValueInRange(p.Value, request.FilterFrom, request.FilterTo))
                 .Select(p => p.FileId)
                 .ToHashSet();
-            fileIds = [.. fileIds.Where(allowedFileIds.Contains)];
+            filteredFileIds = [.. filteredFileIds.Where(allowedFileIds.Contains)];
         }
 
         if (!string.IsNullOrWhiteSpace(request.SubjectKeyFrom)
             || !string.IsNullOrWhiteSpace(request.SubjectKeyTo))
         {
             var pairs = await LoadPairsAsync(
-                fileIds,
+                filteredFileIds,
                 isSubjectKey: true,
                 entityKey: null,
                 cancellationToken);
@@ -67,20 +69,20 @@ public sealed class TypePivotDatasetService(RRDADbContext db) : ITypePivotDatase
                 .Where(p => IsValueInRange(p.Value, request.SubjectKeyFrom, request.SubjectKeyTo))
                 .Select(p => p.FileId)
                 .ToHashSet();
-            fileIds = [.. fileIds.Where(allowedFileIds.Contains)];
+            filteredFileIds = [.. filteredFileIds.Where(allowedFileIds.Contains)];
         }
 
         return new TypePivotDataset
         {
             ReportType = reportType,
-            FileIds = fileIds,
+            FileIds = filteredFileIds,
             BatchOptions = batchRecords.Select(b => new TypePivotBatchOption
             {
                 Id = b.Id,
                 Label = string.IsNullOrWhiteSpace(b.Description) ? b.Name : $"{b.Name} - {b.Description}"
             }).ToList(),
             BatchNames = batchRecords.ToDictionary(b => b.Id, b => b.Name),
-            Metadata = await BuildMetadataAsync(fileIds, cancellationToken)
+            Metadata = await BuildMetadataAsync(baseFileIds, cancellationToken)
         };
     }
 
