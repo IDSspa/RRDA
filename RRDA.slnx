@@ -6,6 +6,10 @@
   <Folder Name="/RRDA.Plugins/">
     <Project Path="RRDA.Plugins.Common/RRDA.Plugins.Common.csproj" Id="4b9e852e-531a-41e5-b6bc-b916cb5d8bfc" />
   </Folder>
+  <Folder Name="/RRDA.Plugins/A0007121_3LIV/">
+    <Project Path="RRDA.Plugins.A0007121_3LIV/A0007121_3LIV/RRDA.Plugins.A0007121_3LIV.csproj" Id="e07d75ca-4c3f-41a2-8481-bd8f1a7bfe20" />
+    <Project Path="RRDA.Plugins.A0007121_3LIV_ACC/RRDA.Plugins.A0007121_3LIV_ACC.csproj" Id="559cfb2a-989a-403f-a440-e04ce6016c57" />
+  </Folder>
   <Folder Name="/RRDA.Plugins/ALI/">
     <Project Path="RRDA.Plugins.ALI/RRDA.Plugins.ALI.csproj" Id="03fc7545-3c0a-41d9-824b-e191fafd668d" />
   </Folder>
@@ -52,18 +56,18 @@
   <Folder Name="/RRDA.Plugins/UDX/">
     <Project Path="RRDA.Plugins.UDX/RRDA.Plugins.UDX.csproj" />
   </Folder>
+  <Folder Name="/Setup/">
+    <File Path="RRDA.RepImp.Setup/INSTALLAZIONE.md" />
+    <Project Path="RRDA.RepImp.Setup/RRDA.RepImp.Setup.wixproj" Type="b7dd6f7e-def8-4e67-b5b7-07ef123db6f0" Id="41fd7e2a-79d2-427c-8671-abed99ea5aa2">
+      <Platform Project="x64" />
+    </Project>
+  </Folder>
   <Project Path="RRDA.Core.Tests/RRDA.Core.Tests.csproj" />
   <Project Path="RRDA.Core/RRDA.Core.csproj" />
   <Project Path="RRDA.Data.Tests/RRDA.Data.Tests.csproj" />
   <Project Path="RRDA.Data/RRDA.Data.csproj" />
   <Project Path="RRDA.Plugins.Common.Tests/RRDA.Plugins.Common.Tests.csproj" />
   <Project Path="RRDA.RepImp/RRDA.RepImp.csproj" Id="d0da7b7f-4ff2-42ed-b582-3b6268cee7f5" />
-  <Folder Name="/Setup/">
-    <File Path="RRDA.RepImp.Setup/INSTALLAZIONE.md" />
-    <Project Path="RRDA.RepImp.Setup/RRDA.RepImp.Setup.wixproj" Id="41fd7e2a-79d2-427c-8671-abed99ea5aa2" Type="b7dd6f7e-def8-4e67-b5b7-07ef123db6f0">
-      <Platform Project="x64" />
-    </Project>
-  </Folder>
   <Project Path="RRDA.Web.Tests/RRDA.Web.Tests.csproj" />
   <Project Path="RRDA.Web/RRDA.Web.csproj" />
 </Solution>

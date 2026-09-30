@@ -1,0 +1,128 @@
+﻿<Window x:Class="RRDA.RepImp.ValidatorConflictDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Validatore già esistente"
+        Width="560"
+        Height="300"
+        MinWidth="500"
+        MinHeight="280"
+        ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner"
+        ShowInTaskbar="False">
+
+    <Border Background="{DynamicResource SurfaceBrush}"
+            BorderBrush="#D0D0D0"
+            BorderThickness="1"
+            CornerRadius="2"
+            Padding="18">
+
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Titolo -->
+            <DockPanel Grid.Row="0"
+                       LastChildFill="True"
+                       Margin="0,0,0,16">
+
+                <!-- Icona informativa -->
+                <Border Width="42"
+                        Height="42"
+                        Margin="0,0,14,0"
+                        VerticalAlignment="Top"
+                        Background="#FFF4CE"
+                        BorderBrush="#D6B656"
+                        BorderThickness="1"
+                        CornerRadius="21"
+                        DockPanel.Dock="Left">
+
+                    <TextBlock Text="!"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"
+                               FontSize="24"
+                               FontWeight="Bold"
+                               Foreground="#805E00"/>
+                </Border>
+
+                <StackPanel>
+                    <TextBlock Text="Esiste già un validatore"
+                               FontSize="17"
+                               FontWeight="SemiBold"
+                               Margin="0,0,0,5"/>
+
+                    <TextBlock Text="Scegliere come gestire il validatore esistente."
+                               TextWrapping="Wrap"
+                               Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"/>
+                </StackPanel>
+            </DockPanel>
+
+            <!-- Informazioni -->
+            <Border Grid.Row="1"
+                    Padding="12"
+                    BorderBrush="#D0D0D0"
+                    BorderThickness="1"
+                    CornerRadius="2"
+                    Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}">
+
+                <StackPanel>
+                    <TextBlock Text="File esistente:"
+                               FontWeight="SemiBold"
+                               Margin="0,0,0,4"/>
+
+                    <TextBox Text="{Binding ValidatorPath,
+                                            RelativeSource={RelativeSource AncestorType=Window}}"
+                             IsReadOnly="True"
+                             BorderThickness="0"
+                             Background="Transparent"
+                             TextWrapping="Wrap"
+                             ToolTip="{Binding ValidatorPath,
+                                               RelativeSource={RelativeSource AncestorType=Window}}"/>
+
+                    <TextBlock Margin="0,12,0,0"
+                               TextWrapping="Wrap">
+                        <Run Text="Sovrascrivi"/>
+                        <Run Text=" sostituisce completamente il file esistente. "/>
+                        <Run Text="Merge"/>
+                        <Run Text=" conserva le configurazioni esistenti e aggiunge quelle nuove."/>
+                    </TextBlock>
+                </StackPanel>
+            </Border>
+
+            <!-- Pulsanti -->
+            <Grid Grid.Row="2" Margin="0,18,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <Button Grid.Column="0"
+                        Content="Annulla"
+                        Width="100"
+                        Height="30"
+                        HorizontalAlignment="Left"
+                        IsCancel="True"
+                        Click="Cancel_Click"/>
+
+                <StackPanel Grid.Column="1"
+                            Orientation="Horizontal"
+                            HorizontalAlignment="Right">
+
+                    <Button Content="Sovrascrivi"
+                            Width="110"
+                            Height="30"
+                            Margin="0,0,8,0"
+                            Click="Overwrite_Click"/>
+
+                    <Button Content="Merge"
+                            Width="110"
+                            Height="30"
+                            IsDefault="True"
+                            Click="Merge_Click"/>
+                </StackPanel>
+            </Grid>
+        </Grid>
+    </Border>
+</Window>

@@ -193,7 +193,7 @@ namespace RRDA.RepImp
                         Log,
                         cts.Token);
 
-                        files = [.. scannedFiles
+                    files = [.. scannedFiles
                         .Select(f =>
                         {
                             var reportType = f.ReportType ?? string.Empty;
@@ -277,7 +277,7 @@ namespace RRDA.RepImp
                 AppDomain.CurrentDomain.BaseDirectory);
         }
 
-        private string? ResolveValidatorPath(string? pluginName)
+        private static string? ResolveValidatorPath(string? pluginName)
         {
             if (string.IsNullOrWhiteSpace(pluginName))
                 return null;
@@ -362,7 +362,7 @@ namespace RRDA.RepImp
             try
             {
                 var connectionString = Properties.Settings.Default.ConnectionString;
-                
+
                 Log("Verifica della connessione al database in corso...");
 
                 if (string.IsNullOrWhiteSpace(connectionString))
@@ -417,7 +417,7 @@ namespace RRDA.RepImp
             };
             _connectionStatusTimer.Tick += async (s, e) => await UpdateConnectionStatusAsync();
             _connectionStatusTimer.Start();
-            
+
             Log($"Polling dello stato di connessione avviato (intervallo: {Properties.Settings.Default.DBCheckInterval} secondi).");
         }
 
@@ -668,101 +668,101 @@ namespace RRDA.RepImp
                     {
                         try
                         {
-                                // -------------------------------------------------------
-                                // Controllo duplicato: verifica se il file è già in DB
-                                // prima di aprire il dialog, per non disturbarlo se il
-                                // file è nuovo.
-                                // -------------------------------------------------------
+                            // -------------------------------------------------------
+                            // Controllo duplicato: verifica se il file è già in DB
+                            // prima di aprire il dialog, per non disturbarlo se il
+                            // file è nuovo.
+                            // -------------------------------------------------------
 
-                                int existing = await _importResultRepository.CountExistingAsync(
-                                    fileName: fi.Name,
-                                    reportTypeKey: importResult.ReportTypeKey,
-                                    cancellationToken: ct);
+                            int existing = await _importResultRepository.CountExistingAsync(
+                                fileName: fi.Name,
+                                reportTypeKey: importResult.ReportTypeKey,
+                                cancellationToken: ct);
 
-                                if (existing > 0 && !_applyForAll)
+                            if (existing > 0 && !_applyForAll)
+                            {
+                                // Apriamo il dialog sul thread UI (siamo già su di esso
+                                // perché ImportReport è chiamato da un async void handler).
+                                var dupDlg = new DuplicateImportDialog(fi.Name, existing)
                                 {
-                                    // Apriamo il dialog sul thread UI (siamo già su di esso
-                                    // perché ImportReport è chiamato da un async void handler).
-                                    var dupDlg = new DuplicateImportDialog(fi.Name, existing)
-                                    {
-                                        Owner = this
-                                    };
+                                    Owner = this
+                                };
 
-                                    var dlgResult = dupDlg.ShowDialog();
+                                var dlgResult = dupDlg.ShowDialog();
 
-                                    if (dlgResult != true || !dupDlg.Confirmed)
-                                    {
-                                        // L'utente ha chiuso o annullato il dialog:
-                                        // saltiamo la persistenza per questo file.
-                                        Log($"Persistenza annullata dall'utente per '{fi.Name}'.");
-                                        await WriteAuditAsync(
-                                            "Report.ImportCancelled",
-                                            "Cancelled",
-                                            "ReportFile",
-                                            fi.Name,
-                                            "Persistenza annullata dall'utente dopo il rilevamento di un duplicato.",
-                                            new { FilePath = fi.FullPath, Plugin = plugin.Name, ExistingReports = existing });
-                                        return true; // l'import è riuscito, solo la save è stata saltata
-                                    }
-
-                                    _applyForAll = dupDlg.ApplyForAll;
-                                    _duplicateStrategy = dupDlg.SelectedStrategy;
-
-                                    Log($"Strategia duplicato scelta per '{fi.Name}': {_duplicateStrategy}.");
-
-                                    if (_applyForAll)
-                                        Log($"La strategia scelta sarà applicata a tutti i file duplicati in questo ciclo di import.");
-                                }
-
-                                // -------------------------------------------------------
-                                // Persistenza con la strategia selezionata
-                                // -------------------------------------------------------
-                                try
+                                if (dlgResult != true || !dupDlg.Confirmed)
                                 {
-                                    var saved = await _importResultRepository.SaveAsync(
-                                        file: fi.ToDataFileItem(),
-                                        importResult: importResult,
-                                        logger: Log,
-                                        user: user,
-                                        batchId: batchId,
-                                        duplicateStrategy: _duplicateStrategy,
-                                        cancellationToken: ct);
-
-                                    Log($"Persistenza completata: ReportFileId={saved.ReportFileId}, "
-                                        + $"Entities={saved.EntitiesSaved}, Properties={saved.PropertiesSaved}"
-                                        + (batchId.HasValue ? $", BatchId={batchId.Value}." : "."));
-
+                                    // L'utente ha chiuso o annullato il dialog:
+                                    // saltiamo la persistenza per questo file.
+                                    Log($"Persistenza annullata dall'utente per '{fi.Name}'.");
                                     await WriteAuditAsync(
-                                        "Report.ImportSucceeded",
-                                        "Success",
-                                        "ReportFile",
-                                        saved.ReportFileId.ToString(),
-                                        $"Importato '{fi.Name}' usando il plugin '{plugin.Name}'.",
-                                        new
-                                        {
-                                            FileName = fi.Name,
-                                            FilePath = fi.FullPath,
-                                            Plugin = plugin.Name,
-                                            plugin.Version,
-                                            importResult.ReportTypeKey,
-                                            BatchId = batchId,
-                                            DuplicateStrategy = _duplicateStrategy.ToString(),
-                                            saved.EntitiesSaved,
-                                            saved.PropertiesSaved
-                                        });
-                                }
-                                catch (DuplicateImportException die)
-                                {
-                                    // Caso Block: non è un errore tecnico, è una scelta dell'utente.
-                                    Log($"Import bloccato per '{fi.Name}': {die.Message}");
-                                    await WriteAuditAsync(
-                                        "Report.ImportBlocked",
-                                        "Blocked",
+                                        "Report.ImportCancelled",
+                                        "Cancelled",
                                         "ReportFile",
                                         fi.Name,
-                                        die.Message,
-                                        new { FilePath = fi.FullPath, Plugin = plugin.Name });
+                                        "Persistenza annullata dall'utente dopo il rilevamento di un duplicato.",
+                                        new { FilePath = fi.FullPath, Plugin = plugin.Name, ExistingReports = existing });
+                                    return true; // l'import è riuscito, solo la save è stata saltata
                                 }
+
+                                _applyForAll = dupDlg.ApplyForAll;
+                                _duplicateStrategy = dupDlg.SelectedStrategy;
+
+                                Log($"Strategia duplicato scelta per '{fi.Name}': {_duplicateStrategy}.");
+
+                                if (_applyForAll)
+                                    Log($"La strategia scelta sarà applicata a tutti i file duplicati in questo ciclo di import.");
+                            }
+
+                            // -------------------------------------------------------
+                            // Persistenza con la strategia selezionata
+                            // -------------------------------------------------------
+                            try
+                            {
+                                var saved = await _importResultRepository.SaveAsync(
+                                    file: fi.ToDataFileItem(),
+                                    importResult: importResult,
+                                    logger: Log,
+                                    user: user,
+                                    batchId: batchId,
+                                    duplicateStrategy: _duplicateStrategy,
+                                    cancellationToken: ct);
+
+                                Log($"Persistenza completata: ReportFileId={saved.ReportFileId}, "
+                                    + $"Entities={saved.EntitiesSaved}, Properties={saved.PropertiesSaved}"
+                                    + (batchId.HasValue ? $", BatchId={batchId.Value}." : "."));
+
+                                await WriteAuditAsync(
+                                    "Report.ImportSucceeded",
+                                    "Success",
+                                    "ReportFile",
+                                    saved.ReportFileId.ToString(),
+                                    $"Importato '{fi.Name}' usando il plugin '{plugin.Name}'.",
+                                    new
+                                    {
+                                        FileName = fi.Name,
+                                        FilePath = fi.FullPath,
+                                        Plugin = plugin.Name,
+                                        plugin.Version,
+                                        importResult.ReportTypeKey,
+                                        BatchId = batchId,
+                                        DuplicateStrategy = _duplicateStrategy.ToString(),
+                                        saved.EntitiesSaved,
+                                        saved.PropertiesSaved
+                                    });
+                            }
+                            catch (DuplicateImportException die)
+                            {
+                                // Caso Block: non è un errore tecnico, è una scelta dell'utente.
+                                Log($"Import bloccato per '{fi.Name}': {die.Message}");
+                                await WriteAuditAsync(
+                                    "Report.ImportBlocked",
+                                    "Blocked",
+                                    "ReportFile",
+                                    fi.Name,
+                                    die.Message,
+                                    new { FilePath = fi.FullPath, Plugin = plugin.Name });
+                            }
                         }
                         catch (Exception ex)
                         {
@@ -815,6 +815,80 @@ namespace RRDA.RepImp
 
             return true;
         }
+        private static void CreateValidatorFile(RepImpFileItem fileItem, IReportImporter plugin, string outputFile)
+        {
+            ValidationFileCreator.CreateFromFile(
+                fileItem.FullPath,
+                outputFile,
+                plugin.SubjectKeyDefinedName,
+                ConfiguredPathResolver.ResolveFile(
+                    Properties.Settings.Default.UnitMappings),
+                importBanListPath:
+                    ConfiguredPathResolver.ResolveFile(
+                        Properties.Settings.Default.ImportBanList),
+                referenceDefinitions:
+                    plugin is IReportReferenceProvider referenceProvider
+                        ? referenceProvider.ReferenceDefinitions
+                        : []);
+        }
+
+        private static string CreateTemporaryXmlPath(string folder)
+        {
+            return Path.Combine(
+                folder,
+                $".validator-{Guid.NewGuid():N}.tmp.xml");
+        }
+
+        private void DeleteTemporaryFile(string? filePath)
+        {
+            if (string.IsNullOrWhiteSpace(filePath))
+                return;
+
+            try
+            {
+                if (File.Exists(filePath))
+                    File.Delete(filePath);
+            }
+            catch (Exception ex)
+            {
+                /*
+                 * Il fallimento della pulizia non deve trasformare
+                 * un'esportazione riuscita in un errore.
+                 */
+                Log(
+                    $"Avviso: impossibile eliminare il file temporaneo " +
+                    $"'{filePath}': {ex.Message}");
+            }
+        }
+
+        private void UpdateValidatorStatus(string pluginName, string validatorPath)
+        {
+            if (FilesListView.ItemsSource is not List<RepImpFileItem> fileItems)
+                return;
+
+            for (var index = 0; index < fileItems.Count; index++)
+            {
+                var item = fileItems[index];
+
+                if (!string.Equals(
+                        item.Type,
+                        pluginName,
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                fileItems[index] = item with
+                {
+                    HasValidator = true,
+                    ValidatorPath = validatorPath
+                };
+            }
+
+            CollectionViewSource
+                .GetDefaultView(FilesListView.ItemsSource)?
+                .Refresh();
+        }
 
         private async void MainWindow_Loaded(object? sender, RoutedEventArgs e)
         {
@@ -822,10 +896,10 @@ namespace RRDA.RepImp
             {
                 // Controlla la connessione al database prima di caricare i dati
                 await CheckDatabaseConnectionOnStartupAsync();
-                
+
                 // Avvia il polling periodico dello stato della connessione
                 StartConnectionStatusPolling();
-                
+
                 LoadFolders();
                 LoadPlugins();
             }
@@ -928,8 +1002,8 @@ namespace RRDA.RepImp
             if (e.OriginalSource is not GridViewColumnHeader headerClicked || headerClicked.Column == null)
                 return;
 
-            if (headerClicked.Column != TypeColumn && 
-                headerClicked.Column != SizeColumn && 
+            if (headerClicked.Column != TypeColumn &&
+                headerClicked.Column != SizeColumn &&
                 headerClicked.Column != NameColumn &&
                 headerClicked.Column != LastModifiedColumn)
             {
@@ -964,7 +1038,7 @@ namespace RRDA.RepImp
                     dataView.SortDescriptions.Add(new SortDescription("Name", direction));
                 else if (headerClicked.Column == LastModifiedColumn)
                     dataView.SortDescriptions.Add(new SortDescription("LastWriteTime", direction));
-                
+
                 dataView.Refresh();
             }
 
@@ -1242,78 +1316,190 @@ namespace RRDA.RepImp
         {
             if (FilesListView.SelectedItem is not RepImpFileItem fi)
             {
-                MessageBox.Show(this, "Seleziona un file per esportare il validatore.", "Nessun file selezionato", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(
+                    this,
+                    "Seleziona un file per esportare il validatore.",
+                    "Nessun file selezionato",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(fi.Type))
             {
-                MessageBox.Show(this, "Nessun plugin associato al file selezionato.", "Esporta validatore non disponibile", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(
+                    this,
+                    "Nessun plugin associato al file selezionato.",
+                    "Esporta validatore non disponibile",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+
                 return;
             }
 
-            var plugin = _plugins.FirstOrDefault(p => string.Equals(p.Name, fi.Type, StringComparison.OrdinalIgnoreCase));
+            var plugin = _plugins.FirstOrDefault(
+                p => string.Equals(
+                    p.Name,
+                    fi.Type,
+                    StringComparison.OrdinalIgnoreCase));
+
             if (plugin == null)
             {
                 Log($"Plugin '{fi.Type}' non trovato fra i plugin caricati.");
-                MessageBox.Show(this, $"Plugin '{fi.Type}' non caricato.", "Plugin mancante", MessageBoxButton.OK, MessageBoxImage.Warning);
+
+                MessageBox.Show(
+                    this,
+                    $"Plugin '{fi.Type}' non caricato.",
+                    "Plugin mancante",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+
                 return;
             }
 
-            var validatorsFolder = ConfiguredPathResolver.ResolveValidatorsFolder(
-                Properties.Settings.Default.ValidatorsFolder);
-            var outputFile = Path.Combine(validatorsFolder, $"{plugin.Name}.xml");
+            var validatorsFolder =
+                ConfiguredPathResolver.ResolveValidatorsFolder(
+                    Properties.Settings.Default.ValidatorsFolder);
 
+            var outputFile = Path.Combine(
+                validatorsFolder,
+                $"{plugin.Name}.xml");
+
+            var selectedAction = ValidatorConflictAction.Overwrite;
+
+            /*
+             * Se il file non esiste non serve mostrare il dialog:
+             * il nuovo validatore viene semplicemente creato.
+             */
             if (File.Exists(outputFile))
             {
-                var res = MessageBox.Show(this,
-                    $"Il file di validazione '{outputFile}' esiste già. Sovrascrivere?",
-                    "Conferma sovrascrittura",
-                    MessageBoxButton.YesNo,
-                    MessageBoxImage.Question);
-                if (res != MessageBoxResult.Yes)
+                var conflictDialog = new ValidatorConflictDialog(outputFile)
                 {
-                    Log("Esportazione validatore annullata dall'utente (sovrascrittura).");
+                    Owner = this
+                };
+
+                var dialogResult = conflictDialog.ShowDialog();
+
+                if (dialogResult != true ||
+                    conflictDialog.SelectedAction == ValidatorConflictAction.Cancel)
+                {
+                    Log(
+                        $"Esportazione validatore annullata dall'utente. " +
+                        $"File esistente: '{outputFile}'.");
+
                     return;
                 }
+
+                selectedAction = conflictDialog.SelectedAction;
             }
+
+            string? generatedValidatorTempFile = null;
+            string? mergedValidatorTempFile = null;
 
             try
             {
                 Directory.CreateDirectory(validatorsFolder);
-                ValidationFileCreator.CreateFromFile(
-                    fi.FullPath,
-                    outputFile,
-                    plugin.SubjectKeyDefinedName,
-                    ConfiguredPathResolver.ResolveFile(Properties.Settings.Default.UnitMappings),
-                    importBanListPath: ConfiguredPathResolver.ResolveFile(Properties.Settings.Default.ImportBanList),
-                    referenceDefinitions: plugin is IReportReferenceProvider referenceProvider
-                        ? referenceProvider.ReferenceDefinitions
-                        : []);
-                if (FilesListView.ItemsSource is List<RepImpFileItem> fileItems)
+
+                switch (selectedAction)
                 {
-                    for (var index = 0; index < fileItems.Count; index++)
-                    {
-                        var item = fileItems[index];
-                        if (!string.Equals(item.Type, plugin.Name, StringComparison.OrdinalIgnoreCase))
-                            continue;
-
-                        fileItems[index] = item with
+                    case ValidatorConflictAction.Overwrite:
                         {
-                            HasValidator = true,
-                            ValidatorPath = outputFile
-                        };
-                    }
+                            /*
+                             * Il file non esiste oppure l'utente ha esplicitamente
+                             * richiesto la sovrascrittura.
+                             */
+                            CreateValidatorFile(
+                                fi,
+                                plugin,
+                                outputFile);
 
-                    CollectionViewSource.GetDefaultView(FilesListView.ItemsSource)?.Refresh();
+                            Log(
+                                $"File di validazione creato o sovrascritto in " +
+                                $"'{outputFile}' per report '{fi.Name}' " +
+                                $"utilizzando plugin '{plugin.Name}'.");
+
+                            break;
+                        }
+
+                    case ValidatorConflictAction.Merge:
+                        {
+                            /*
+                             * Il nuovo validatore viene generato separatamente.
+                             * In questo modo il file esistente non viene modificato
+                             * prima che il merge sia completato con successo.
+                             */
+                            generatedValidatorTempFile =
+                                CreateTemporaryXmlPath(validatorsFolder);
+
+                            mergedValidatorTempFile =
+                                CreateTemporaryXmlPath(validatorsFolder);
+
+                            CreateValidatorFile(
+                                fi,
+                                plugin,
+                                generatedValidatorTempFile);
+
+                            ValidatorMerger.MergeValidators(
+                                existingValidatorPath: outputFile,
+                                newValidatorPath: generatedValidatorTempFile,
+                                outputPath: mergedValidatorTempFile);
+
+                            /*
+                             * Aggiorna il file definitivo solamente dopo che
+                             * la generazione e il merge sono terminati correttamente.
+                             */
+                            File.Copy(
+                                mergedValidatorTempFile,
+                                outputFile,
+                                overwrite: true);
+
+                            Log(
+                                $"Merge del validatore completato in '{outputFile}'. " +
+                                $"Validatore esistente unito con quello generato " +
+                                $"dal report '{fi.Name}'.");
+
+                            break;
+                        }
+
+                    case ValidatorConflictAction.Cancel:
+                    default:
+                        Log("Esportazione validatore annullata dall'utente.");
+                        return;
                 }
-                Log($"File di validazione creato in '{outputFile}' per report '{fi.Name}' utilizzando plugin '{plugin.Name}'.");
-                MessageBox.Show(this, $"File di validazione creato:{Environment.NewLine}{outputFile}", "Esporta validatore", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                UpdateValidatorStatus(
+                    plugin.Name,
+                    outputFile);
+
+                var operationDescription =
+                    selectedAction == ValidatorConflictAction.Merge
+                        ? "File di validazione aggiornato tramite merge:"
+                        : "File di validazione creato:";
             }
             catch (Exception ex)
             {
-                Log($"Errore creazione file di validazione per '{fi.Name}': {ex.Message}");
-                MessageBox.Show(this, $"Errore durante la creazione del file di validazione:{Environment.NewLine}{ex.Message}", "Errore", MessageBoxButton.OK, MessageBoxImage.Error);
+                var operation =
+                    selectedAction == ValidatorConflictAction.Merge
+                        ? "merge"
+                        : "creazione";
+
+                Log(
+                    $"Errore durante {operation} del file di validazione " +
+                    $"per '{fi.Name}': {ex.Message}");
+
+                MessageBox.Show(
+                    this,
+                    $"Errore durante {operation} del file di validazione:" +
+                    $"{Environment.NewLine}{ex.Message}",
+                    "Errore",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+            finally
+            {
+                DeleteTemporaryFile(generatedValidatorTempFile);
+                DeleteTemporaryFile(mergedValidatorTempFile);
             }
         }
 
