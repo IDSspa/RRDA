@@ -1,0 +1,109 @@
+﻿<Window x:Class="RRDA.RepImp.PluginInfoDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Informazioni Plugin"
+        Height="450"
+        Width="700"
+        ResizeMode="CanResize"
+        WindowStartupLocation="CenterOwner">
+
+    <Grid Margin="10">
+
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="150"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <TextBlock Grid.Row="0"
+                   Grid.Column="0"
+                   FontWeight="Bold"
+                   Text="Nome:"/>
+
+        <TextBlock Grid.Row="0"
+                   Grid.Column="1"
+                   Text="{Binding Name}"/>
+
+        <TextBlock Grid.Row="1"
+                   Grid.Column="0"
+                   Margin="0,8,0,0"
+                   FontWeight="Bold"
+                   Text="Versione:"/>
+
+        <TextBlock Grid.Row="1"
+                   Grid.Column="1"
+                   Margin="0,8,0,0"
+                   Text="{Binding Version}"/>
+
+        <TextBlock Grid.Row="2"
+                   Grid.Column="0"
+                   Margin="0,8,0,0"
+                   FontWeight="Bold"
+                   Text="Estensione:"/>
+
+        <TextBlock Grid.Row="2"
+                   Grid.Column="1"
+                   Margin="0,8,0,0"
+                   Text="{Binding SupportedFileExtension}"/>
+
+        <TextBlock Grid.Row="3"
+                   Grid.Column="0"
+                   Margin="0,8,0,0"
+                   FontWeight="Bold"
+                   Text="Subject Kind:"/>
+
+        <TextBlock Grid.Row="3"
+                   Grid.Column="1"
+                   Margin="0,8,0,0"
+                   Text="{Binding SubjectKind}"/>
+
+        <TextBlock Grid.Row="4"
+                   Grid.Column="0"
+                   Margin="0,8,0,0"
+                   FontWeight="Bold"
+                   Text="Subject Key:"/>
+
+        <TextBlock Grid.Row="4"
+                   Grid.Column="1"
+                   Margin="0,8,0,0"
+                   Text="{Binding SubjectKeyDefinedName}"/>
+
+        <GroupBox Grid.Row="5"
+                  Grid.ColumnSpan="2"
+                  Margin="0,15,0,0"
+                  Header="Matching Patterns">
+
+            <ListBox ItemsSource="{Binding MatchingPatterns}">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding}"
+                                   FontFamily="Consolas"/>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+
+        </GroupBox>
+
+        <Button Grid.Row="6"
+                Grid.ColumnSpan="2"
+                Width="100"
+                Height="30"
+                Margin="0,15,0,0"
+                HorizontalAlignment="Right"
+                IsDefault="True"
+                Click="Close_Click">
+            Chiudi
+        </Button>
+
+    </Grid>
+
+</Window>

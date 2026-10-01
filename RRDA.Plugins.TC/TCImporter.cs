@@ -8,10 +8,10 @@ namespace RRDA.Plugins.TC
         public override string Name => "TC";
         public override string Version => "1.0.0";
         public override string SupportedFileExtension => ".xlsx";
-        public override IReadOnlyList<string> MatchingPatterns => ["Report_TC-AnD - "];
+        public override IReadOnlyList<string> MatchingPatterns => [
+            @"^Report_TC-AnD - #[0-9]+$"
+        ];
         public override ReportSubjectKind SubjectKind => ReportSubjectKind.Component;
         public override string SubjectKeyDefinedName => "Serial";
-
-
     }
 }

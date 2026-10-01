@@ -1,6 +1,7 @@
 ﻿using DocumentFormat.OpenXml.Packaging;
 using RRDA.Core;
 using RRDA.Core.Validator;
+using System.Text.RegularExpressions;
 
 namespace RRDA.Plugins.Common
 {
@@ -17,30 +18,48 @@ namespace RRDA.Plugins.Common
         public abstract string SubjectKeyDefinedName { get; }
         public virtual IReadOnlyList<ReportReferenceDefinition> ReferenceDefinitions => [];
         /// <summary>
-        /// Check if fileName can be imported by the implemented plugin class
+        /// Check if fileNamePattern can be imported by the implemented plugin class
         /// </summary>
-        /// <param name="fileName"></param>
+        /// <param name="fileNamePattern"></param>
         /// <param name="validationConfigXml"></param>
-        /// 
+        /// <remarks>fileNamePattern is a regex pattern</remarks>
         /// <returns>True if file can be imported false otherwise</returns>
-        public virtual Task<bool> CanImportAsync(string fileName, Stream? validationConfigXml = null)
+        public virtual Task<bool> CanImportAsync(
+            string fileNamePattern,
+            Stream? validationConfigXml = null)
         {
-            if (string.IsNullOrWhiteSpace(fileName))
+            if (string.IsNullOrWhiteSpace(fileNamePattern))
                 return Task.FromResult(false);
 
-            var actualFileName = Path.GetFileName(fileName);
+            var actualFileName = Path.GetFileName(fileNamePattern);
+
             if (string.IsNullOrEmpty(actualFileName))
                 return Task.FromResult(false);
 
-            // Controlla estensione
+            // Controlla l'estensione.
             var ext = Path.GetExtension(actualFileName);
-            if (!string.Equals(ext, SupportedFileExtension, StringComparison.OrdinalIgnoreCase))
-                return Task.FromResult(false);
 
-            // Controlla se il nome (senza estensione) contiene almeno uno dei pattern definiti (case-insensitive)
-            var nameWithoutExt = Path.GetFileNameWithoutExtension(actualFileName) ?? string.Empty;
+            if (!string.Equals(
+                    ext,
+                    SupportedFileExtension,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return Task.FromResult(false);
+            }
+
+            // Il matching viene effettuato sul nome completo senza estensione.
+            var nameWithoutExt =
+                Path.GetFileNameWithoutExtension(actualFileName)
+                ?? string.Empty;
+
             var matches = MatchingPatterns.Any(pattern =>
-                nameWithoutExt.Contains(pattern, StringComparison.OrdinalIgnoreCase));
+                !string.IsNullOrWhiteSpace(pattern)
+                && Regex.IsMatch(
+                    nameWithoutExt,
+                    pattern,
+                    RegexOptions.IgnoreCase
+                    | RegexOptions.CultureInvariant,
+                    TimeSpan.FromMilliseconds(250)));
 
             return Task.FromResult(matches);
         }
@@ -347,5 +366,14 @@ namespace RRDA.Plugins.Common
             FieldDataType.Bool => "bool",
             _ => "string"
         };
+
+        public virtual ImporterInfo GetInfo() =>
+            new()
+            {
+                Name = Name,
+                Version = Version,
+                Extension = SupportedFileExtension,
+                Patterns = MatchingPatterns
+            };
     }
 }

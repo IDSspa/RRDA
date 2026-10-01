@@ -8,7 +8,9 @@ namespace RRDA.Plugins.DRS_UDX_MAN
         public override string Name => "DRS_UDX_MAN";
         public override string Version => "1.0.0";
         public override string SupportedFileExtension => ".xlsx";
-        public override IReadOnlyList<string> MatchingPatterns => ["NCH_DRS_UDX_MAN"];
+        public override IReadOnlyList<string> MatchingPatterns => [
+            @"^NCH_DRS_UDX_MAN#[0-9]+$"
+        ];
         public override ReportSubjectKind SubjectKind => ReportSubjectKind.SubAssembly;
         public override string SubjectKeyDefinedName => "Serial";
     }

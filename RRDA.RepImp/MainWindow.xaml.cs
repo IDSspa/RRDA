@@ -1764,5 +1764,18 @@ namespace RRDA.RepImp
                 MessageBox.Show(this, $"Impossibile selezionare la cartella radice:{Environment.NewLine}{ex.Message}", "Errore", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
+
+        private void PluginsListBox_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            if (PluginsListBox.SelectedItem is not BaseImporter importer)
+                return;
+
+            var dlg = new PluginInfoDialog(importer)
+            {
+                Owner = this
+            };
+
+            dlg.ShowDialog();
+        }
     }
 }

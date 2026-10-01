@@ -8,7 +8,9 @@ namespace RRDA.Plugins.A0007121_3LIV
         public override string Name => "A0007121_3LIV_ACC";
         public override string Version => "1.0.0";
         public override string SupportedFileExtension => ".xlsx";
-        public override IReadOnlyList<string> MatchingPatterns => ["NCH_2025_0007_A0007121_Accettazione_IDS"];
+        public override IReadOnlyList<string> MatchingPatterns => [
+            @"^NCH_2025_0007_A0007121_Accettazione_IDS#[0-9]+$"
+        ];
         public override ReportSubjectKind SubjectKind => ReportSubjectKind.Component;
         public override string SubjectKeyDefinedName => "Serial";
     }

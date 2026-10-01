@@ -137,7 +137,8 @@
                         <TextBlock Text="Plugins" FontWeight="Bold" DockPanel.Dock="Top" Margin="0,0,0,6"/>
                         <ListBox x:Name="PluginsListBox"
                                     SelectionChanged="PluginsListBox_SelectionChanged"
-                                    DisplayMemberPath="Name"
+                                    DisplayMemberPath="Name" 
+                                    MouseDoubleClick="PluginsListBox_MouseDoubleClick"
                                     HorizontalContentAlignment="Stretch"
                                     AllowDrop="True" 
                                     DragOver="PluginsListBox_DragOver"

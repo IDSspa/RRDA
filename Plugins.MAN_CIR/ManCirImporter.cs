@@ -8,7 +8,9 @@ namespace RRDA.Plugins.MAN_CIR
         public override string Name => "MAN_CIR";
         public override string Version => "1.0.0";
         public override string SupportedFileExtension => ".xlsx";
-        public override IReadOnlyList<string> MatchingPatterns => ["NCH_PAIPL_MAN_CIR"];
+        public override IReadOnlyList<string> MatchingPatterns => [
+            @"^NCH_PAIPL_MAN_CIR#[0-9]+$"
+        ];
         public override ReportSubjectKind SubjectKind => ReportSubjectKind.Component;
         public override string SubjectKeyDefinedName => "Serial";
     }

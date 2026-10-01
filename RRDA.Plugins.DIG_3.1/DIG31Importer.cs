@@ -8,7 +8,9 @@ namespace RRDA.Plugins.DIG_31
         public override string Name => "DIG_31";
         public override string Version => "1.0.0";
         public override string SupportedFileExtension => ".xlsx";
-        public override IReadOnlyList<string> MatchingPatterns => ["NCH_RSR_DIG_3_1"];
+        public override IReadOnlyList<string> MatchingPatterns => [
+            @"^NCH_RSR_DIG_3_1#[0-9]+$"
+        ];
         public override ReportSubjectKind SubjectKind => ReportSubjectKind.Component;
         public override string SubjectKeyDefinedName => "Serial";
     }
