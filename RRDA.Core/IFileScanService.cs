@@ -3,17 +3,18 @@
     public interface IFileScanService
     {
         Task<IReadOnlyList<ScannedReportFile>> ScanAsync(
-        FileScanRequest request,
-        IReadOnlyCollection<IReportImporter> importers,
-        IProgress<FileScanProgress>? progress = null,
-        Action<string>? log = null,
-        CancellationToken cancellationToken = default);
+            FileScanRequest request,
+            IReadOnlyCollection<IReportImporter> importers,
+            ReportFileBanListResolver? reportFileBanList = null,  // ← ADD THIS
+            IProgress<FileScanProgress>? progress = null,
+            Action<string>? log = null,
+            CancellationToken cancellationToken = default);
     }
 
     public sealed record FileScanRequest(
-    string RootFolder,
-    string SearchPattern,
-    int MaxDepth);
+        string RootFolder,
+        string SearchPattern,
+        int MaxDepth);
 
     public sealed record ScannedReportFile(
         string Name,

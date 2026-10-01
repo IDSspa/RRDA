@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ReportFileBanList version="1"
+                   matchMode="glob"
+                   caseSensitive="false">
+	<FileNames>
+		<!-- Temporary files -->
+		<Pattern>~$*.xlsx</Pattern>
+		<Pattern>~*.xlsx</Pattern>
+		<Pattern>*.tmp</Pattern>
+		<Pattern>*.temp</Pattern>
+		<Pattern>.~lock.*</Pattern>
+
+		<!-- Backup files -->
+		<Pattern>*.bak</Pattern>
+		<Pattern>*.backup</Pattern>
+
+		<!-- System files -->
+		<Pattern>Thumbs.db</Pattern>
+		<Pattern>desktop.ini</Pattern>
+	</FileNames>
+</ReportFileBanList>

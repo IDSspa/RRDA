@@ -117,7 +117,7 @@
         <Setter Property="Padding" Value="8,7"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
         <Setter Property="HorizontalContentAlignment" Value="Left"/>
-        <Setter Property="Template">
+        <!--<Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="GridViewColumnHeader">
                     <Border x:Name="HeaderBorder"
@@ -135,7 +135,7 @@
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
-        </Setter>
+        </Setter>-->
     </Style>
     <Style TargetType="Menu">
         <Setter Property="Background" Value="{DynamicResource SurfaceBrush}"/>

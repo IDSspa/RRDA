@@ -5,6 +5,7 @@
         public async Task<IReadOnlyList<ScannedReportFile>> ScanAsync(
             FileScanRequest request,
             IReadOnlyCollection<IReportImporter> importers,
+            ReportFileBanListResolver? reportFileBanList = null,  // ← ADD THIS
             IProgress<FileScanProgress>? progress = null,
             Action<string>? log = null,
             CancellationToken cancellationToken = default)
@@ -31,6 +32,7 @@
                 request.RootFolder,
                 pattern,
                 maxDepth,
+                reportFileBanList,  // ← PASS HERE
                 progress,
                 log,
                 cancellationToken)
@@ -90,6 +92,7 @@
             string rootFolder,
             string searchPattern,
             int maxDepth,
+            ReportFileBanListResolver? reportFileBanList,  // ← ADD THIS
             IProgress<FileScanProgress>? progress,
             Action<string>? log,
             CancellationToken cancellationToken)
@@ -135,7 +138,16 @@
                 }
 
                 foreach (var file in files)
+                {
+                    // ← ADD BAN-LIST CHECK HERE
+                    if (reportFileBanList?.IsFileNameExcluded(file.Name) ?? false)
+                    {
+                        log?.Invoke($"File escluso dalla ban-list: '{file.Name}'");
+                        continue;
+                    }
+
                     yield return file;
+                }
 
                 if (depth >= maxDepth)
                     continue;

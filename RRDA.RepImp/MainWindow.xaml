@@ -173,6 +173,7 @@
                         <TextBlock Text="File(s) nella cartella selezionata" FontWeight="Bold" DockPanel.Dock="Top" Margin="0,0,0,6"/>
 
                         <ListView x:Name="FilesListView"
+                                  HorizontalContentAlignment="Stretch"
                                   SelectionChanged="FilesListView_SelectionChanged"
                                   ContextMenuOpening="FilesListView_ContextMenuOpening"
                                   GridViewColumnHeader.Click="FilesListView_Click">

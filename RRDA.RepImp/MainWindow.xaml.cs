@@ -186,30 +186,42 @@ namespace RRDA.RepImp
 
                 if (!_cache.TryGetValue(cacheKey, out List<RepImpFileItem> files))
                 {
+                    // Carica la banlist (restituisce Empty se non disponibile)
+                    var reportFileBanListPath = ConfiguredPathResolver.ResolveFile(
+                        Properties.Settings.Default.ReportFileBanList);
+                    var reportFileBanList = ReportFileBanListResolver.Load(reportFileBanListPath);
+
+                    if (reportFileBanList == ReportFileBanListResolver.Empty)
+                    {
+                        Log($"Avviso: ReportFileBanList non trovata in '{reportFileBanListPath}'. " +
+                            $"Tutti i file .xlsx saranno ammessi.");
+                    }
+
                     var scannedFiles = await _fileScanService.ScanAsync(
                         new FileScanRequest(folderPath, "*.xlsx", maxDepth),
                         _plugins,
+                        reportFileBanList,
                         progress,
                         Log,
                         cts.Token);
 
                     files = [.. scannedFiles
-                        .Select(f =>
-                        {
-                            var reportType = f.ReportType ?? string.Empty;
-                            var validatorPath = ResolveValidatorPath(reportType);
-                            return new RepImpFileItem(
-                                f.Name,
-                                f.Length,
-                                f.LastWriteTime,
-                                reportType,
-                                f.FullPath,
-                                validatorPath is not null,
-                                validatorPath);
-                        })];
+                .Select(f =>
+                {
+                    var reportType = f.ReportType ?? string.Empty;
+                    var validatorPath = ResolveValidatorPath(reportType);
+                    return new RepImpFileItem(
+                        f.Name,
+                        f.Length,
+                        f.LastWriteTime,
+                        reportType,
+                        f.FullPath,
+                        validatorPath is not null,
+                        validatorPath);
+                })];
 
                     var cacheEntryOptions = new MemoryCacheEntryOptions()
-                                    .SetSlidingExpiration(TimeSpan.FromMinutes(10)); // Opzionale: scade se inutilizzata
+                                            .SetSlidingExpiration(TimeSpan.FromMinutes(10));
 
                     _cache.Set(cacheKey, files, cacheEntryOptions);
 
@@ -243,7 +255,6 @@ namespace RRDA.RepImp
                 scanDlg.Close();
             }
         }
-
         private void LoadPlugins()
         {
             try

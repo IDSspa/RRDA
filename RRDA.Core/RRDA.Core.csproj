@@ -16,4 +16,24 @@
     <EmbeddedResource Include="Validator\ImportBanList.xsd" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="ReportFileBanList.xsd">
+      <SubType>Designer</SubType>
+    </None>
+  </ItemGroup>
+
+	<ItemGroup>
+		<None Update="ReportFileBanList.xml">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+		<None Update="ReportFileBanList.xsd">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
+
+	<ItemGroup>
+		<EmbeddedResource Include="ReportFileBanList.xsd" />
+		<EmbeddedResource Include="ReportFileBanList.xml" />
+	</ItemGroup>
+
 </Project>
