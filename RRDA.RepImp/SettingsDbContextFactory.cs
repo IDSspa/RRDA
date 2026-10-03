@@ -9,7 +9,7 @@ public sealed class SettingsDbContextFactory : IDbContextFactory<RRDADbContext>
     {
         var connectionString = Properties.Settings.Default.ConnectionString;
         if (string.IsNullOrWhiteSpace(connectionString))
-            return new RRDAContextFactory().CreateDbContext([]);
+            return new ContextFactory().CreateDbContext([]);
 
         var options = new DbContextOptionsBuilder<RRDADbContext>()
             .UseSqlServer(connectionString)

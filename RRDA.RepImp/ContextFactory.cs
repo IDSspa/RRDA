@@ -1,9 +1,10 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
+using RRDA.Data;
 
-namespace RRDA.Data
+namespace RRDA.RepImp
 {
-    public class RRDAContextFactory : IDesignTimeDbContextFactory<RRDADbContext>
+    public class ContextFactory : IDesignTimeDbContextFactory<RRDADbContext>
     {
         public RRDADbContext CreateDbContext(string[] args)
         {

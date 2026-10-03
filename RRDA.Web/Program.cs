@@ -11,10 +11,25 @@ using RRDA.Web.Services.TypePivot;
 using System.Net;
 using System.Runtime.Versioning;
 
+
 var builder = WebApplication.CreateBuilder(args);
-builder.Configuration.AddEnvironmentVariables(prefix: "RRDA_");
+
+//builder.Configuration.AddEnvironmentVariables(prefix: "RRDA_");
+
+Console.WriteLine($"Ambiente: {builder.Environment.ContentRootPath}");
+Console.WriteLine($"DefaultConnection: {builder.Configuration.GetConnectionString("DefaultConnection")}");
 
 var isDevelopment = builder.Environment.IsDevelopment();
+
+if (isDevelopment && OperatingSystem.IsWindows())
+{
+    // Il provider Event Log predefinito di Windows tenta di creare/usare la
+    // sorgente ".NET Runtime", operazione che un processo locale non elevato
+    // non può eseguire. In sviluppo usiamo gli altri provider predefiniti.
+    builder.Logging.AddFilter<Microsoft.Extensions.Logging.EventLog.EventLogLoggerProvider>(
+        (_, _) => false);
+}
+
 var skipWindowsAuthRequested =
     builder.Configuration.GetValue<bool>("DevSettings:SkipWindowsAuth");
 if (skipWindowsAuthRequested && !isDevelopment)
@@ -39,6 +54,7 @@ if (OperatingSystem.IsWindows() && !isDevelopment)
 // ─────────────────────────────────────────────────────────────────────────────
 // Database
 // ─────────────────────────────────────────────────────────────────────────────
+
 builder.Services.AddDbContextFactory<RRDADbContext>(options =>
     options.UseSqlServer(
         builder.Configuration.GetConnectionString("DefaultConnection")),
@@ -105,6 +121,8 @@ builder.Services.AddScoped<ITypePivotViewModelBuilder, TypePivotViewModelBuilder
 builder.Services.AddScoped<ITypePivotExportService, TypePivotExportService>();
 builder.Services.AddHostedService<AdminBootstrapStartupService>();
 builder.Services.AddHostedService<PluginCatalogStartupService>();
+
+
 
 var app = builder.Build();
 

@@ -317,7 +317,7 @@ namespace RRDA.RepImp
                 }
                 else
                 {
-                    db = new RRDAContextFactory().CreateDbContext([]);
+                    db = new ContextFactory().CreateDbContext([]);
                 }
 
                 await using (db)
@@ -515,7 +515,7 @@ namespace RRDA.RepImp
                 }
                 else
                 {
-                    db = new RRDAContextFactory().CreateDbContext([]);
+                    db = new ContextFactory().CreateDbContext([]);
                 }
 
                 await using (db)
@@ -1206,7 +1206,7 @@ namespace RRDA.RepImp
                 }
                 else
                 {
-                    dbForBatches = new RRDAContextFactory().CreateDbContext([]);
+                    dbForBatches = new ContextFactory().CreateDbContext([]);
                 }
 
                 await using (dbForBatches)
