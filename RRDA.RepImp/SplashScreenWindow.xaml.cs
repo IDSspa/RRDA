@@ -53,7 +53,7 @@ namespace RRDA.RepImp
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("Assembly location non trovato");
+                Debug.WriteLine("Assembly location non trovato: " + ex.Message);
             }
 
             // Leggi la versione dall'assembly
