@@ -1,4 +1,7 @@
+using System.Diagnostics;
+using System.Reflection;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
@@ -35,6 +38,25 @@ namespace RRDA.RepImp
         public SplashScreenWindow()
         {
             InitializeComponent();
+
+            try{
+                var assemblyLocation = Assembly.GetExecutingAssembly().Location;
+
+                if (string.IsNullOrEmpty(assemblyLocation))
+                    throw new Exception("Assembly location non trovato");
+
+                // Leggi FileVersionInfo dal file fisico (questo avrà il valore corretto di MinVer)
+                var fileVersionInfo = FileVersionInfo.GetVersionInfo(assemblyLocation);
+                var fileVersion = fileVersionInfo.FileVersion ?? "1.0.0.0";
+
+                VersionTextBlock.Text = $"v{fileVersion}";
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("Assembly location non trovato");
+            }
+
+            // Leggi la versione dall'assembly
 
             _timer = new DispatcherTimer
             {
