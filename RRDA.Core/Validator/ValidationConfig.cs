@@ -12,9 +12,12 @@ namespace RRDA.Core.Validator
         public bool FailOnError { get; set; } = true;
         public CultureInfo Culture { get; set; } = CultureInfo.InvariantCulture;
         public List<FieldMapping> Mappings { get; set; } = [];
+        public List<CellMapping> Cells { get; set; } = [];
         public List<FieldRule> FieldRules { get; set; } = [];
         public List<Sheet> Sheets { get; set; } = [];
         public List<RowRule> RowRules { get; set; } = [];
+
+
         public string SubjectKeyField { get; set; } = string.Empty;
         /// <summary>
         /// Caricamento e validazione file XML.
@@ -76,6 +79,24 @@ namespace RRDA.Core.Validator
                 var sheetName = s.Attribute("Name");
                 if (sheetName is not null) 
                     cfg.Sheets.Add(new Sheet { Name = sheetName.Value });
+            }
+
+            // ← AGGIUNGERE QUI: parsing Cells
+            var cells = root.Element("Cells")?.Elements("Cell") ?? [];
+
+            foreach (var c in cells)
+            {
+                var coordinate = (string?)c.Attribute("coordinate") ?? string.Empty;
+                var definedNameAlias = (string?)c.Attribute("definedNameAlias") ?? string.Empty;
+
+                if (!string.IsNullOrWhiteSpace(coordinate) && !string.IsNullOrWhiteSpace(definedNameAlias))
+                {
+                    cfg.Cells.Add(new CellMapping
+                    {
+                        Coordinate = coordinate,
+                        DefinedNameAlias = definedNameAlias
+                    });
+                }
             }
 
             var mappings = root.Element("FieldMappings")?.Elements("Map") ?? [];

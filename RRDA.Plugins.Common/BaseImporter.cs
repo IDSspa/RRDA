@@ -177,7 +177,7 @@ namespace RRDA.Plugins.Common
                 var sheetIndex = OpenXmlExcelReader.BuildSheetIndex(workbook, wbPart);
 
                 // Costruiamo un indice  definedName -> (sheetName, cellRef) dei DefinedNames della workbook
-                var definedNamesIndex = OpenXmlExcelReader.BuildDefinedNamesIndex(workbook);
+                var definedNamesIndex = OpenXmlExcelReader.BuildDefinedNamesIndexWithDirectCells(workbook, config.Cells);
 
                 // Set dei worksheet ammessi (case-insensitive) — da sezione <Sheets> del config
                 var allowedSheets = new HashSet<string>(

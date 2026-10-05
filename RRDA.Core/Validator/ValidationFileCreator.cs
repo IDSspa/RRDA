@@ -1,6 +1,5 @@
 ﻿using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Spreadsheet;
-using RRDA.Core;
 using System.Globalization;
 using System.Xml.Linq;
 
@@ -39,6 +38,7 @@ namespace RRDA.Core.Validator
             using var outFs = File.Create(outputXmlPath);
             CreateFromStream(inFs, outFs, subjectKeyDefinedName, unitMappingsPath, failOnError, culture, importBanListPath, referenceDefinitions);
         }
+
         /// <summary>
         /// Crea il file di validazione scrivendo l'XML su uno stream di output.
         /// Lo stream di input può essere non seekable (viene gestito internamente).

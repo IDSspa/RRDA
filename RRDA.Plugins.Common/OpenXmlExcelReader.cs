@@ -1,10 +1,84 @@
 ﻿using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Spreadsheet;
+using RRDA.Core.Validator;
 
 namespace RRDA.Plugins.Common
 {
     public static class OpenXmlExcelReader
     {
+        /// <summary>
+        /// Analizza una coordinata di cella (es: "C3", "foglio!$B$3") e restituisce
+        /// (sheetName, cellAddress normalizzato).
+        /// Se il foglio non è specificato, usa il foglio corrente (da gestire dal chiamante).
+        /// </summary>
+        public static (string SheetName, string CellAddress) ParseCellCoordinate(string coordinate)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(coordinate);
+
+            var normalized = coordinate.Trim();
+
+            // Controlla se contiene il separatore '!'
+            var bangIdx = normalized.LastIndexOf('!');
+
+            if (bangIdx > 0)
+            {
+                // Formato: "foglio!$B$3"
+                var sheetName = normalized[..bangIdx].Trim('\'');  // rimuove apici
+                var cellAddr = normalized[(bangIdx + 1)..].Replace("$", "");  // rimuove $
+                return (sheetName, cellAddr.ToUpperInvariant());
+            }
+            else
+            {
+                // Formato: "C3" senza foglio specificato
+                // Il foglio deve essere fornito dal contesto (default "Sheet1" o lanciare eccezione)
+                throw new ArgumentException(
+                    $"Coordinata '{coordinate}' non contiene il nome del foglio. " +
+                    "Formato richiesto: 'SheetName!$CoL$Row' o 'SheetName!CoLRow'.");
+            }
+        }
+
+        /// <summary>
+        /// Estende BuildDefinedNamesIndex() con le celle dirette dalla configurazione.
+        /// Le celle dirette vengono aggiunte all'indice come se fossero DefinedNames virtuali.
+        /// </summary>
+        public static Dictionary<string, (string SheetName, string CellAddress)>
+            BuildDefinedNamesIndexWithDirectCells(
+                Workbook workbook,
+                IReadOnlyList<CellMapping>? directCells = null)
+        {
+            // Costruisci l'indice dai DefinedNames reali
+            var index = BuildDefinedNamesIndex(workbook);
+
+            // Aggiungi le celle dirette come entry virtuali
+            if (directCells != null && directCells.Count > 0)
+            {
+                foreach (var cell in directCells)
+                {
+                    if (string.IsNullOrWhiteSpace(cell.Coordinate)
+                        || string.IsNullOrWhiteSpace(cell.DefinedNameAlias))
+                        continue;
+
+                    try
+                    {
+                        var (sheetName, cellAddr) = ParseCellCoordinate(cell.Coordinate);
+
+                        // Non sovrascrivere DefinedNames esistenti
+                        if (!index.ContainsKey(cell.DefinedNameAlias))
+                        {
+                            index[cell.DefinedNameAlias] = (sheetName, cellAddr);
+                        }
+                    }
+                    catch (ArgumentException ex)
+                    {
+                        // Log warning e skip
+                        System.Diagnostics.Debug.WriteLine($"Avviso: coordinata non valida '{cell.Coordinate}': {ex.Message}");
+                    }
+                }
+            }
+
+            return index;
+        }
+
         /// <summary>
         /// Legge il valore testuale di una singola cella identificata dal suo indirizzo (es: "B5").
         /// Gestisce SharedString, valori numerici, date e testo inline.
