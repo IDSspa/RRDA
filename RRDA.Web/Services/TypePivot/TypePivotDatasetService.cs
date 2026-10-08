@@ -28,8 +28,9 @@ public sealed class TypePivotDatasetService(RRDADbContext db) : ITypePivotDatase
             .AsNoTracking()
             .Where(f => f.ReportTypeId == request.ReportTypeId);
 
-        if (request.BatchId.HasValue)
-            filesQuery = filesQuery.Where(f => f.ReportBatchId == request.BatchId.Value);
+        if (request.BatchIds.Count > 0)
+            filesQuery = filesQuery.Where(f => f.ReportBatchId.HasValue
+                && request.BatchIds.Contains(f.ReportBatchId.Value));
         if (request.LastModifiedFrom.HasValue)
             filesQuery = filesQuery.Where(f => f.FileLastModify >= request.LastModifiedFrom.Value);
         if (request.LastModifiedTo.HasValue)

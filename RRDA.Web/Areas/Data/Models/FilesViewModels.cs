@@ -5,7 +5,7 @@ namespace RRDA.Web.Areas.Data.Models;
 
 public sealed class FilesIndexViewModel
 {
-    public required IReadOnlyList<ReportFile> Files { get; init; }
+    public required IReadOnlyList<FileIndexItemViewModel> Files { get; init; }
     public required IReadOnlyList<SelectListItem> ReportTypeOptions { get; init; }
     public required IReadOnlyList<SelectListItem> BatchOptions { get; init; }
     public required FilesIndexFilters Filters { get; init; }
@@ -18,10 +18,18 @@ public sealed class FilesIndexFilters
 {
     public int? ReportTypeId { get; init; }
     public int? BatchId { get; init; }
+    public string? FileName { get; init; }
+    public string? SerialNumber { get; init; }
     public string? ImportedBy { get; init; }
     public string? From { get; init; }
     public string? To { get; init; }
     public int PageSize { get; init; }
+}
+
+public sealed class FileIndexItemViewModel
+{
+    public required ReportFile File { get; init; }
+    public string? SerialNumber { get; init; }
 }
 
 public sealed class FileEntitiesViewModel
@@ -34,4 +42,3 @@ public sealed class FileEntitiesViewModel
     public int TotalPages { get; init; }
     public int CurrentPage { get; init; }
 }
-

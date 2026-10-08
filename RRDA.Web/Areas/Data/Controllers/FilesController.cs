@@ -23,7 +23,7 @@ namespace RRDA.Web.Areas.Data.Controllers
     {
         // ── GET /Data/Files ───────────────────────────────────────────────
         public async Task<IActionResult> Index(
-            int? reportTypeId, int? batchId, string? importedBy,
+            int? reportTypeId, int? batchId, string? fileName, string? serialNumber, string? importedBy,
             DateTime? from, DateTime? to,
             int page = 1, int pageSize = 25)
         {
@@ -37,6 +37,20 @@ namespace RRDA.Web.Areas.Data.Controllers
 
             if (batchId.HasValue)
                 query = query.Where(f => f.ReportBatchId == batchId.Value);
+
+            if (!string.IsNullOrWhiteSpace(fileName))
+                query = ApplyFileNameFilter(query, fileName);
+
+            if (!string.IsNullOrWhiteSpace(serialNumber))
+            {
+                var serialPattern = ToSqlLikePattern(serialNumber);
+                query = query.Where(f => f.Entities
+                    .SelectMany(entity => entity.Properties)
+                    .Any(property => property.IsSubjectKey
+                        && property.Name == "value"
+                        && property.Value != null
+                        && EF.Functions.Like(property.Value, serialPattern)));
+            }
 
             if (!string.IsNullOrWhiteSpace(importedBy))
                 query = query.Where(f => f.ImportedBy != null &&
@@ -54,6 +68,15 @@ namespace RRDA.Web.Areas.Data.Controllers
                 .OrderByDescending(f => f.UploadedAt)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
+                .Select(f => new FileIndexItemViewModel
+                {
+                    File = f,
+                    SerialNumber = f.Entities
+                        .SelectMany(entity => entity.Properties)
+                        .Where(property => property.IsSubjectKey && property.Name == "value")
+                        .Select(property => property.Value)
+                        .FirstOrDefault()
+                })
                 .ToListAsync();
 
             var reportTypeOptions = new SelectList(
@@ -73,6 +96,8 @@ namespace RRDA.Web.Areas.Data.Controllers
                 {
                     ReportTypeId = reportTypeId,
                     BatchId = batchId,
+                    FileName = fileName,
+                    SerialNumber = serialNumber,
                     ImportedBy = importedBy,
                     From = from?.ToString("yyyy-MM-dd"),
                     To = to?.ToString("yyyy-MM-dd"),
@@ -82,6 +107,21 @@ namespace RRDA.Web.Areas.Data.Controllers
                 TotalPages = (int)Math.Ceiling(total / (double)pageSize),
                 CurrentPage = page
             });
+        }
+
+        private static IQueryable<ReportFile> ApplyFileNameFilter(
+            IQueryable<ReportFile> query,
+            string fileName)
+        {
+            var pattern = ToSqlLikePattern(fileName);
+            return query.Where(file => EF.Functions.Like(file.FileName, pattern));
+        }
+
+        private static string ToSqlLikePattern(string value)
+        {
+            var trimmed = value.Trim();
+            var pattern = trimmed.Replace('*', '%').Replace('?', '_');
+            return pattern.Contains('%') || pattern.Contains('_') ? pattern : $"%{pattern}%";
         }
 
         // GET /Data/Files/Import

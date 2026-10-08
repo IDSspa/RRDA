@@ -6,7 +6,7 @@ namespace RRDA.Web.Services.TypePivot;
 
 public sealed record TypePivotFilterRequest(
     int ReportTypeId,
-    int? BatchId,
+    IReadOnlyCollection<int> BatchIds,
     DateTime? LastModifiedFrom,
     DateTime? LastModifiedTo,
     string? FilterField,

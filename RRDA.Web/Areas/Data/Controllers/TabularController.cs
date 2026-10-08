@@ -36,7 +36,7 @@ namespace RRDA.Web.Areas.Data.Controllers
 
             var useCompactRanges = ResolveCompactRangeDisplay();
             var dataset = await typePivotDatasetService.GetAsync(
-                CreateFilterRequest(file.ReportTypeId, null, null, null, null, null, null, null, null));
+                CreateFilterRequest(file.ReportTypeId, [], null, null, null, null, null, null, null));
             if (dataset is null) return NotFound();
 
             var pairs = await db.ReportEntities
@@ -121,7 +121,7 @@ namespace RRDA.Web.Areas.Data.Controllers
 
         public async Task<IActionResult> TypePivot(
             int reportTypeId,
-            int? batchId,
+            [FromQuery] string[]? batchIds,
             DateTime? lastModifiedFrom,
             DateTime? lastModifiedTo,
             string? filterField,
@@ -139,7 +139,7 @@ namespace RRDA.Web.Areas.Data.Controllers
                 new TypePivotViewRequest(
                     CreateFilterRequest(
                         reportTypeId,
-                        batchId,
+                        ParseBatchIds(batchIds),
                         lastModifiedFrom,
                         lastModifiedTo,
                         filterField,
@@ -167,7 +167,7 @@ namespace RRDA.Web.Areas.Data.Controllers
         [HttpGet]
         public async Task<IActionResult> TypePivotColumnStats(
             int reportTypeId,
-            int? batchId,
+            [FromQuery] string[]? batchIds,
             DateTime? lastModifiedFrom,
             DateTime? lastModifiedTo,
             string? filterField,
@@ -180,7 +180,7 @@ namespace RRDA.Web.Areas.Data.Controllers
             var dataset = await typePivotDatasetService.GetAsync(
                 CreateFilterRequest(
                     reportTypeId,
-                    batchId,
+                    ParseBatchIds(batchIds),
                     lastModifiedFrom,
                     lastModifiedTo,
                     filterField,
@@ -215,7 +215,7 @@ namespace RRDA.Web.Areas.Data.Controllers
 
         public async Task<IActionResult> TypePivotExport(
             int reportTypeId,
-            int? batchId,
+            [FromQuery] string[]? batchIds,
             DateTime? lastModifiedFrom,
             DateTime? lastModifiedTo,
             string? filterField,
@@ -233,7 +233,7 @@ namespace RRDA.Web.Areas.Data.Controllers
                 new TypePivotExportRequest(
                     CreateFilterRequest(
                         reportTypeId,
-                        batchId,
+                        ParseBatchIds(batchIds),
                         lastModifiedFrom,
                         lastModifiedTo,
                         filterField,
@@ -251,7 +251,7 @@ namespace RRDA.Web.Areas.Data.Controllers
 
         public async Task<IActionResult> TypePivotPlotData(
             int reportTypeId,
-            int? batchId,
+            [FromQuery] string[]? batchIds,
             DateTime? lastModifiedFrom,
             DateTime? lastModifiedTo,
             string? filterField,
@@ -269,7 +269,7 @@ namespace RRDA.Web.Areas.Data.Controllers
                 new TypePivotPlotRequest(
                     CreateFilterRequest(
                         reportTypeId,
-                        batchId,
+                        ParseBatchIds(batchIds),
                         lastModifiedFrom,
                         lastModifiedTo,
                         filterField,
@@ -293,7 +293,7 @@ namespace RRDA.Web.Areas.Data.Controllers
 
         private static TypePivotFilterRequest CreateFilterRequest(
             int reportTypeId,
-            int? batchId,
+            IReadOnlyCollection<int> batchIds,
             DateTime? lastModifiedFrom,
             DateTime? lastModifiedTo,
             string? filterField,
@@ -303,7 +303,7 @@ namespace RRDA.Web.Areas.Data.Controllers
             string? subjectKeyTo) =>
             new(
                 reportTypeId,
-                batchId,
+                batchIds,
                 lastModifiedFrom,
                 lastModifiedTo,
                 filterField,
@@ -311,6 +311,16 @@ namespace RRDA.Web.Areas.Data.Controllers
                 filterTo,
                 subjectKeyFrom,
                 subjectKeyTo);
+
+        private static IReadOnlyCollection<int> ParseBatchIds(IEnumerable<string>? values) =>
+            values?
+                .SelectMany(value => value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                .Select(value => int.TryParse(value, out var id) ? id : (int?)null)
+                .Where(id => id.HasValue)
+                .Select(id => id!.Value)
+                .Distinct()
+                .ToArray()
+            ?? [];
 
         private int ResolveDecimalPlaces()
         {

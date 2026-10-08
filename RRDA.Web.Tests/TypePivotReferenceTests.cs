@@ -33,7 +33,7 @@ public sealed class TypePivotReferenceTests
         await db.SaveChangesAsync();
 
         var dataset = await new TypePivotDatasetService(db).GetAsync(
-            new TypePivotFilterRequest(radarType.Id, null, null, null, null, null, null, null, null));
+            new TypePivotFilterRequest(radarType.Id, [], null, null, null, null, null, null, null));
 
         Assert.NotNull(dataset);
         Assert.Contains("SN_ALI", dataset.Metadata.VisibleHeaders);
@@ -103,7 +103,7 @@ public sealed class TypePivotReferenceTests
             new TypePivotDatasetService(db),
             new TypePivotOrderingService(db));
         var model = await builder.BuildAsync(new TypePivotViewRequest(
-            new TypePivotFilterRequest(radarType.Id, null, null, null, null, null, null, null, null),
+            new TypePivotFilterRequest(radarType.Id, [], null, null, null, null, null, null, null),
             null,
             null,
             1,

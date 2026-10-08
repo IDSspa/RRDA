@@ -207,7 +207,7 @@ public sealed class TypePivotViewModelBuilder(
             HeaderUnits = dataset.Metadata.HeaderUnits,
             ReferenceHeaders = dataset.Metadata.ReferenceHeaders,
             DynamicFilterFields = dataset.Metadata.AllMeasureHeaders,
-            BatchId = request.Filter.BatchId,
+            BatchIds = [.. request.Filter.BatchIds],
             LastModifiedFrom = request.Filter.LastModifiedFrom,
             LastModifiedTo = request.Filter.LastModifiedTo,
             FilterField = request.Filter.FilterField,

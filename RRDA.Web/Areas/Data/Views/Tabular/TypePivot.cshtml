@@ -5,6 +5,7 @@
 @{
     ViewData["Title"] = $"Type Pivot - {Model.ReportTypeKey}";
     var staticFooterColumns = Model.HasSubjectKey ? 5 : 4;
+    var batchIdsRouteValue = string.Join(',', Model.BatchIds);
 
     string FormatStatistic(double? value)
     {
@@ -260,6 +261,10 @@
 
     .type-pivot-plot-action {
         align-self: start;
+        padding-top: calc(1.275rem + .3rem);
+    }
+
+    .type-pivot-filter-actions {
         padding-top: calc(1.275rem + .3rem);
     }
 
@@ -540,7 +545,7 @@
                asp-controller="Tabular"
                asp-action="TypePivotExport"
                asp-route-reportTypeId="@Model.ReportTypeId"
-               asp-route-batchId="@Model.BatchId"
+               asp-route-batchIds="@batchIdsRouteValue"
                asp-route-lastModifiedFrom="@(Model.LastModifiedFrom?.ToString("yyyy-MM-dd"))"
                asp-route-lastModifiedTo="@(Model.LastModifiedTo?.ToString("yyyy-MM-dd"))"
                asp-route-filterField="@Model.FilterField"
@@ -554,7 +559,7 @@
                asp-controller="Tabular"
                asp-action="TypePivotExport"
                asp-route-reportTypeId="@Model.ReportTypeId"
-               asp-route-batchId="@Model.BatchId"
+               asp-route-batchIds="@batchIdsRouteValue"
                asp-route-lastModifiedFrom="@(Model.LastModifiedFrom?.ToString("yyyy-MM-dd"))"
                asp-route-lastModifiedTo="@(Model.LastModifiedTo?.ToString("yyyy-MM-dd"))"
                asp-route-filterField="@Model.FilterField"
@@ -583,20 +588,20 @@
         </div>
         <div class="collapse" id="typePivotFilters">
             <div class="type-pivot-collapse-body">
-                <form id="type-pivot-filter-form" method="get" class="row g-2 align-items-end">
+                <form id="type-pivot-filter-form" method="get" class="row g-2 align-items-start">
                     <input type="hidden" name="reportTypeId" value="@Model.ReportTypeId" />
                     <input type="hidden" name="sortField" value="@Model.SortField" />
                     <input type="hidden" name="sortDirection" value="@Model.SortDirection" />
 
                     <div class="col-md-3">
                         <label class="form-label">Batch</label>
-                        <select class="form-select" name="batchId">
-                            <option value="">Tutti</option>
+                        <select class="form-select" name="batchIds" multiple size="5" aria-describedby="batch-help">
                             @foreach (var batch in Model.BatchOptions)
                             {
-                                <option value="@batch.Id" selected="@(Model.BatchId == batch.Id)">@batch.Label</option>
+                                <option value="@batch.Id" selected="@Model.BatchIds.Contains(batch.Id)">@batch.Label</option>
                             }
                         </select>
+                        <div id="batch-help" class="form-text">Seleziona uno o più batch (Ctrl/Cmd+clic).</div>
                     </div>
 
                     <div class="col-md-2">
@@ -640,7 +645,7 @@
                         <input class="form-control" name="subjectKeyTo" value="@Model.SubjectKeyTo" />
                     </div>
 
-                    <div class="col-md-auto type-pivot-form-actions">
+                    <div class="col-md-auto type-pivot-form-actions type-pivot-filter-actions">
                         <button class="btn-rrda-primary" type="submit">Applica</button>
                         <a asp-action="TypePivot"
                            asp-route-reportTypeId="@Model.ReportTypeId"
@@ -674,7 +679,10 @@
                       method="get"
                       class="type-pivot-plot-grid">
                     <input type="hidden" name="reportTypeId" value="@Model.ReportTypeId" />
-                    <input type="hidden" name="batchId" value="@Model.BatchId" />
+                    @foreach (var batchId in Model.BatchIds)
+                    {
+                        <input type="hidden" name="batchIds" value="@batchId" />
+                    }
                     <input type="hidden" name="lastModifiedFrom" value="@(Model.LastModifiedFrom?.ToString("yyyy-MM-dd"))" />
                     <input type="hidden" name="lastModifiedTo" value="@(Model.LastModifiedTo?.ToString("yyyy-MM-dd"))" />
                     <input type="hidden" name="filterField" value="@Model.FilterField" />
@@ -770,7 +778,7 @@
                                    asp-route-reportTypeId="@Model.ReportTypeId"
                                    asp-route-page="1"
                                    asp-route-pageSize="@Model.PageSize"
-                                   asp-route-batchId="@Model.BatchId"
+                                   asp-route-batchIds="@batchIdsRouteValue"
                                    asp-route-lastModifiedFrom="@(Model.LastModifiedFrom?.ToString("yyyy-MM-dd"))"
                                    asp-route-lastModifiedTo="@(Model.LastModifiedTo?.ToString("yyyy-MM-dd"))"
                                    asp-route-filterField="@Model.FilterField"
@@ -1041,7 +1049,7 @@
                        asp-route-reportTypeId="@Model.ReportTypeId"
                        asp-route-page="@p"
                        asp-route-pageSize="@Model.PageSize"
-                       asp-route-batchId="@Model.BatchId"
+                       asp-route-batchIds="@batchIdsRouteValue"
                        asp-route-lastModifiedFrom="@(Model.LastModifiedFrom?.ToString("yyyy-MM-dd"))"
                        asp-route-lastModifiedTo="@(Model.LastModifiedTo?.ToString("yyyy-MM-dd"))"
                        asp-route-filterField="@Model.FilterField"

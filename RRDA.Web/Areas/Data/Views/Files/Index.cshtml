@@ -77,6 +77,16 @@
             </select>
         </div>
         <div class="col-md-2">
+            <label class="form-label">Nome file</label>
+            <input type="text" name="fileName" class="form-control"
+                   value="@Model.Filters.FileName" placeholder="es. *seriale*.xlsx" />
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Numero seriale</label>
+            <input type="text" name="serialNumber" class="form-control"
+                   value="@Model.Filters.SerialNumber" placeholder="es. SN-12*" />
+        </div>
+        <div class="col-md-2">
             <label class="form-label">Importato da</label>
             <input type="text" name="importedBy" class="form-control"
                    value="@Model.Filters.ImportedBy" placeholder="username..." />
@@ -120,6 +130,7 @@
                         </th>
                     }
                     <th>Nome file</th>
+                    <th>Numero seriale</th>
                     <th>Tipo</th>
                     <th>Batch</th>
                     <th>Importato da</th>
@@ -129,8 +140,9 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach (var f in Model.Files)
+                @foreach (var item in Model.Files)
                 {
+                    var f = item.File;
                     <tr>
                         @if (isSupervisor)
                         {
@@ -144,6 +156,9 @@
                                style="color:#c9d1d9;text-decoration:none;">
                                 @f.FileName
                             </a>
+                        </td>
+                        <td style="font-family:monospace;font-size:.82rem;color:#c9d1d9;">
+                            @(item.SerialNumber ?? "—")
                         </td>
                         <td>
                             <span class="badge-pill"
@@ -201,6 +216,8 @@
                        asp-route-page="@p"
                        asp-route-reportTypeId="@Model.Filters.ReportTypeId"
                        asp-route-batchId="@Model.Filters.BatchId"
+                       asp-route-fileName="@Model.Filters.FileName"
+                       asp-route-serialNumber="@Model.Filters.SerialNumber"
                        asp-route-importedBy="@Model.Filters.ImportedBy"
                        asp-route-from="@Model.Filters.From"
                        asp-route-to="@Model.Filters.To"
