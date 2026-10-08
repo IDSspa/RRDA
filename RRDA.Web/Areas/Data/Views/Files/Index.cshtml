@@ -5,6 +5,8 @@
     ViewData["Title"] = "File importati";
     var isSupervisor = User.HasClaim(c => c.Type == AppUserClaimsTransformation.AppRoleClaimType
         && (c.Value == "Supervisor" || c.Value == "Admin"));
+    var firstPage = Math.Max(1, Model.CurrentPage - 3);
+    var lastPage = Math.Min(Model.TotalPages, Model.CurrentPage + 3);
 }
 
 <div class="d-flex align-items-center justify-content-between mb-3">
@@ -120,6 +122,15 @@
         <form id="bulk-delete-form" asp-action="DeleteSelected" method="post"
               onsubmit="return event.submitter?.id !== 'delete-selected' || confirm('Eliminare tutti i file selezionati e i relativi dati?')">
             @Html.AntiForgeryToken()
+            <input type="hidden" name="reportTypeId" value="@Model.Filters.ReportTypeId" />
+            <input type="hidden" name="batchId" value="@Model.Filters.BatchId" />
+            <input type="hidden" name="fileName" value="@Model.Filters.FileName" />
+            <input type="hidden" name="serialNumber" value="@Model.Filters.SerialNumber" />
+            <input type="hidden" name="importedBy" value="@Model.Filters.ImportedBy" />
+            <input type="hidden" name="from" value="@Model.Filters.From" />
+            <input type="hidden" name="to" value="@Model.Filters.To" />
+            <input type="hidden" name="page" value="@Model.CurrentPage" />
+            <input type="hidden" name="pageSize" value="@Model.Filters.PageSize" />
         <table class="table table-borderless mb-0">
             <thead>
                 <tr>
@@ -208,8 +219,29 @@
         <!-- ── Paginazione ── -->
         @if (Model.TotalPages > 1)
         {
-            <div class="d-flex justify-content-center gap-1 mt-3">
-                @for (int p = 1; p <= Model.TotalPages; p++)
+            <nav class="d-flex justify-content-center flex-wrap gap-1 mt-3" aria-label="Paginazione file">
+                @if (firstPage > 1)
+                {
+                    <a asp-action="Index"
+                       asp-route-page="1"
+                       asp-route-reportTypeId="@Model.Filters.ReportTypeId"
+                       asp-route-batchId="@Model.Filters.BatchId"
+                       asp-route-fileName="@Model.Filters.FileName"
+                       asp-route-serialNumber="@Model.Filters.SerialNumber"
+                       asp-route-importedBy="@Model.Filters.ImportedBy"
+                       asp-route-from="@Model.Filters.From"
+                       asp-route-to="@Model.Filters.To"
+                       asp-route-pageSize="@Model.Filters.PageSize"
+                       style="padding:.25rem .6rem;border-radius:4px;font-size:.82rem;text-decoration:none;
+                              color:#8b949e;border:1px solid #30363d;">
+                        1
+                    </a>
+                    @if (firstPage > 2)
+                    {
+                        <span class="px-1 align-self-center" style="color:#8b949e;">…</span>
+                    }
+                }
+                @for (int p = firstPage; p <= lastPage; p++)
                 {
                     var isActive = p == Model.CurrentPage;
                     <a asp-action="Index"
@@ -230,7 +262,28 @@
                         @p
                     </a>
                 }
-            </div>
+                @if (lastPage < Model.TotalPages)
+                {
+                    @if (lastPage < Model.TotalPages - 1)
+                    {
+                        <span class="px-1 align-self-center" style="color:#8b949e;">…</span>
+                    }
+                    <a asp-action="Index"
+                       asp-route-page="@Model.TotalPages"
+                       asp-route-reportTypeId="@Model.Filters.ReportTypeId"
+                       asp-route-batchId="@Model.Filters.BatchId"
+                       asp-route-fileName="@Model.Filters.FileName"
+                       asp-route-serialNumber="@Model.Filters.SerialNumber"
+                       asp-route-importedBy="@Model.Filters.ImportedBy"
+                       asp-route-from="@Model.Filters.From"
+                       asp-route-to="@Model.Filters.To"
+                       asp-route-pageSize="@Model.Filters.PageSize"
+                       style="padding:.25rem .6rem;border-radius:4px;font-size:.82rem;text-decoration:none;
+                              color:#8b949e;border:1px solid #30363d;">
+                        @Model.TotalPages
+                    </a>
+                }
+            </nav>
         }
     }
 </div>

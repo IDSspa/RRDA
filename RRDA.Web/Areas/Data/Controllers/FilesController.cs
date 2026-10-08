@@ -518,12 +518,16 @@ namespace RRDA.Web.Areas.Data.Controllers
         // ── POST /Data/Files/Delete/{id} ──────────────────────────────────
         [HttpPost, ValidateAntiForgeryToken]
         [Authorize(Policy = Policies.AtLeastSupervisor)]
-        public async Task<IActionResult> Delete(int id)
+        public async Task<IActionResult> Delete(
+            int id,
+            int? reportTypeId, int? batchId, string? fileName, string? serialNumber, string? importedBy,
+            string? from, string? to,
+            int page = 1, int pageSize = 25)
         {
             var file = await db.ReportFiles.FindAsync(id);
             if (file is null) return NotFound();
 
-            var fileName = file.FileName;
+            var deletedFileName = file.FileName;
             var incomingReferences = await db.ReportReferences
                 .Where(reference => reference.TargetReportFileId == id)
                 .ToListAsync();
@@ -536,22 +540,28 @@ namespace RRDA.Web.Areas.Data.Controllers
                 "Success",
                 entityType: "ReportFile",
                 entityId: id.ToString(),
-                description: $"Eliminato il file importato '{fileName}'.",
-                details: new { FileName = fileName });
+                description: $"Eliminato il file importato '{deletedFileName}'.",
+                details: new { FileName = deletedFileName });
 
-            TempData["Success"] = $"File '{fileName}' eliminato.";
-            return RedirectToAction(nameof(Index));
+            TempData["Success"] = $"File '{deletedFileName}' eliminato.";
+            return RedirectToIndex(
+                reportTypeId, batchId, fileName, serialNumber, importedBy, from, to, page, pageSize);
         }
 
         [HttpPost, ValidateAntiForgeryToken]
         [Authorize(Policy = Policies.AtLeastSupervisor)]
-        public async Task<IActionResult> DeleteSelected(List<int>? selectedIds)
+        public async Task<IActionResult> DeleteSelected(
+            List<int>? selectedIds,
+            int? reportTypeId, int? batchId, string? fileName, string? serialNumber, string? importedBy,
+            string? from, string? to,
+            int page = 1, int pageSize = 25)
         {
             var ids = selectedIds?.Distinct().ToList() ?? [];
             if (ids.Count == 0)
             {
                 TempData["Warning"] = "Selezionare almeno un file da eliminare.";
-                return RedirectToAction(nameof(Index));
+                return RedirectToIndex(
+                    reportTypeId, batchId, fileName, serialNumber, importedBy, from, to, page, pageSize);
             }
 
             var files = await db.ReportFiles
@@ -561,7 +571,8 @@ namespace RRDA.Web.Areas.Data.Controllers
             if (files.Count == 0)
             {
                 TempData["Warning"] = "Nessuno dei file selezionati è stato trovato.";
-                return RedirectToAction(nameof(Index));
+                return RedirectToIndex(
+                    reportTypeId, batchId, fileName, serialNumber, importedBy, from, to, page, pageSize);
             }
 
             var deletedFiles = files
@@ -588,7 +599,27 @@ namespace RRDA.Web.Areas.Data.Controllers
                 });
 
             TempData["Success"] = $"Eliminati {files.Count} file importati.";
-            return RedirectToAction(nameof(Index));
+            return RedirectToIndex(
+                reportTypeId, batchId, fileName, serialNumber, importedBy, from, to, page, pageSize);
+        }
+
+        private RedirectToActionResult RedirectToIndex(
+            int? reportTypeId, int? batchId, string? fileName, string? serialNumber, string? importedBy,
+            string? from, string? to,
+            int page, int pageSize)
+        {
+            return RedirectToAction(nameof(Index), new
+            {
+                reportTypeId,
+                batchId,
+                fileName,
+                serialNumber,
+                importedBy,
+                from,
+                to,
+                page,
+                pageSize
+            });
         }
 
         [HttpPost, ValidateAntiForgeryToken]
