@@ -107,16 +107,38 @@
 
                     <!-- Sezione cartelle -->
                     <DockPanel Grid.Row="0" LastChildFill="True">
-                        <TextBlock Text="Cartelle disponibili" FontWeight="Bold" DockPanel.Dock="Top" Margin="0,0,0,6"/>
+                        <Grid DockPanel.Dock="Top" Margin="0,0,0,6">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="Cartelle" FontWeight="Bold"/>
+                                <TextBlock x:Name="CurrentFolderTextBlock"
+                                           TextTrimming="CharacterEllipsis"
+                                           ToolTip="Cartella corrente"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                <Button Content="↑" ToolTip="Cartella superiore" Click="NavigateUp_Click" Margin="2,0" Padding="6,2"/>
+                                <Button Content="↻" ToolTip="Riscansiona i report della cartella corrente" Click="Rescan_Click" Margin="2,0" Padding="6,2"/>
+                                <TextBlock Text="Prof." VerticalAlignment="Center" Margin="5,0,2,0"/>
+                                <TextBox x:Name="ScanDepthTextBox" Width="32" Text="0" VerticalContentAlignment="Center"
+                                         TextChanged="ScanDepthTextBox_TextChanged"
+                                         ToolTip="Profondità ricorsiva (0 = solo cartella corrente)"/>
+                            </StackPanel>
+                        </Grid>
                         <ListBox x:Name="FoldersListBox"
-                                    SelectionChanged="FoldersListBox_SelectionChanged"
                                     DisplayMemberPath="Name"
                                     HorizontalContentAlignment="Stretch"
                                     AllowDrop="True"
                                     DragOver="FoldersListBox_DragOver"
-                                    Drop="FoldersListBox_Drop">
+                                    Drop="FoldersListBox_Drop"
+                                    MouseDoubleClick="FoldersListBox_MouseDoubleClick">
                             <ListBox.ContextMenu>
                                 <ContextMenu>
+                                    <MenuItem Header="Riscansiona" Click="Rescan_Click"/>
+                                    <Separator/>
+                                    <MenuItem Header="Cartella superiore" Click="NavigateUp_Click"/>
                                     <MenuItem Header="Seleziona cartella radice" Click="SelectRootFolder_Click"/>
                                 </ContextMenu>
                             </ListBox.ContextMenu>

@@ -25,6 +25,8 @@ namespace RRDA.RepImp
     public partial class MainWindow : Window
     {
         private string? _reportsRoot;
+        private string? _currentReportsFolder;
+        private bool _isNavigatingFolders;
         private List<IReportImporter> _plugins = [];
         private SplashScreenWindow? _aboutWindow;
         private GridViewColumnHeader? _lastHeaderClicked;
@@ -106,21 +108,38 @@ namespace RRDA.RepImp
                 _reportsRoot = configured;
             else
                 _reportsRoot = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Reports");
+
+            _currentReportsFolder = _reportsRoot;
         }
 
         private void LoadFolders()
         {
             List<DirectoryInfo> folders = [];
 
-            if (Directory.Exists(_reportsRoot))
+            if (!string.IsNullOrWhiteSpace(_currentReportsFolder) && Directory.Exists(_currentReportsFolder))
             {
-                var dirInfo = new DirectoryInfo(_reportsRoot);
-                folders = [.. dirInfo.GetDirectories().OrderBy(d => d.Name)];
-                Log($"Caricate {folders.Count} cartelle da '{_reportsRoot}'.");
+                var dirInfo = new DirectoryInfo(_currentReportsFolder);
+                try
+                {
+                    folders = [.. dirInfo.GetDirectories()
+                        .Where(d => !d.Attributes.HasFlag(FileAttributes.Hidden))
+                        .OrderBy(d => d.Name)];
+                    CurrentFolderTextBlock.Text = dirInfo.FullName;
+                    CurrentFolderTextBlock.ToolTip = dirInfo.FullName;
+                    Log($"Caricate {folders.Count} cartelle da '{dirInfo.FullName}'.");
+                }
+                catch (UnauthorizedAccessException ex)
+                {
+                    Log($"Accesso negato a '{dirInfo.FullName}': {ex.Message}");
+                }
+                catch (IOException ex)
+                {
+                    Log($"Impossibile leggere '{dirInfo.FullName}': {ex.Message}");
+                }
             }
             else
             {
-                // Se non esiste la cartella Reports mostriamo le unità logiche come fallback
+                // Se la cartella corrente non esiste, mostriamo le unità logiche come fallback.
                 var drives = DriveInfo.GetDrives()
                     .Where(d => d.IsReady)
                     .Select(d => new DirectoryInfo(d.RootDirectory.FullName))
@@ -128,15 +147,49 @@ namespace RRDA.RepImp
                     .ToList();
 
                 folders = drives;
-                Log($"Cartella '{_reportsRoot}' non trovata. Visualizzate {folders.Count} unità logiche come fallback.");
+                CurrentFolderTextBlock.Text = "Cartella non disponibile";
+                CurrentFolderTextBlock.ToolTip = _currentReportsFolder;
+                Log($"Cartella '{_currentReportsFolder}' non trovata. Visualizzate {folders.Count} unità logiche come fallback.");
             }
 
             FoldersListBox.ItemsSource = folders;
-            if (folders.Count > 0)
-                FoldersListBox.SelectedIndex = 0;
         }
 
-        private async Task LoadFiles(string folderPath)
+        private void NavigateToFolder(string folderPath)
+        {
+            if (!Directory.Exists(folderPath))
+            {
+                Log($"Cartella non trovata: {folderPath}");
+                return;
+            }
+
+            _isNavigatingFolders = true;
+            try
+            {
+                _currentReportsFolder = folderPath;
+                ScanDepthTextBox.Text = "0";
+                FoldersListBox.SelectedItem = null;
+                LoadFolders();
+            }
+            finally
+            {
+                _isNavigatingFolders = false;
+            }
+        }
+
+        private bool TryGetScanDepth(out int depth)
+        {
+            if (int.TryParse(ScanDepthTextBox.Text, out depth) && depth >= 0)
+                return true;
+
+            MessageBox.Show(this, "La profondità di scansione deve essere un numero intero maggiore o uguale a zero.",
+                "Profondità non valida", MessageBoxButton.OK, MessageBoxImage.Information);
+            ScanDepthTextBox.Focus();
+            ScanDepthTextBox.SelectAll();
+            return false;
+        }
+
+        private async Task LoadFiles(string folderPath, int maxDepth, bool forceReload)
         {
             if (!Directory.Exists(folderPath))
             {
@@ -144,10 +197,6 @@ namespace RRDA.RepImp
                 Log($"Cartella non trovata: {folderPath}");
                 return;
             }
-
-            var maxDepth = Properties.Settings.Default.RecurseDepth;
-            if (maxDepth < 0)
-                maxDepth = 0;
 
             using var cts = new CancellationTokenSource();
             var scanDlg = new ScanProgressDialog(cts) { Owner = this };
@@ -182,7 +231,10 @@ namespace RRDA.RepImp
                     }
                 });
 
-                string cacheKey = $"{folderPath}_{Properties.Settings.Default.RecurseDepth}";
+                string cacheKey = $"{folderPath}_{maxDepth}";
+
+                if (forceReload)
+                    _cache.Remove(cacheKey);
 
                 if (!_cache.TryGetValue(cacheKey, out List<RepImpFileItem> files))
                 {
@@ -920,17 +972,49 @@ namespace RRDA.RepImp
             }
         }
 
-        private async void FoldersListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void FoldersListBox_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
             if (FoldersListBox.SelectedItem is DirectoryInfo di)
             {
-                await LoadFiles(di.FullName);
-                Log($"Selezionata cartella: {di.FullName}");
+                NavigateToFolder(di.FullName);
             }
-            else
+        }
+
+        private void NavigateUp_Click(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(_currentReportsFolder))
+                return;
+
+            var parent = Directory.GetParent(_currentReportsFolder);
+            if (parent is not null)
             {
-                FilesListView.ItemsSource = null;
+                NavigateToFolder(parent.FullName);
             }
+        }
+
+        private async void Rescan_Click(object sender, RoutedEventArgs e)
+        {
+            if (!TryGetScanDepth(out var depth))
+                return;
+
+            await RescanCurrentFolderAsync(depth);
+        }
+
+        private async void ScanDepthTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (_isNavigatingFolders || string.IsNullOrWhiteSpace(_currentReportsFolder))
+                return;
+
+            if (!int.TryParse(ScanDepthTextBox.Text, out var depth) || depth < 0)
+                return;
+
+            await RescanCurrentFolderAsync(depth);
+        }
+
+        private async Task RescanCurrentFolderAsync(int depth)
+        {
+            if (!string.IsNullOrWhiteSpace(_currentReportsFolder))
+                await LoadFiles(_currentReportsFolder, depth, forceReload: true);
         }
 
         private void FoldersListBox_DragOver(object? sender, DragEventArgs e)
@@ -986,13 +1070,13 @@ namespace RRDA.RepImp
                     return;
                 }
 
-                // Salva la cartella come PluginsFolder nelle impostazioni e ricarica i plugin
+                // Salva la cartella come ReportsFolder e ne visualizza il contenuto.
                 _reportsRoot = Properties.Settings.Default.ReportsFolder = first;
                 //Properties.Settings.Default.Save();
 
                 Log($"Cartella reports impostata su '{first}' tramite drag & drop.");
 
-                LoadFolders();
+                NavigateToFolder(first);
 
                 e.Effects = DragDropEffects.Copy;
             }
@@ -1629,13 +1713,12 @@ namespace RRDA.RepImp
                     return;
                 }
 
-                // Salva la cartella come PluginsFolder nelle impostazioni e ricarica i plugin
+                // Salva la cartella come PluginsFolder e ricarica i plugin.
                 Properties.Settings.Default.PluginsFolder = first;
                 //Properties.Settings.Default.Save();
 
                 Log($"Cartella plugin impostata su '{first}' tramite drag & drop.");
                 LoadPlugins();
-                LoadFolders();
 
                 e.Effects = DragDropEffects.Copy;
             }
@@ -1671,7 +1754,8 @@ namespace RRDA.RepImp
                     // Ricarica le impostazioni applicate dall'utente
                     try
                     {
-                        // Ricarica cartelle e plugin secondo le nuove impostazioni
+                        // Ricarica cartella reports e plugin secondo le nuove impostazioni.
+                        ApplySettings();
                         LoadFolders();
                         LoadPlugins();
                         Log("Impostazioni aggiornate dall'utente e ricaricate.");
@@ -1762,9 +1846,9 @@ namespace RRDA.RepImp
                     Properties.Settings.Default.ReportsFolder = dlg.FolderName;
                     Properties.Settings.Default.Save();
 
-                    // Aggiorna la variabile locale e ricarica l'elenco cartelle
+                    // Aggiorna la variabile locale e visualizza il contenuto della nuova root.
                     _reportsRoot = dlg.FolderName;
-                    LoadFolders();
+                    NavigateToFolder(_reportsRoot);
 
                     Log($"Cartella radice impostata su '{_reportsRoot}' e salvata nelle impostazioni.");
                 }

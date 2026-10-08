@@ -28,15 +28,6 @@ namespace RRDA.RepImp
                 .OfType<ComboBoxItem>()
                 .First(item => string.Equals(item.Tag?.ToString(), theme, StringComparison.OrdinalIgnoreCase));
 
-            // Carica RecurseDepth (valore intero). Se non presente o non impostato, mostra 0.
-            try
-            {
-                RecurseDepthTextBox.Text = Properties.Settings.Default.RecurseDepth.ToString();
-            }
-            catch
-            {
-                RecurseDepthTextBox.Text = "0";
-            }
         }
 
         private void BrowseReportsButton_Click(object sender, RoutedEventArgs e)
@@ -264,25 +255,12 @@ namespace RRDA.RepImp
                 }
             }
 
-            // Validazione RecurseDepth: intero >= 0
-            int depth = 0;
-            if (!string.IsNullOrWhiteSpace(RecurseDepthTextBox.Text))
-            {
-                if (!int.TryParse(RecurseDepthTextBox.Text, out depth) || depth < 0)
-                {
-                    MessageBox.Show(this, "La profondità di ricorsione deve essere un intero maggiore o uguale a 0.", "Valore non valido", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    RecurseDepthTextBox.Focus();
-                    return;
-                }
-            }
-
             Properties.Settings.Default.ReportsFolder = string.IsNullOrWhiteSpace(ReportsFolderTextBox.Text) ? null : ReportsFolderTextBox.Text;
             Properties.Settings.Default.PluginsFolder = string.IsNullOrWhiteSpace(PluginsFolderTextBox.Text) ? null : PluginsFolderTextBox.Text;
             Properties.Settings.Default.ValidatorsFolder = string.IsNullOrWhiteSpace(ValidatorsFolderTextBox.Text) ? null : ValidatorsFolderTextBox.Text;
             Properties.Settings.Default.UnitMappings = string.IsNullOrWhiteSpace(UnitMappingsTextBox.Text) ? null : UnitMappingsTextBox.Text;
             Properties.Settings.Default.ImportBanList = string.IsNullOrWhiteSpace(ImportBanListTextBox.Text) ? null : ImportBanListTextBox.Text;
             Properties.Settings.Default.ConnectionString = string.IsNullOrWhiteSpace(ConnectionStringTextBox.Text) ? null : ConnectionStringTextBox.Text;
-            Properties.Settings.Default.RecurseDepth = depth;
             Properties.Settings.Default.Theme = ThemeManager.Normalize(
                 (ThemeComboBox.SelectedItem as ComboBoxItem)?.Tag?.ToString());
             Properties.Settings.Default.Save();

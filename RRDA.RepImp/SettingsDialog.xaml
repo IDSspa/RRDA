@@ -25,34 +25,31 @@
         <TextBox x:Name="ReportsFolderTextBox" Grid.Row="0" Grid.Column="1" Margin="0,4,6,4"/>
         <Button x:Name="BrowseReportsButton" Grid.Row="0" Grid.Column="2" Content="Sfoglia..." Width="80" Click="BrowseReportsButton_Click" Margin="0,4,0,4"/>
 
-        <TextBlock Grid.Row="1" Grid.Column="0" Text="Profondità ricorsione:" VerticalAlignment="Center" Margin="0,0,8,0"/>
-        <TextBox x:Name="RecurseDepthTextBox" Grid.Row="1" Grid.Column="1" Width="80" Margin="0,4,6,4" HorizontalAlignment="Left" ToolTip="Numero intero >= 0 (0 = non ricorsivo)"/>
+        <TextBlock Grid.Row="1" Grid.Column="0" Text="Cartella Plugins:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+        <TextBox x:Name="PluginsFolderTextBox" Grid.Row="1" Grid.Column="1" Margin="0,4,6,4"/>
+        <Button x:Name="BrowsePluginsButton" Grid.Row="1" Grid.Column="2" Content="Sfoglia..." Width="80" Click="BrowsePluginsButton_Click" Margin="0,4,0,4"/>
 
-        <TextBlock Grid.Row="2" Grid.Column="0" Text="Cartella Plugins:" VerticalAlignment="Center" Margin="0,0,8,0"/>
-        <TextBox x:Name="PluginsFolderTextBox" Grid.Row="2" Grid.Column="1" Margin="0,4,6,4"/>
-        <Button x:Name="BrowsePluginsButton" Grid.Row="2" Grid.Column="2" Content="Sfoglia..." Width="80" Click="BrowsePluginsButton_Click" Margin="0,4,0,4"/>
+        <TextBlock Grid.Row="2" Grid.Column="0" Text="Cartella Validatori:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+        <TextBox x:Name="ValidatorsFolderTextBox" Grid.Row="2" Grid.Column="1" Margin="0,4,6,4"/>
+        <Button x:Name="BrowseValidatorsButton" Grid.Row="2" Grid.Column="2" Content="Sfoglia..." Width="80" Click="BrowseValidatorsButton_Click" Margin="0,4,0,4"/>
 
-        <TextBlock Grid.Row="3" Grid.Column="0" Text="Cartella Validatori:" VerticalAlignment="Center" Margin="0,0,8,0"/>
-        <TextBox x:Name="ValidatorsFolderTextBox" Grid.Row="3" Grid.Column="1" Margin="0,4,6,4"/>
-        <Button x:Name="BrowseValidatorsButton" Grid.Row="3" Grid.Column="2" Content="Sfoglia..." Width="80" Click="BrowseValidatorsButton_Click" Margin="0,4,0,4"/>
+        <TextBlock Grid.Row="3" Grid.Column="0" Text="Mapping unità:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+        <TextBox x:Name="UnitMappingsTextBox" Grid.Row="3" Grid.Column="1" Margin="0,4,6,4"/>
+        <Button x:Name="BrowseUnitMappingsButton" Grid.Row="3" Grid.Column="2" Content="Sfoglia..." Width="80" Click="BrowseUnitMappingsButton_Click" Margin="0,4,0,4"/>
 
-        <TextBlock Grid.Row="4" Grid.Column="0" Text="Mapping unità:" VerticalAlignment="Center" Margin="0,0,8,0"/>
-        <TextBox x:Name="UnitMappingsTextBox" Grid.Row="4" Grid.Column="1" Margin="0,4,6,4"/>
-        <Button x:Name="BrowseUnitMappingsButton" Grid.Row="4" Grid.Column="2" Content="Sfoglia..." Width="80" Click="BrowseUnitMappingsButton_Click" Margin="0,4,0,4"/>
+        <TextBlock Grid.Row="4" Grid.Column="0" Text="Banlist importazione:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+        <TextBox x:Name="ImportBanListTextBox" Grid.Row="4" Grid.Column="1" Margin="0,4,6,4"/>
+        <Button x:Name="BrowseImportBanListButton" Grid.Row="4" Grid.Column="2" Content="Sfoglia..." Width="80" Click="BrowseImportBanListButton_Click" Margin="0,4,0,4"/>
 
-        <TextBlock Grid.Row="5" Grid.Column="0" Text="Banlist importazione:" VerticalAlignment="Center" Margin="0,0,8,0"/>
-        <TextBox x:Name="ImportBanListTextBox" Grid.Row="5" Grid.Column="1" Margin="0,4,6,4"/>
-        <Button x:Name="BrowseImportBanListButton" Grid.Row="5" Grid.Column="2" Content="Sfoglia..." Width="80" Click="BrowseImportBanListButton_Click" Margin="0,4,0,4"/>
-
-        <TextBlock Grid.Row="6" Grid.Column="0" Text="Tema:" VerticalAlignment="Center" Margin="0,0,8,0"/>
-        <ComboBox x:Name="ThemeComboBox" Grid.Row="6" Grid.Column="1" Width="180" HorizontalAlignment="Left" Margin="0,4,6,4">
+        <TextBlock Grid.Row="5" Grid.Column="0" Text="Tema:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+        <ComboBox x:Name="ThemeComboBox" Grid.Row="5" Grid.Column="1" Width="180" HorizontalAlignment="Left" Margin="0,4,6,4">
             <ComboBoxItem Content="Sistema" Tag="system"/>
             <ComboBoxItem Content="Chiaro" Tag="light"/>
             <ComboBoxItem Content="Scuro" Tag="dark"/>
         </ComboBox>
 
-        <TextBlock Grid.Row="7" Grid.Column="0" Text="ConnectionString:" VerticalAlignment="Top" Margin="0,6,8,0"/>
-        <Grid Grid.Row="7" Grid.Column="1" Grid.ColumnSpan="2">
+        <TextBlock Grid.Row="6" Grid.Column="0" Text="ConnectionString:" VerticalAlignment="Top" Margin="0,6,8,0"/>
+        <Grid Grid.Row="6" Grid.Column="1" Grid.ColumnSpan="2">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="Auto"/>

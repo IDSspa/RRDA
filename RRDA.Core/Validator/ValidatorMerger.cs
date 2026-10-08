@@ -56,6 +56,9 @@ namespace RRDA.Core.Validator
             // Start with the existing validator as the base
             var mergedRoot = new XElement(existingRoot);
 
+            // Merge Cells (Cell elements)
+            MergeCells(mergedRoot, newRoot);
+
             // Merge FieldMappings (Map elements)
             MergeFieldMappings(mergedRoot, newRoot);
 
@@ -211,6 +214,57 @@ namespace RRDA.Core.Validator
                 if (!existingSheetNames.Contains(newSheetName))
                 {
                     existingSheets.Add(new XElement(newSheet));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Merges Cells from new validator into existing (if not already present).
+        /// </summary>
+        private static void MergeCells(XElement mergedRoot, XElement newRoot)
+        {
+            var newCells = newRoot.Element("Cells");
+
+            if (newCells == null || !newCells.Elements("Cell").Any())
+                return;
+
+            var existingCells = mergedRoot.Element("Cells");
+
+            if (existingCells == null)
+            {
+                existingCells = new XElement("Cells");
+                // Insert after Sheets or at the beginning if no Sheets
+                var sheetsElement = mergedRoot.Element("Sheets");
+                if (sheetsElement != null)
+                    sheetsElement.AddAfterSelf(existingCells);
+                else
+                    mergedRoot.AddFirst(existingCells);
+            }
+
+            // Get all existing coordinate+definedNameAlias pairs (case-insensitive)
+            var existingCellKeys = existingCells
+                .Elements("Cell")
+                .Select(c => (string?)c.Attribute("coordinate") ?? string.Empty)
+                .Zip(
+                    existingCells.Elements("Cell")
+                        .Select(c => (string?)c.Attribute("definedNameAlias") ?? string.Empty),
+                    (coord, alias) => $"{coord}|{alias}")
+                .Where(k => !string.IsNullOrWhiteSpace(k))
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            // Add new Cell elements that don't already exist
+            foreach (var newCell in newCells.Elements("Cell"))
+            {
+                var newCoord = (string?)newCell.Attribute("coordinate") ?? string.Empty;
+                var newAlias = (string?)newCell.Attribute("definedNameAlias") ?? string.Empty;
+
+                if (string.IsNullOrWhiteSpace(newCoord) || string.IsNullOrWhiteSpace(newAlias))
+                    continue;
+
+                var key = $"{newCoord}|{newAlias}";
+                if (!existingCellKeys.Contains(key))
+                {
+                    existingCells.Add(new XElement(newCell));
                 }
             }
         }
