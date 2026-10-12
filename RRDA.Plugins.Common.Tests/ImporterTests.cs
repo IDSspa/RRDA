@@ -8,7 +8,7 @@ using Xunit;
 
 namespace RRDA.Plugins.Common.Tests;
 
-public sealed class BaseImporterTests
+public sealed class ImporterTests
 {
     [Fact]
     public async Task ImportAsync_UsesCustomImportDataAsyncAndKeepsCommonResultHandling()
