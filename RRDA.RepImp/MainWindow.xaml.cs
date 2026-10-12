@@ -232,7 +232,8 @@ namespace RRDA.RepImp
                     }
                 });
 
-                string cacheKey = $"{folderPath}_{maxDepth}";
+                var keepOnlyNewest = Properties.Settings.Default.KeepOnlyNewest;
+                string cacheKey = $"{folderPath}_{maxDepth}_keepOnlyNewest={keepOnlyNewest}";
 
                 if (forceReload)
                     _cache.Remove(cacheKey);
@@ -258,7 +259,7 @@ namespace RRDA.RepImp
                         Log,
                         cts.Token);
 
-                    files = [.. scannedFiles
+                    var allFiles = scannedFiles
                 .Select(f =>
                 {
                     var reportType = f.ReportType ?? string.Empty;
@@ -271,7 +272,33 @@ namespace RRDA.RepImp
                         f.FullPath,
                         validatorPath is not null,
                         validatorPath);
-                })];
+                })
+                .ToList();
+
+                    var hiddenLocalDuplicates = 0;
+                    files = keepOnlyNewest
+                        ? allFiles
+                            .GroupBy(file => $"{file.Name}\0{file.Type}", StringComparer.OrdinalIgnoreCase)
+                            .Select(group =>
+                            {
+                                var orderedFiles = group
+                                    .OrderByDescending(file => file.LastWriteTime)
+                                    .ThenBy(file => file.FullPath, StringComparer.OrdinalIgnoreCase)
+                                    .ToList();
+                                var retained = orderedFiles[0];
+                                foreach (var excluded in orderedFiles.Skip(1))
+                                {
+                                    hiddenLocalDuplicates++;
+                                    Log($"Duplicato locale escluso: '{excluded.FullPath}'. Mantenuto '{retained.FullPath}' "
+                                        + $"(nome='{retained.Name}', plugin='{retained.Type}').");
+                                }
+                                return retained;
+                            })
+                            .ToList()
+                        : allFiles;
+
+                    if (hiddenLocalDuplicates > 0)
+                        Log($"KeepOnlyNewest: nascosti {hiddenLocalDuplicates} duplicati locali.");
 
                     var cacheEntryOptions = new MemoryCacheEntryOptions()
                                             .SetSlidingExpiration(TimeSpan.FromMinutes(10));
@@ -291,7 +318,8 @@ namespace RRDA.RepImp
                 Log($"Caricati {files.Count} file *.xlsx da '{folderPath}' "
                     + $"(profondità ricorsione={maxDepth}). "
                     + $"Plugin applicabili trovati per {files.Count(f => !string.IsNullOrEmpty(f.Type))} file; "
-                    + $"validatori disponibili per {files.Count(f => f.HasValidator)} file.");
+                    + $"validatori disponibili per {files.Count(f => f.HasValidator)} file. "
+                    + $"KeepOnlyNewest={keepOnlyNewest}.");
             }
             catch (OperationCanceledException)
             {
@@ -458,7 +486,7 @@ namespace RRDA.RepImp
 
                     if (result == MessageBoxResult.Yes)
                     {
-                        OpenSettings();
+                        await OpenSettingsAsync();
                     }
                 }
             }
@@ -1842,12 +1870,12 @@ namespace RRDA.RepImp
             }
         }
 
-        private void OpenSettings_Click(object? sender, RoutedEventArgs e)
+        private async void OpenSettings_Click(object? sender, RoutedEventArgs e)
         {
-            OpenSettings();
+            await OpenSettingsAsync();
         }
 
-        private void OpenSettings()
+        private async Task OpenSettingsAsync()
         {
             try
             {
@@ -1863,9 +1891,12 @@ namespace RRDA.RepImp
                     try
                     {
                         // Ricarica cartella reports e plugin secondo le nuove impostazioni.
+                        _cache.Compact(1.0);
                         ApplySettings();
                         LoadFolders();
                         LoadPlugins();
+                        if (TryGetScanDepth(out var depth))
+                            await RescanCurrentFolderAsync(depth);
                         Log("Impostazioni aggiornate dall'utente e ricaricate.");
                     }
                     catch (Exception ex)

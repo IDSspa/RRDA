@@ -84,6 +84,18 @@ namespace RRDA.RepImp.Properties {
                 this["RecurseDepth"] = value;
             }
         }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool KeepOnlyNewest {
+            get {
+                return ((bool)(this["KeepOnlyNewest"]));
+            }
+            set {
+                this["KeepOnlyNewest"] = value;
+            }
+        }
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]

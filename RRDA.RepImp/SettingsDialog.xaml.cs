@@ -22,6 +22,7 @@ namespace RRDA.RepImp
                 Properties.Settings.Default.ValidatorsFolder);
             UnitMappingsTextBox.Text = Properties.Settings.Default.UnitMappings ?? string.Empty;
             ImportBanListTextBox.Text = Properties.Settings.Default.ImportBanList ?? string.Empty;
+            KeepOnlyNewestCheckBox.IsChecked = Properties.Settings.Default.KeepOnlyNewest;
             ConnectionStringTextBox.Text = Properties.Settings.Default.ConnectionString ?? string.Empty;
             var theme = ThemeManager.Normalize(Properties.Settings.Default.Theme);
             ThemeComboBox.SelectedItem = ThemeComboBox.Items
@@ -260,6 +261,7 @@ namespace RRDA.RepImp
             Properties.Settings.Default.ValidatorsFolder = string.IsNullOrWhiteSpace(ValidatorsFolderTextBox.Text) ? null : ValidatorsFolderTextBox.Text;
             Properties.Settings.Default.UnitMappings = string.IsNullOrWhiteSpace(UnitMappingsTextBox.Text) ? null : UnitMappingsTextBox.Text;
             Properties.Settings.Default.ImportBanList = string.IsNullOrWhiteSpace(ImportBanListTextBox.Text) ? null : ImportBanListTextBox.Text;
+            Properties.Settings.Default.KeepOnlyNewest = KeepOnlyNewestCheckBox.IsChecked == true;
             Properties.Settings.Default.ConnectionString = string.IsNullOrWhiteSpace(ConnectionStringTextBox.Text) ? null : ConnectionStringTextBox.Text;
             Properties.Settings.Default.Theme = ThemeManager.Normalize(
                 (ThemeComboBox.SelectedItem as ComboBoxItem)?.Tag?.ToString());
