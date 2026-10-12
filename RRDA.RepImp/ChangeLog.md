@@ -4,6 +4,27 @@ Questo documento raccoglie le modifiche rilevanti per gli utenti di RRDA
 RepImp. Le voci storiche sono state ricostruite dai tag e dalla cronologia Git
 disponibili nel repository.
 
+## 1.0.7 — 2026-10-12
+
+### Aggiunto
+
+- Aggiunta opzione per ignorare i report duplicati durante la scansione, tramite il flag `KeepOnlyNewest` nelle impostazioni.
+
+### Modificato
+
+- Il controllo dei duplicati viene eseguito duante la scansione.
+
+## 1.0.6 — 2026-10-12
+
+### Aggiunto
+
+- Gestione massiva dei report duplicati: un solo dialog elenca i file rilevati e permette di scegliere l’azione per ciascuno.
+- Nel dialog sono disponibili percorso completo del report, data di ultima modifica, selezione multipla e applicazione massiva dell’azione scelta.
+
+### Modificato
+
+- Il controllo dei duplicati viene eseguito cumulativamente prima della persistenza dei report.
+
 ## 1.0.5.0 — 2026-10-08
 
 ### Modificato
