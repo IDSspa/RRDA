@@ -224,7 +224,37 @@ namespace RRDA.Data
                            .CountAsync(f =>
                                f.FileName == fileName &&
                                f.ReportType.Key == reportTypeKey,
-                               cancellationToken);
+                                cancellationToken);
+        }
+
+        public async Task<IReadOnlyList<ImportDuplicateMatch>> FindExistingAsync(
+            IEnumerable<ImportDuplicateCandidate> candidates,
+            CancellationToken cancellationToken = default)
+        {
+            var requested = candidates
+                .Where(candidate => !string.IsNullOrWhiteSpace(candidate.FileName)
+                                 && !string.IsNullOrWhiteSpace(candidate.ReportTypeKey))
+                .DistinctBy(candidate => (candidate.FileName, candidate.ReportTypeKey))
+                .ToList();
+            if (requested.Count == 0)
+                return [];
+
+            var fileNames = requested.Select(candidate => candidate.FileName).Distinct().ToList();
+            var reportTypeKeys = requested.Select(candidate => candidate.ReportTypeKey).Distinct().ToList();
+            var requestedPairs = requested
+                .Select(candidate => (candidate.FileName, candidate.ReportTypeKey))
+                .ToHashSet();
+
+            await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
+            var matches = await db.ReportFiles
+                .AsNoTracking()
+                .Where(file => fileNames.Contains(file.FileName)
+                            && reportTypeKeys.Contains(file.ReportType.Key))
+                .GroupBy(file => new { file.FileName, ReportTypeKey = file.ReportType.Key })
+                .Select(group => new ImportDuplicateMatch(group.Key.FileName, group.Key.ReportTypeKey, group.Count()))
+                .ToListAsync(cancellationToken);
+
+            return matches.Where(match => requestedPairs.Contains((match.FileName, match.ReportTypeKey))).ToList();
         }
     }
 }

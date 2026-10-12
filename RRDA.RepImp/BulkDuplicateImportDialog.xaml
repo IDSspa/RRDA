@@ -1,0 +1,41 @@
+<Window x:Class="RRDA.RepImp.BulkDuplicateImportDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:sys="clr-namespace:System;assembly=mscorlib"
+        Title="Gestione file già importati" Width="1040" Height="520"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
+    <DockPanel Margin="16">
+        <StackPanel DockPanel.Dock="Top">
+            <TextBlock Text="Per ogni file già presente seleziona l'azione da applicare." FontWeight="SemiBold"/>
+            <TextBlock Text="Sostituisci elimina il file esistente e i relativi dati; Mantieni come nuova versione conserva lo storico."
+                       Foreground="Gray" TextWrapping="Wrap" Margin="0,4,0,12"/>
+        </StackPanel>
+        <Grid DockPanel.Dock="Bottom" Margin="0,12,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0" Orientation="Horizontal">
+                <ComboBox x:Name="BulkStrategyComboBox" ItemsSource="{Binding AvailableStrategies}"
+                          SelectedIndex="2" Width="230" VerticalContentAlignment="Center"/>
+                <Button Content="Applica" Margin="8,0,0,0" Width="90" Click="ApplyStrategy_Click"/>
+            </StackPanel>
+            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <Button Content="Conferma" Width="90" Margin="0,0,8,0" IsDefault="True" Click="Confirm_Click"/>
+                <Button Content="Annulla" Width="90" IsCancel="True" Click="Cancel_Click"/>
+            </StackPanel>
+        </Grid>
+        <DataGrid x:Name="DuplicateItemsGrid" ItemsSource="{Binding Items}" AutoGenerateColumns="False"
+                  CanUserAddRows="False" CanUserDeleteRows="False" SelectionMode="Extended" SelectionUnit="FullRow">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Percorso report" Binding="{Binding FilePath}" Width="*" IsReadOnly="True"/>
+                <DataGridTextColumn Header="Ultima modifica" Binding="{Binding LastWriteTime, StringFormat={}{0:dd/MM/yyyy HH:mm}}" Width="135" IsReadOnly="True"/>
+                <DataGridTextColumn Header="Tipo" Binding="{Binding ReportTypeKey}" Width="150" IsReadOnly="True"/>
+                <DataGridTextColumn Header="Duplicati" Binding="{Binding ExistingCount}" Width="80" IsReadOnly="True"/>
+                <DataGridComboBoxColumn Header="Azione" Width="210" SelectedItemBinding="{Binding SelectedStrategy}">
+                    <DataGridComboBoxColumn.ItemsSource><x:Array Type="{x:Type sys:String}"><sys:String>Blocca / Non importare</sys:String><sys:String>Sostituisci</sys:String><sys:String>Mantieni come nuova versione</sys:String></x:Array></DataGridComboBoxColumn.ItemsSource>
+                </DataGridComboBoxColumn>
+            </DataGrid.Columns>
+        </DataGrid>
+    </DockPanel>
+</Window>

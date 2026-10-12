@@ -17,6 +17,10 @@ public interface IImportResultRepository
         string fileName,
         string reportTypeKey,
         CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<ImportDuplicateMatch>> FindExistingAsync(
+        IEnumerable<ImportDuplicateCandidate> candidates,
+        CancellationToken cancellationToken = default);
 }
 
 public sealed record ImportFileItem(
@@ -30,3 +34,7 @@ public sealed record ImportSaveResult(
     int ReportFileId,
     int EntitiesSaved,
     int PropertiesSaved);
+
+public sealed record ImportDuplicateCandidate(string FileName, string ReportTypeKey);
+
+public sealed record ImportDuplicateMatch(string FileName, string ReportTypeKey, int ExistingCount);

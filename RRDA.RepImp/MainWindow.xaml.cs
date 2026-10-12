@@ -33,6 +33,7 @@ namespace RRDA.RepImp
         private ListSortDirection _lastDirection;
         private bool _applyForAll = false;
         private DuplicateImportStrategy _duplicateStrategy = DuplicateImportStrategy.NewVersion;
+        private Dictionary<string, DuplicateImportStrategy>? _bulkDuplicateStrategies;
         private readonly ObservableCollection<RepImpFileItem> _fileItems = [];
         private readonly IReportTypeCompatibilityChecker _reportTypeCompatibilityChecker;
         private readonly IPluginService _pluginService;
@@ -737,12 +738,19 @@ namespace RRDA.RepImp
                             // file è nuovo.
                             // -------------------------------------------------------
 
-                            int existing = await _importResultRepository.CountExistingAsync(
-                                fileName: fi.Name,
-                                reportTypeKey: importResult.ReportTypeKey,
-                                cancellationToken: ct);
+                            var duplicateStrategy = _duplicateStrategy;
+                            var hasBulkDecision = _bulkDuplicateStrategies?.TryGetValue(fi.FullPath, out duplicateStrategy) == true;
+                            int existing = 0;
 
-                            if (existing > 0 && !_applyForAll)
+                            if (!hasBulkDecision)
+                            {
+                                existing = await _importResultRepository.CountExistingAsync(
+                                    fileName: fi.Name,
+                                    reportTypeKey: importResult.ReportTypeKey,
+                                    cancellationToken: ct);
+                            }
+
+                            if (!hasBulkDecision && existing > 0 && !_applyForAll)
                             {
                                 // Apriamo il dialog sul thread UI (siamo già su di esso
                                 // perché ImportReport è chiamato da un async void handler).
@@ -770,6 +778,7 @@ namespace RRDA.RepImp
 
                                 _applyForAll = dupDlg.ApplyForAll;
                                 _duplicateStrategy = dupDlg.SelectedStrategy;
+                                duplicateStrategy = _duplicateStrategy;
 
                                 Log($"Strategia duplicato scelta per '{fi.Name}': {_duplicateStrategy}.");
 
@@ -788,7 +797,7 @@ namespace RRDA.RepImp
                                     logger: Log,
                                     user: user,
                                     batchId: batchId,
-                                    duplicateStrategy: _duplicateStrategy,
+                                    duplicateStrategy: duplicateStrategy,
                                     cancellationToken: ct);
 
                                 Log($"Persistenza completata: ReportFileId={saved.ReportFileId}, "
@@ -809,7 +818,7 @@ namespace RRDA.RepImp
                                         plugin.Version,
                                         importResult.ReportTypeKey,
                                         BatchId = batchId,
-                                        DuplicateStrategy = _duplicateStrategy.ToString(),
+                                        DuplicateStrategy = duplicateStrategy.ToString(),
                                         saved.EntitiesSaved,
                                         saved.PropertiesSaved
                                     });
@@ -1247,6 +1256,81 @@ namespace RRDA.RepImp
             }
         }
 
+        /// <summary>
+        /// Ricava i tipi effettivi dai report prima della persistenza, esegue un solo
+        /// controllo DB per tutte le coppie e raccoglie le decisioni dell'utente.
+        /// </summary>
+        private async Task<Dictionary<string, DuplicateImportStrategy>?> GetBulkDuplicateStrategiesAsync(
+            IReadOnlyList<RepImpFileItem> files,
+            CancellationToken ct)
+        {
+            var prepared = new List<(RepImpFileItem File, string ReportTypeKey)>();
+
+            foreach (var file in files)
+            {
+                ct.ThrowIfCancellationRequested();
+                var plugin = _plugins.FirstOrDefault(p => string.Equals(p.Name, file.Type, StringComparison.OrdinalIgnoreCase));
+                var validatorPath = plugin is null ? null : ResolveValidatorPath(plugin.Name);
+                if (plugin is null || validatorPath is null)
+                    continue;
+
+                try
+                {
+                    await using var fileStream = File.OpenRead(file.FullPath);
+                    await using var validationStream = File.OpenRead(validatorPath);
+                    var result = await plugin.ImportAsync(fileStream, ValidationConfig.Load(validationStream), null, ct);
+                    if (result is { Success: true } && result.Entities?.Any() == true)
+                        prepared.Add((file, result.ReportTypeKey));
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    // Il vero import mostrerà e registrerà l'errore con il normale flusso.
+                    Log($"Pre-controllo duplicati non disponibile per '{file.Name}': {ex.Message}");
+                }
+            }
+
+            var decisions = prepared.ToDictionary(
+                item => item.File.FullPath,
+                _ => DuplicateImportStrategy.NewVersion,
+                StringComparer.OrdinalIgnoreCase);
+            if (prepared.Count == 0)
+                return decisions;
+
+            var matches = await _importResultRepository.FindExistingAsync(
+                prepared.Select(item => new ImportDuplicateCandidate(item.File.Name, item.ReportTypeKey)), ct);
+            var existingByPair = matches.ToDictionary(
+                match => (match.FileName, match.ReportTypeKey),
+                match => match.ExistingCount);
+            var seenInSelection = new Dictionary<(string FileName, string ReportTypeKey), int>();
+            var duplicateItems = new List<BulkDuplicateImportItem>();
+
+            foreach (var item in prepared)
+            {
+                var pair = (item.File.Name, item.ReportTypeKey);
+                var existing = existingByPair.GetValueOrDefault(pair) + seenInSelection.GetValueOrDefault(pair);
+                if (existing > 0)
+                    duplicateItems.Add(new BulkDuplicateImportItem(
+                        item.File.FullPath,
+                        item.File.Name,
+                        item.File.LastWriteTime,
+                        item.ReportTypeKey,
+                        existing));
+                seenInSelection[pair] = seenInSelection.GetValueOrDefault(pair) + 1;
+            }
+
+            if (duplicateItems.Count == 0)
+                return decisions;
+
+            var dialog = new BulkDuplicateImportDialog(duplicateItems) { Owner = this };
+            if (dialog.ShowDialog() != true || !dialog.Confirmed)
+                return null;
+
+            foreach (var item in dialog.Items)
+                decisions[item.FilePath] = item.Strategy;
+
+            return decisions;
+        }
+
         private async void File_Import_Click(object? sender, RoutedEventArgs e)
         {
             var selectedItems = FilesListView.SelectedItems?.OfType<RepImpFileItem>().ToList();
@@ -1340,6 +1424,29 @@ namespace RRDA.RepImp
                 : "Nessun batch selezionato: i file saranno importati senza associazione a un batch.");
 
             using var cts = new CancellationTokenSource();
+            try
+            {
+                _bulkDuplicateStrategies = await GetBulkDuplicateStrategiesAsync(selectedItems, cts.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                Log("Importazione annullata dall'utente durante il pre-controllo duplicati.");
+                return;
+            }
+            catch (Exception ex)
+            {
+                Log($"Errore durante il pre-controllo duplicati: {ex.Message}");
+                MessageBox.Show(this, $"Impossibile verificare i duplicati:{Environment.NewLine}{ex.Message}",
+                    "Errore controllo duplicati", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            if (_bulkDuplicateStrategies is null)
+            {
+                Log("Importazione annullata dall'utente (gestione duplicati).");
+                return;
+            }
+
             var progressDlg = new ImportProgressDialog(cts) { Owner = this };
             progressDlg.Show();
 
@@ -1402,6 +1509,7 @@ namespace RRDA.RepImp
             finally
             {
                 progressDlg.Close();
+                _bulkDuplicateStrategies = null;
             }
 
             Log($"Import multiplo completato. Successi: {successCount}, Falliti: {failCount}.");
