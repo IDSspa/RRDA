@@ -41,9 +41,24 @@
     }
 
     .file-pivot-table {
+        --file-pivot-subject-key-background: #161b22;
+        --file-pivot-subject-key-border: #30363d;
         border-collapse: separate;
         border-spacing: 0;
         min-width: 1400px;
+    }
+
+    html[data-theme="light"] .file-pivot-table {
+        --file-pivot-subject-key-background: #ffffff;
+        --file-pivot-subject-key-border: #dbe3ec;
+    }
+
+    .file-pivot-table .file-pivot-subject-key-column {
+        background: var(--file-pivot-subject-key-background);
+        box-shadow: inset -1px 0 var(--file-pivot-subject-key-border);
+        left: 0;
+        position: sticky;
+        z-index: 3;
     }
 
     .file-pivot-table td,
@@ -56,6 +71,10 @@
         position: sticky;
         top: 0;
         z-index: 2;
+    }
+
+    .file-pivot-table thead .file-pivot-subject-key-column {
+        z-index: 4;
     }
 
     .file-pivot-range-summary {
@@ -90,7 +109,7 @@
                 <tr>
                     @if (Model.HasSubjectKey)
                     {
-                        <th style="font-family:monospace;font-size:.78rem;white-space:nowrap;">@Model.SubjectKeyLabel</th>
+                        <th class="file-pivot-subject-key-column" style="font-family:monospace;font-size:.78rem;white-space:nowrap;">@Model.SubjectKeyLabel</th>
                     }
                     <th>Batch</th>
                     <th>Nome file</th>
@@ -116,7 +135,7 @@
                 <tr>
                     @if (Model.HasSubjectKey)
                     {
-                        <td style="font-family:monospace;font-size:.78rem;white-space:nowrap;">@FormatSubjectKey()</td>
+                        <td class="file-pivot-subject-key-column" style="font-family:monospace;font-size:.78rem;white-space:nowrap;">@FormatSubjectKey()</td>
                     }
                     <td style="font-size:.78rem;">@(Model.Row.BatchName ?? "—")</td>
                     <td style="font-family:monospace;font-size:.78rem;">@Model.Row.FileName</td>

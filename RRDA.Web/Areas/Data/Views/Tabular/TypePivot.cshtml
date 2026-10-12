@@ -105,9 +105,47 @@
         }
 
     .type-pivot-table {
+        --type-pivot-selector-width: 2.75rem;
         border-collapse: separate;
         border-spacing: 0;
     }
+
+        .type-pivot-table .type-pivot-selector-column,
+        .type-pivot-table .type-pivot-subject-key-column {
+            position: sticky;
+            z-index: 3;
+        }
+
+        .type-pivot-table .type-pivot-selector-column {
+            left: 0;
+            min-width: var(--type-pivot-selector-width);
+            width: var(--type-pivot-selector-width);
+        }
+
+        .type-pivot-table .type-pivot-subject-key-column {
+            box-shadow: inset -1px 0 var(--tp-border);
+            left: var(--type-pivot-selector-width);
+        }
+
+        .type-pivot-table thead .type-pivot-selector-column,
+        .type-pivot-table thead .type-pivot-subject-key-column {
+            z-index: 7;
+        }
+
+        .type-pivot-table tbody tr:nth-child(odd) > .type-pivot-selector-column,
+        .type-pivot-table tbody tr:nth-child(odd) > .type-pivot-subject-key-column {
+            background-color: var(--tp-canvas);
+        }
+
+        .type-pivot-table tbody tr:nth-child(even) > .type-pivot-selector-column,
+        .type-pivot-table tbody tr:nth-child(even) > .type-pivot-subject-key-column {
+            background-color: var(--tp-surface-raised);
+        }
+
+        .type-pivot-table tbody tr:hover > .type-pivot-selector-column,
+        .type-pivot-table tbody tr:hover > .type-pivot-subject-key-column {
+            background-color: var(--tp-surface-hover);
+        }
 
         .type-pivot-table thead {
             position: sticky;
@@ -147,6 +185,13 @@
         .type-pivot-table tfoot th,
         .type-pivot-table tfoot td {
             background: var(--tp-surface);
+        }
+
+        .type-pivot-table tfoot .type-pivot-stats-label {
+            box-shadow: inset -1px 0 var(--tp-border);
+            left: 0;
+            position: sticky;
+            z-index: 5;
         }
 
         .type-pivot-table tfoot tr:first-child > * {
@@ -766,13 +811,13 @@
             <table class="table table-borderless mb-0 type-pivot-table" style="min-width:1400px;">
                 <thead>
                     <tr>
-                        <th style="font-size:.78rem;white-space:nowrap;">
+                        <th class="type-pivot-selector-column" style="font-size:.78rem;white-space:nowrap;">
                             <input class="form-check-input" type="checkbox" id="plot-select-all" title="Seleziona tutte le righe della pagina" />
                         </th>
                         @* ── SubjectKey: prima colonna ── *@
                         @if (Model.HasSubjectKey)
                         {
-                            <th style="font-family:monospace;font-size:.78rem;white-space:nowrap;">
+                            <th class="type-pivot-subject-key-column" style="font-family:monospace;font-size:.78rem;white-space:nowrap;">
                                 <a class="type-pivot-sort-link"
                                    asp-action="TypePivot"
                                    asp-route-reportTypeId="@Model.ReportTypeId"
@@ -826,7 +871,7 @@
                     @foreach (var row in Model.Rows)
                     {
                         <tr>
-                            <td>
+                            <td class="type-pivot-selector-column">
                                 <input class="form-check-input plot-row-selector"
                                        type="checkbox"
                                        name="selectedFileIds"
@@ -837,7 +882,7 @@
                             @* ── SubjectKey: renderizzato come intero (o stringa se non numerico) ── *@
                             @if (Model.HasSubjectKey)
                             {
-                                <td style="font-family:monospace;font-size:.78rem;white-space:nowrap;">
+                                <td class="type-pivot-subject-key-column" style="font-family:monospace;font-size:.78rem;white-space:nowrap;">
                                     @{
                                         var skRaw = row.SubjectKey;
                                         if (!string.IsNullOrWhiteSpace(skRaw)
@@ -948,7 +993,7 @@
                         </td>
                     </tr>
                         <tr class="tp-stats-row" style="display:none;">
-                            <th colspan="@staticFooterColumns" style="font-size:.76rem;color:#8b949e;">Max</th>
+                            <th class="type-pivot-stats-label" colspan="@staticFooterColumns" style="font-size:.76rem;color:#8b949e;">Max</th>
                             @foreach (var header in Model.Headers)
                             {
                                 if (Model.ReferenceHeaders.Contains(header, StringComparer.OrdinalIgnoreCase))
@@ -970,7 +1015,7 @@
                             }
                         </tr>
                         <tr class="tp-stats-row" style="display:none;">
-                            <th colspan="@staticFooterColumns" style="font-size:.76rem;color:#8b949e;">Media</th>
+                            <th class="type-pivot-stats-label" colspan="@staticFooterColumns" style="font-size:.76rem;color:#8b949e;">Media</th>
                             @foreach (var header in Model.Headers)
                             {
                                 if (Model.ReferenceHeaders.Contains(header, StringComparer.OrdinalIgnoreCase))
@@ -992,7 +1037,7 @@
                             }
                         </tr>
                         <tr class="tp-stats-row" style="display:none;">
-                            <th colspan="@staticFooterColumns" style="font-size:.76rem;color:#8b949e;">Min</th>
+                            <th class="type-pivot-stats-label" colspan="@staticFooterColumns" style="font-size:.76rem;color:#8b949e;">Min</th>
                             @foreach (var header in Model.Headers)
                             {
                                 if (Model.ReferenceHeaders.Contains(header, StringComparer.OrdinalIgnoreCase))
@@ -1014,7 +1059,7 @@
                             }
                         </tr>
                         <tr class="tp-stats-row" style="display:none;">
-                            <th colspan="@staticFooterColumns" style="font-size:.76rem;color:#8b949e;">Dev. std</th>
+                            <th class="type-pivot-stats-label" colspan="@staticFooterColumns" style="font-size:.76rem;color:#8b949e;">Dev. std</th>
                             @foreach (var header in Model.Headers)
                             {
                                 if (Model.ReferenceHeaders.Contains(header, StringComparer.OrdinalIgnoreCase))
