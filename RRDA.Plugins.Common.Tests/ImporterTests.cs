@@ -67,6 +67,20 @@ public sealed class ImporterTests
     }
 
     [Fact]
+    public async Task ImportAsync_RejectsEmptyOutput()
+    {
+        var importer = new EmptyCustomImporter();
+
+        var result = await importer.ImportAsync(
+            Stream.Null,
+            new ValidationConfig { SubjectKeyField = importer.SubjectKeyDefinedName });
+
+        Assert.False(result.Success);
+        Assert.Contains(result.Errors, error =>
+            error.Contains("non contiene campi importabili", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
     public async Task ImportAsync_RejectsValidatorWithDifferentSubjectKey()
     {
         var importer = new CustomImporter();
@@ -171,6 +185,16 @@ public sealed class ImporterTests
                     Properties = []
                 }
             ]);
+    }
+
+    private sealed class EmptyCustomImporter : CustomImporter
+    {
+        protected override Task<IEnumerable<ReportEntityDto>> ImportDataAsync(
+            Stream xlsxStream,
+            ValidationConfig config,
+            IProgress<ImportProgress>? progress = null,
+            CancellationToken ct = default) =>
+            Task.FromResult<IEnumerable<ReportEntityDto>>([]);
     }
 
     private sealed class MissingSubjectKeyImporter : CustomImporter

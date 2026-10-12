@@ -876,11 +876,20 @@ namespace RRDA.RepImp
                                 fi.Name,
                                 ex.Message,
                                 new { FilePath = fi.FullPath, Plugin = plugin.Name, Phase = "Persistence" });
+                            return false;
                         }
                     }
                     else
                     {
                         Log("Nessuna entity da salvare nel database.");
+                        await WriteAuditAsync(
+                            "Report.ImportFailed",
+                            "Failure",
+                            "ReportFile",
+                            fi.Name,
+                            "Il plugin non ha prodotto entità da persistere.",
+                            new { FilePath = fi.FullPath, Plugin = plugin.Name, Phase = "Import" });
+                        return false;
                     }
                 }
                 catch (Exception ex)
@@ -893,6 +902,7 @@ namespace RRDA.RepImp
                         fi.Name,
                         ex.Message,
                         new { FilePath = fi.FullPath, Plugin = plugin.Name, Phase = "Persistence" });
+                    return false;
                 }
             }
             catch (Exception ex)

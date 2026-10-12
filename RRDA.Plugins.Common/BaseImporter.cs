@@ -92,6 +92,16 @@ namespace RRDA.Plugins.Common
                 var entities = (await ImportDataAsync(fileStream, config, progress, ct)).ToList();
                 ValidateImportedEntities(entities);
 
+                // Un import senza entità non può essere persistito e veniva finora
+                // riportato come riuscito, pur non creando alcun ReportFile. Rendiamo
+                // esplicito l'errore così da distinguere un template non compatibile
+                // da un import realmente completato.
+                if (entities.Count == 0)
+                {
+                    throw new InvalidDataException(
+                        "Il report non contiene campi importabili con il validatore configurato.");
+                }
+
                 result.Entities = entities;
                 result.Success = true;
             }
