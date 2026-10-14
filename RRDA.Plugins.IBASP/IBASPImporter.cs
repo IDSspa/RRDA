@@ -151,6 +151,18 @@ namespace RRDA.Plugins.IBASP
                               ?? string.Empty,
                         StringComparer.OrdinalIgnoreCase);
 
+                var pivotVisibilityByDefinedName = config.Mappings
+                    .Where(m => !string.IsNullOrWhiteSpace(m.DefinedName))
+                    .GroupBy(m => m.DefinedName, StringComparer.OrdinalIgnoreCase)
+                    .ToDictionary(
+                        g => g.Key,
+                        g => g.Select(m => m.VisibleInPivot).FirstOrDefault(value => value.HasValue),
+                        StringComparer.OrdinalIgnoreCase);
+                var filterabilityByDefinedName = config.Mappings
+                    .Where(m => !string.IsNullOrWhiteSpace(m.DefinedName))
+                    .GroupBy(m => m.DefinedName, StringComparer.OrdinalIgnoreCase)
+                    .ToDictionary(g => g.Key, g => g.Select(m => m.Filterable).FirstOrDefault(value => value.HasValue), StringComparer.OrdinalIgnoreCase);
+
                 int index = 0;
 
                 // Iteriamo sui FieldRules definiti nel config
@@ -171,6 +183,11 @@ namespace RRDA.Plugins.IBASP
                         && !string.IsNullOrWhiteSpace(alias)
                         ? alias
                         : definedName;
+                    var visibleInPivot = pivotVisibilityByDefinedName.TryGetValue(definedName, out var pivotVisibility)
+                        ? pivotVisibility
+                        : null;
+                    var filterable = filterabilityByDefinedName.TryGetValue(definedName, out var filterability)
+                        ? filterability : null;
 
                     if (string.IsNullOrWhiteSpace(definedName))
                         continue;
@@ -215,7 +232,9 @@ namespace RRDA.Plugins.IBASP
                                 ["row_index"] = "-1",
                                 ["col_index"] = "-1",
                                 ["is_subject_key"] = isSubjectKey ? "1" : "0",
-                                ["data_type"] = SerializeDataType(rule.DataType)
+                                ["data_type"] = SerializeDataType(rule.DataType),
+                                ["visible_in_pivot"] = visibleInPivot.HasValue ? (visibleInPivot.Value ? "1" : "0") : string.Empty
+                                ,["filterable"] = filterable.HasValue ? (filterable.Value ? "1" : "0") : string.Empty
                             }
                         });
                     }
@@ -249,7 +268,9 @@ namespace RRDA.Plugins.IBASP
                                         ["unit"] = rule.Unit ?? string.Empty,
                                         ["row_index"] = dr.ToString(),
                                         ["col_index"] = dc.ToString(),
-                                        ["data_type"] = SerializeDataType(rule.DataType)
+                                ["data_type"] = SerializeDataType(rule.DataType),
+                                ["visible_in_pivot"] = visibleInPivot.HasValue ? (visibleInPivot.Value ? "1" : "0") : string.Empty
+                                ,["filterable"] = filterable.HasValue ? (filterable.Value ? "1" : "0") : string.Empty
                                     }
                                 });
                             }

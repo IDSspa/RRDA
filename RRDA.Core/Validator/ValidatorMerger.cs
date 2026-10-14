@@ -65,6 +65,10 @@ namespace RRDA.Core.Validator
             // Merge FieldRules (Field elements)
             MergeFieldRules(mergedRoot, newRoot);
 
+            // I campi calcolati sono definiti manualmente e non devono essere persi
+            // durante la rigenerazione del validatore.
+            MergeCalculatedFields(mergedRoot, newRoot);
+
             // Merge Sheets (optional, but preserve if any exist in new validator)
             MergeSheets(mergedRoot, newRoot);
 
@@ -174,6 +178,35 @@ namespace RRDA.Core.Validator
                 {
                     existingFieldRules.Add(new XElement(newField));
                 }
+            }
+        }
+
+        private static void MergeCalculatedFields(XElement mergedRoot, XElement newRoot)
+        {
+            var incoming = newRoot.Element("CalculatedFields");
+            if (incoming is null || !incoming.Elements("Field").Any())
+                return;
+
+            var existing = mergedRoot.Element("CalculatedFields");
+            if (existing is null)
+            {
+                existing = new XElement("CalculatedFields");
+                var fieldRules = mergedRoot.Element("FieldRules");
+                if (fieldRules is not null)
+                    fieldRules.AddAfterSelf(existing);
+                else
+                    mergedRoot.Add(existing);
+            }
+
+            var aliases = existing.Elements("Field")
+                .Select(field => (string?)field.Attribute("alias"))
+                .Where(alias => !string.IsNullOrWhiteSpace(alias))
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            foreach (var field in incoming.Elements("Field"))
+            {
+                var alias = (string?)field.Attribute("alias");
+                if (!string.IsNullOrWhiteSpace(alias) && aliases.Add(alias))
+                    existing.Add(new XElement(field));
             }
         }
 

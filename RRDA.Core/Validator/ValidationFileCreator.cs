@@ -165,9 +165,17 @@ namespace RRDA.Core.Validator
                     foreach (var dn in definedNames)
                     {
                         var dnName = dn.Name?.Value ?? string.Empty;
+                        var inferredType = InferTypeForDefinedName(dn, sheetIndex,
+                            wbPart.SharedStringTablePart?.SharedStringTable, wbPart);
+                        var isReference = referencesByDefinedName.ContainsKey(dnName);
+                        var isSubjectKey = string.Equals(
+                            dnName,
+                            subjectKeyDefinedName,
+                            StringComparison.OrdinalIgnoreCase);
                         var map = new XElement("Map",
                             new XAttribute("definedName", dnName),
-                            new XAttribute("field", dnName)
+                            new XAttribute("field", dnName),
+                            new XAttribute("filterable", (!isSubjectKey && !isReference && IsNumericType(inferredType)).ToString().ToLowerInvariant())
                         );
                         fieldMappings.Add(map);
                     }

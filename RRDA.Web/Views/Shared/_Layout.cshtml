@@ -344,6 +344,11 @@
         <span class="icon">⊞</span> Dashboard
     </a>
 
+    <a class="sidebar-link @ActiveIf("", "Help")"
+       asp-controller="Help" asp-action="Index" asp-area="">
+        <span class="icon">?</span> Help online
+    </a>
+
     <div class="sidebar-divider"></div>
 
     <!-- ── Dati (tutti) ── -->

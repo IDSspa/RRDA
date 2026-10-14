@@ -661,23 +661,47 @@
 
                     <div class="col-md-3">
                         <label class="form-label">Campo filtro</label>
-                        <select class="form-select" name="filterField">
+                        <select class="form-select" name="filterField" id="pivot-filter-field">
                             <option value="">--</option>
                             @foreach (var f in Model.DynamicFilterFields)
                             {
-                                <option value="@f" selected="@(Model.FilterField == f)">@f</option>
+                                <option value="@f" data-data-type="@Model.FilterFieldDataTypes[f]" selected="@(Model.FilterField == f)">@f</option>
                             }
                         </select>
                     </div>
 
-                    <div class="col-md-2">
-                        <label class="form-label">Campo da</label>
+                    <div class="col-md-2 pivot-filter-control" data-filter-kind="numeric">
+                        <label class="form-label">Valore da</label>
+                        <input type="number" step="any" class="form-control" name="filterFrom" value="@Model.FilterFrom" />
+                    </div>
+
+                    <div class="col-md-2 pivot-filter-control" data-filter-kind="numeric">
+                        <label class="form-label">Valore a</label>
+                        <input type="number" step="any" class="form-control" name="filterTo" value="@Model.FilterTo" />
+                    </div>
+
+                    <div class="col-md-4 pivot-filter-control" data-filter-kind="string">
+                        <label class="form-label">Contiene</label>
                         <input class="form-control" name="filterFrom" value="@Model.FilterFrom" />
                     </div>
 
-                    <div class="col-md-2">
-                        <label class="form-label">Campo a</label>
-                        <input class="form-control" name="filterTo" value="@Model.FilterTo" />
+                    <div class="col-md-2 pivot-filter-control" data-filter-kind="bool">
+                        <label class="form-label">Valore</label>
+                        <select class="form-select" name="filterFrom">
+                            <option value="">--</option>
+                            <option value="true" selected="@(string.Equals(Model.FilterFrom, "true", StringComparison.OrdinalIgnoreCase))">Vero</option>
+                            <option value="false" selected="@(string.Equals(Model.FilterFrom, "false", StringComparison.OrdinalIgnoreCase))">Falso</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-2 pivot-filter-control" data-filter-kind="datetime">
+                        <label class="form-label">Data da</label>
+                        <input type="date" class="form-control" name="filterFrom" value="@Model.FilterFrom" />
+                    </div>
+
+                    <div class="col-md-2 pivot-filter-control" data-filter-kind="datetime">
+                        <label class="form-label">Data a</label>
+                        <input type="date" class="form-control" name="filterTo" value="@Model.FilterTo" />
                     </div>
 
                     <div class="col-md-2">
@@ -1608,6 +1632,23 @@
             window.addEventListener('load', () => {
             void fetchStats();
             }, { once: true });
+            })();
+
+            (() => {
+                const field = document.getElementById('pivot-filter-field');
+                if (!field) return;
+                const controls = document.querySelectorAll('.pivot-filter-control');
+                const refresh = () => {
+                    const type = field.selectedOptions[0]?.dataset.dataType?.toLowerCase();
+                    const kind = type === 'int' || type === 'double' ? 'numeric' : type;
+                    controls.forEach(control => {
+                        const active = control.dataset.filterKind === kind;
+                        control.hidden = !active;
+                        control.querySelectorAll('input, select').forEach(input => input.disabled = !active);
+                    });
+                };
+                field.addEventListener('change', refresh);
+                refresh();
             })();
 
         </script>

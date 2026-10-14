@@ -10,6 +10,7 @@
         public bool UseCompactRanges { get; set; } = true;
         public List<TypePivotRow> Rows { get; set; } = [];
         public List<string> DynamicFilterFields { get; set; } = [];
+        public Dictionary<string, string> FilterFieldDataTypes { get; set; } = new(StringComparer.OrdinalIgnoreCase);
         public List<int> BatchIds { get; set; } = [];
         public DateTime? LastModifiedFrom { get; set; }
         public DateTime? LastModifiedTo { get; set; }

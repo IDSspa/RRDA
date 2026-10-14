@@ -14,6 +14,7 @@ namespace RRDA.Core.Validator
         public List<FieldMapping> Mappings { get; set; } = [];
         public List<CellMapping> Cells { get; set; } = [];
         public List<FieldRule> FieldRules { get; set; } = [];
+        public List<CalculatedFieldRule> CalculatedFields { get; set; } = [];
         public List<Sheet> Sheets { get; set; } = [];
         public List<RowRule> RowRules { get; set; } = [];
 
@@ -191,6 +192,27 @@ namespace RRDA.Core.Validator
                 }
 
                 cfg.FieldRules.Add(fr);
+            }
+
+            var calculatedFields = root.Element("CalculatedFields")?.Elements("Field") ?? [];
+            foreach (var field in calculatedFields)
+            {
+                var type = ((string?)field.Attribute("type") ?? "double").ToLowerInvariant();
+                var dataType = type switch
+                {
+                    "int" => FieldDataType.Int,
+                    "double" => FieldDataType.Double,
+                    _ => throw new InvalidDataException(
+                        $"Il campo calcolato '{(string?)field.Attribute("alias")}' deve avere tipo 'int' o 'double'.")
+                };
+
+                cfg.CalculatedFields.Add(new CalculatedFieldRule
+                {
+                    Alias = (string?)field.Attribute("alias") ?? string.Empty,
+                    Formula = (string?)field.Attribute("formula") ?? string.Empty,
+                    DataType = dataType,
+                    Unit = (string?)field.Attribute("unit")
+                });
             }
 
             cfg.SubjectKeyField = (string?)root.Attribute("subjectKeyField") ?? string.Empty;

@@ -137,6 +137,34 @@ public sealed class ImporterTests
         Assert.Equal("12345", reference.TargetKeyValue);
     }
 
+    [Fact]
+    public async Task ImportAsync_MaterializesCalculatedFieldsAfterCustomImport()
+    {
+        var importer = new CalculatedCustomImporter();
+        var config = new ValidationConfig
+        {
+            SubjectKeyField = importer.SubjectKeyDefinedName,
+            CalculatedFields =
+            [
+                new CalculatedFieldRule
+                {
+                    Alias = "doubleSource",
+                    Formula = "source * 2",
+                    DataType = FieldDataType.Double,
+                    Unit = "dB"
+                }
+            ]
+        };
+
+        var result = await importer.ImportAsync(Stream.Null, config);
+
+        Assert.True(result.Success);
+        var calculated = Assert.Single(result.Entities!, entity => entity.Key == "doubleSource");
+        Assert.Equal("6", calculated.Properties["value"]);
+        Assert.Equal("double", calculated.Properties["data_type"]);
+        Assert.Equal("dB", calculated.Properties["unit"]);
+    }
+
     private class CustomImporter : BaseImporter
     {
         public override string Name => "CUSTOM";
@@ -210,6 +238,31 @@ public sealed class ImporterTests
         public override IReadOnlyList<string> MatchingPatterns => ["RADAR"];
         public override ReportSubjectKind SubjectKind => ReportSubjectKind.Radar;
         public override string SubjectKeyDefinedName => "Serial";
+    }
+
+    private sealed class CalculatedCustomImporter : CustomImporter
+    {
+        protected override Task<IEnumerable<ReportEntityDto>> ImportDataAsync(
+            Stream xlsxStream,
+            ValidationConfig config,
+            IProgress<ImportProgress>? progress = null,
+            CancellationToken ct = default) =>
+            Task.FromResult<IEnumerable<ReportEntityDto>>(
+            [
+                new ReportEntityDto
+                {
+                    EntityKind = "Custom",
+                    Key = "source",
+                    Properties = new Dictionary<string, string>
+                    {
+                        ["name"] = "source",
+                        ["value"] = "3",
+                        ["row_index"] = "-1",
+                        ["col_index"] = "-1",
+                        ["data_type"] = "double"
+                    }
+                }
+            ]);
     }
 
     private static MemoryStream CreateWorkbook(string definedName, string value)

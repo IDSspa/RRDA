@@ -42,20 +42,24 @@ public sealed class TypePivotDatasetService(RRDADbContext db) : ITypePivotDatase
             .ToListAsync(cancellationToken);
 
         var filteredFileIds = baseFileIds;
+        var metadata = await BuildMetadataAsync(baseFileIds, cancellationToken);
 
         if (!string.IsNullOrWhiteSpace(request.FilterField)
             && (!string.IsNullOrWhiteSpace(request.FilterFrom) || !string.IsNullOrWhiteSpace(request.FilterTo)))
         {
-            var pairs = await LoadPairsAsync(
-                baseFileIds,
-                isSubjectKey: false,
-                entityKey: request.FilterField,
-                cancellationToken);
-            var allowedFileIds = pairs
-                .Where(p => IsValueInRange(p.Value, request.FilterFrom, request.FilterTo))
-                .Select(p => p.FileId)
-                .ToHashSet();
-            filteredFileIds = [.. filteredFileIds.Where(allowedFileIds.Contains)];
+            if (metadata.FilterFieldDataTypes.TryGetValue(request.FilterField, out var dataType))
+            {
+                var pairs = await LoadPairsAsync(
+                    baseFileIds,
+                    isSubjectKey: false,
+                    entityKey: request.FilterField,
+                    cancellationToken);
+                var allowedFileIds = pairs
+                    .Where(p => MatchesFilter(p.Value, dataType, request.FilterFrom, request.FilterTo))
+                    .Select(p => p.FileId)
+                    .ToHashSet();
+                filteredFileIds = [.. filteredFileIds.Where(allowedFileIds.Contains)];
+            }
         }
 
         if (!string.IsNullOrWhiteSpace(request.SubjectKeyFrom)
@@ -67,7 +71,7 @@ public sealed class TypePivotDatasetService(RRDADbContext db) : ITypePivotDatase
                 entityKey: null,
                 cancellationToken);
             var allowedFileIds = pairs
-                .Where(p => IsValueInRange(p.Value, request.SubjectKeyFrom, request.SubjectKeyTo))
+                .Where(p => MatchesNumericRange(p.Value, request.SubjectKeyFrom, request.SubjectKeyTo))
                 .Select(p => p.FileId)
                 .ToHashSet();
             filteredFileIds = [.. filteredFileIds.Where(allowedFileIds.Contains)];
@@ -83,7 +87,7 @@ public sealed class TypePivotDatasetService(RRDADbContext db) : ITypePivotDatase
                 Label = string.IsNullOrWhiteSpace(b.Description) ? b.Name : $"{b.Name} - {b.Description}"
             }).ToList(),
             BatchNames = batchRecords.ToDictionary(b => b.Id, b => b.Name),
-            Metadata = await BuildMetadataAsync(baseFileIds, cancellationToken)
+            Metadata = metadata
         };
     }
 
@@ -111,19 +115,30 @@ public sealed class TypePivotDatasetService(RRDADbContext db) : ITypePivotDatase
                 .OrderBy(key => key)
                 .ToListAsync(cancellationToken);
         var referenceHeaderSet = referenceHeaders.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var visibleScalarPairs = scalarPairs
+            .Where(pair => pair.VisibleInPivot ?? IsNumericDataType(pair.DataType))
+            .ToList();
+        var visibleReferenceHeaders = referenceHeaders
+            .Where(header => visibleScalarPairs.Any(pair => string.Equals(pair.Key, header, StringComparison.OrdinalIgnoreCase)))
+            .ToList();
         var statisticalHeaders = scalarPairs
-            .Where(p => IsNumericDataType(p.DataType) && !referenceHeaderSet.Contains(p.Key))
+            .Where(p => (p.VisibleInPivot ?? true) && IsNumericDataType(p.DataType) && !referenceHeaderSet.Contains(p.Key))
             .Select(p => p.Key)
             .Where(k => !string.IsNullOrWhiteSpace(k))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .OrderBy(k => k, StringComparer.OrdinalIgnoreCase)
             .ToList();
-        var visibleHeaders = statisticalHeaders
-            .Concat(referenceHeaders)
+        var visibleHeaders = visibleScalarPairs
+            .Where(pair => !referenceHeaderSet.Contains(pair.Key))
+            .Select(pair => pair.Key)
+            .Where(key => !string.IsNullOrWhiteSpace(key))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(key => key, StringComparer.OrdinalIgnoreCase)
+            .Concat(visibleReferenceHeaders)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
         var rangeHeaders = TypePivotRangeAggregator.BuildDescriptors(
-            rangePairs.Where(p => IsNumericDataType(p.DataType)));
+            rangePairs.Where(p => (p.VisibleInPivot ?? true) && IsNumericDataType(p.DataType)));
         var plotXAxisFields = new List<string> { "FileName", "LastModified", "Batch" };
         if (subjectKeyPairs.Count > 0)
             plotXAxisFields.Insert(0, "SubjectKey");
@@ -137,8 +152,15 @@ public sealed class TypePivotDatasetService(RRDADbContext db) : ITypePivotDatase
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .OrderBy(k => k, StringComparer.OrdinalIgnoreCase)
                 .ToList(),
+            FilterFieldDataTypes = scalarPairs
+                .Where(pair => pair.Filterable == true && !referenceHeaderSet.Contains(pair.Key))
+                .GroupBy(pair => pair.Key, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(
+                    group => group.Key,
+                    group => group.Select(pair => pair.DataType).FirstOrDefault(type => !string.IsNullOrWhiteSpace(type)) ?? "string",
+                    StringComparer.OrdinalIgnoreCase),
             VisibleHeaders = visibleHeaders,
-            ReferenceHeaders = referenceHeaders,
+            ReferenceHeaders = visibleReferenceHeaders,
             StatisticalHeaders = statisticalHeaders,
             ExpandedRangeHeaders = rangeHeaders.SelectMany(range => range.ExpandedHeaders).ToList(),
             RangeHeaders = rangeHeaders,
@@ -181,7 +203,9 @@ public sealed class TypePivotDatasetService(RRDADbContext db) : ITypePivotDatase
                     Unit = p.Unit,
                     RangeName = e.Properties.Where(x => x.Name == "name").Select(x => x.Value).FirstOrDefault(),
                     RowIndex = e.Properties.Where(x => x.Name == "row_index").Select(x => x.Value).FirstOrDefault(),
-                    ColIndex = e.Properties.Where(x => x.Name == "col_index").Select(x => x.Value).FirstOrDefault()
+                    ColIndex = e.Properties.Where(x => x.Name == "col_index").Select(x => x.Value).FirstOrDefault(),
+                    VisibleInPivotValue = e.Properties.Where(x => x.Name == "visible_in_pivot").Select(x => x.Value).FirstOrDefault(),
+                    FilterableValue = e.Properties.Where(x => x.Name == "filterable").Select(x => x.Value).FirstOrDefault()
                 }))
             .ToListAsync(cancellationToken);
     }
@@ -190,7 +214,26 @@ public sealed class TypePivotDatasetService(RRDADbContext db) : ITypePivotDatase
         string.Equals(dataType, "int", StringComparison.OrdinalIgnoreCase)
         || string.Equals(dataType, "double", StringComparison.OrdinalIgnoreCase);
 
-    private static bool IsValueInRange(string? rawValue, string? rawFrom, string? rawTo)
+    private static bool MatchesFilter(string? rawValue, string dataType, string? filterFrom, string? filterTo)
+    {
+        if (string.Equals(dataType, "string", StringComparison.OrdinalIgnoreCase))
+            return !string.IsNullOrWhiteSpace(filterFrom)
+                && (rawValue?.Contains(filterFrom, StringComparison.OrdinalIgnoreCase) ?? false);
+        if (string.Equals(dataType, "bool", StringComparison.OrdinalIgnoreCase))
+            return bool.TryParse(filterFrom, out var expected)
+                && (bool.TryParse(rawValue, out var actual) && actual == expected);
+        if (string.Equals(dataType, "datetime", StringComparison.OrdinalIgnoreCase))
+        {
+            if (!DateTime.TryParse(rawValue, CultureInfo.InvariantCulture, DateTimeStyles.AllowWhiteSpaces, out var date))
+                return false;
+            var dateFrom = DateTime.TryParse(filterFrom, CultureInfo.InvariantCulture, DateTimeStyles.AllowWhiteSpaces, out var parsedFrom) ? parsedFrom : (DateTime?)null;
+            var dateTo = DateTime.TryParse(filterTo, CultureInfo.InvariantCulture, DateTimeStyles.AllowWhiteSpaces, out var parsedTo) ? parsedTo : (DateTime?)null;
+            return (!dateFrom.HasValue || date >= dateFrom.Value) && (!dateTo.HasValue || date <= dateTo.Value);
+        }
+        return MatchesNumericRange(rawValue, filterFrom, filterTo);
+    }
+
+    private static bool MatchesNumericRange(string? rawValue, string? rawFrom, string? rawTo)
     {
         var value = TryParseDouble(rawValue);
         if (!value.HasValue)

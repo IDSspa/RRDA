@@ -206,7 +206,10 @@ public sealed class TypePivotViewModelBuilder(
             UseCompactRanges = request.UseCompactRanges,
             HeaderUnits = dataset.Metadata.HeaderUnits,
             ReferenceHeaders = dataset.Metadata.ReferenceHeaders,
-            DynamicFilterFields = dataset.Metadata.AllMeasureHeaders,
+            DynamicFilterFields = dataset.Metadata.FilterFieldDataTypes.Keys
+                .OrderBy(field => field, StringComparer.OrdinalIgnoreCase)
+                .ToList(),
+            FilterFieldDataTypes = dataset.Metadata.FilterFieldDataTypes,
             BatchIds = [.. request.Filter.BatchIds],
             LastModifiedFrom = request.Filter.LastModifiedFrom,
             LastModifiedTo = request.Filter.LastModifiedTo,

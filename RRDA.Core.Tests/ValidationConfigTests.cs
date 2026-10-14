@@ -67,6 +67,26 @@ public sealed class ValidationConfigTests
     }
 
     [Fact]
+    public void Load_ReadsCalculatedFields()
+    {
+        using var stream = Xml("""
+            <ValidationConfig subjectKeyField="Serial">
+              <FieldRules><Field definedName="Serial" /></FieldRules>
+              <CalculatedFields>
+                <Field alias="pathLossSpan" formula="pathLossMax - pathLossMin" type="double" unit="dB" />
+              </CalculatedFields>
+            </ValidationConfig>
+            """);
+
+        var field = Assert.Single(ValidationConfig.Load(stream).CalculatedFields);
+
+        Assert.Equal("pathLossSpan", field.Alias);
+        Assert.Equal("pathLossMax - pathLossMin", field.Formula);
+        Assert.Equal(FieldDataType.Double, field.DataType);
+        Assert.Equal("dB", field.Unit);
+    }
+
+    [Fact]
     public void Load_RejectsIncompleteReferenceMetadata()
     {
         using var stream = Xml("""

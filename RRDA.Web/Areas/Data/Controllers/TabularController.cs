@@ -54,7 +54,8 @@ namespace RRDA.Web.Areas.Data.Controllers
                         Unit = p.Unit,
                         RangeName = e.Properties.Where(x => x.Name == "name").Select(x => x.Value).FirstOrDefault(),
                         RowIndex = e.Properties.Where(x => x.Name == "row_index").Select(x => x.Value).FirstOrDefault(),
-                        ColIndex = e.Properties.Where(x => x.Name == "col_index").Select(x => x.Value).FirstOrDefault()
+                    ColIndex = e.Properties.Where(x => x.Name == "col_index").Select(x => x.Value).FirstOrDefault(),
+                    VisibleInPivotValue = e.Properties.Where(x => x.Name == "visible_in_pivot").Select(x => x.Value).FirstOrDefault()
                     }))
                 .ToListAsync();
 
@@ -89,7 +90,7 @@ namespace RRDA.Web.Areas.Data.Controllers
             }
 
             var fileRangePairs = pairs
-                .Where(pair => pair.IsRange && !pair.IsSubjectKey)
+                .Where(pair => pair.IsRange && !pair.IsSubjectKey && (pair.VisibleInPivot ?? true))
                 .ToList();
             var fileRangeHeaders = TypePivotRangeAggregator.BuildDescriptors(fileRangePairs);
             var headerUnits = new Dictionary<string, string?>(

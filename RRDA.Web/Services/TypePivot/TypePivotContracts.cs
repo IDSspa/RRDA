@@ -44,6 +44,7 @@ public sealed class TypePivotDataset
 public sealed class TypePivotMetadata
 {
     public List<string> AllMeasureHeaders { get; init; } = [];
+    public Dictionary<string, string> FilterFieldDataTypes { get; init; } = new(StringComparer.OrdinalIgnoreCase);
     public List<string> VisibleHeaders { get; init; } = [];
     public List<string> ReferenceHeaders { get; init; } = [];
     public List<string> StatisticalHeaders { get; init; } = [];

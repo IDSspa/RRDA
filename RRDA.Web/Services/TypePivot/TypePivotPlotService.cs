@@ -18,7 +18,7 @@ public sealed class TypePivotPlotService(
             return new(TypePivotPlotStatus.NotFound, null);
 
         var metadata = dataset.Metadata;
-        var allowedSeriesFields = metadata.VisibleHeaders.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var allowedSeriesFields = metadata.StatisticalHeaders.ToHashSet(StringComparer.OrdinalIgnoreCase);
         var selectedSeriesFields = request.SeriesFields
             .Where(f => !string.IsNullOrWhiteSpace(f) && allowedSeriesFields.Contains(f))
             .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -30,7 +30,7 @@ public sealed class TypePivotPlotService(
             return new(TypePivotPlotStatus.BadRequest, new
             {
                 message = "Selezionare almeno una grandezza numerica valida.",
-                availableSeriesFields = metadata.VisibleHeaders
+                availableSeriesFields = metadata.StatisticalHeaders
             });
         }
 
@@ -117,7 +117,7 @@ public sealed class TypePivotPlotService(
             rowCount = files.Count,
             selectedFileIds = fileIds,
             availableXFields = metadata.PlotXAxisFields,
-            availableSeriesFields = metadata.VisibleHeaders,
+            availableSeriesFields = metadata.StatisticalHeaders,
             layout = new
             {
                 title = $"Scatter - {dataset.ReportType.Key}",
