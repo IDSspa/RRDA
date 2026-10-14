@@ -659,6 +659,18 @@
                         <input type="date" class="form-control" name="lastModifiedTo" value="@(Model.LastModifiedTo?.ToString("yyyy-MM-dd"))" />
                     </div>
 
+                    <div class="col-md-2">
+                        <label class="form-label">@Model.SubjectKeyLabel da</label>
+                        <input class="form-control" name="subjectKeyFrom" value="@Model.SubjectKeyFrom" />
+                    </div>
+
+                    <div class="col-md-2">
+                        <label class="form-label">@Model.SubjectKeyLabel a</label>
+                        <input class="form-control" name="subjectKeyTo" value="@Model.SubjectKeyTo" />
+                    </div>
+
+                    <div class="w-100"></div>
+
                     <div class="col-md-3">
                         <label class="form-label">Campo filtro</label>
                         <select class="form-select" name="filterField" id="pivot-filter-field">
@@ -702,16 +714,6 @@
                     <div class="col-md-2 pivot-filter-control" data-filter-kind="datetime">
                         <label class="form-label">Data a</label>
                         <input type="date" class="form-control" name="filterTo" value="@Model.FilterTo" />
-                    </div>
-
-                    <div class="col-md-2">
-                        <label class="form-label">@Model.SubjectKeyLabel da</label>
-                        <input class="form-control" name="subjectKeyFrom" value="@Model.SubjectKeyFrom" />
-                    </div>
-
-                    <div class="col-md-2">
-                        <label class="form-label">@Model.SubjectKeyLabel a</label>
-                        <input class="form-control" name="subjectKeyTo" value="@Model.SubjectKeyTo" />
                     </div>
 
                     <div class="col-md-auto type-pivot-form-actions type-pivot-filter-actions">
