@@ -336,14 +336,14 @@ namespace RRDA.RepImp
                 scanDlg.Close();
             }
         }
-        private void LoadPlugins()
+        private void LoadPlugins(ListBox pluginsListBox)
         {
             try
             {
                 var pluginsFolder = ResolvePluginsFolder();
                 var result = _pluginService.LoadPlugins(pluginsFolder);
                 _plugins = [.. result.Plugins];
-                PluginsListBox.ItemsSource = _plugins;
+                pluginsListBox.ItemsSource = _plugins;
 
                 foreach (var error in result.Errors)
                     Log($"Plugin non caricato da '{error.Source}': {error.Message}");
@@ -357,7 +357,7 @@ namespace RRDA.RepImp
             catch (Exception ex)
             {
                 _plugins = [];
-                PluginsListBox.ItemsSource = null;
+                pluginsListBox.ItemsSource = null;
                 Log($"Errore caricamento plugin: {ex.Message}");
             }
         }
@@ -1011,7 +1011,7 @@ namespace RRDA.RepImp
                 StartConnectionStatusPolling();
 
                 LoadFolders();
-                LoadPlugins();
+                LoadPlugins(PluginsListBox);
             }
             catch (Exception ex)
             {
@@ -1225,6 +1225,11 @@ namespace RRDA.RepImp
                         !string.IsNullOrWhiteSpace(file.Type)
                         && ResolveValidatorPath(file.Type) is not null);
 
+                FileForceMenuItem.IsEnabled = selectedFiles.Count > 0
+                    && selectedFiles.All(file =>
+                        string.IsNullOrWhiteSpace(file.Type));
+
+
                 if (firstSelectedFile != null && selectedFiles.Count == 1)
                     FileExportValidatorMenuItem.IsEnabled = (_plugins.FirstOrDefault(p => string.Equals(p.Name, firstSelectedFile.Type, StringComparison.OrdinalIgnoreCase)) != null);
                 else
@@ -1371,9 +1376,13 @@ namespace RRDA.RepImp
 
         private async void File_Import_Click(object? sender, RoutedEventArgs e)
         {
-            var selectedItems = FilesListView.SelectedItems?.OfType<RepImpFileItem>().ToList();
+            var selectedItems = FilesListView.SelectedItems?.OfType<RepImpFileItem>().ToList() ?? [];
+            await ImportSelectedFilesAsync(selectedItems);
+        }
 
-            if (selectedItems == null || selectedItems.Count == 0)
+        private async Task ImportSelectedFilesAsync(List<RepImpFileItem> selectedItems)
+        {
+            if (selectedItems.Count == 0)
             {
                 MessageBox.Show(this, "Seleziona almeno un file da importare.", "Nessun file selezionato", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
@@ -1551,6 +1560,68 @@ namespace RRDA.RepImp
             }
 
             Log($"Import multiplo completato. Successi: {successCount}, Falliti: {failCount}.");
+        }
+
+        private async void File_ForceImport_Click(object? sender, RoutedEventArgs e)
+        {
+            var selectedItems = FilesListView.SelectedItems?.OfType<RepImpFileItem>().ToList() ?? [];
+            if (selectedItems.Count == 0)
+            {
+                MessageBox.Show(this, "Seleziona almeno un file da importare.", "Nessun file selezionato", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            if (_plugins.Count == 0)
+            {
+                MessageBox.Show(this, "Non sono disponibili plugin da associare ai file.", "Plugin non disponibili", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            var forceDlg = new ForcePluginDialog(_plugins) { Owner = this };
+
+            var dlgResult = forceDlg.ShowDialog();
+
+            // L'utente ha premuto Annulla (o chiuso la finestra): interrompiamo
+            if (dlgResult != true || forceDlg.SelectedPlugin is not IReportImporter plugin)
+            {
+                Log("Importazione forzata annullata dall'utente.");
+                return;
+            }
+
+            var validatorPath = ResolveValidatorPath(plugin.Name);
+            if (validatorPath is null)
+            {
+                var message = $"Configurazione di validazione mancante per il plugin '{plugin.Name}'.";
+                Log($"Importazione forzata non disponibile: {message}");
+                MessageBox.Show(this, message, "Validatore mancante", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            var forcedItems = selectedItems
+                .Select(file => file with
+                {
+                    Type = plugin.Name,
+                    HasValidator = true,
+                    ValidatorPath = validatorPath
+                })
+                .ToList();
+
+            var fileList = string.Join(", ", forcedItems.Select(file => $"'{file.FullPath}'"));
+            Log($"Avvio importazione forzata con plugin '{plugin.Name}' (v{plugin.Version}). File: {fileList}.");
+            await WriteAuditAsync(
+                "Report.ForcedImportStarted",
+                "Started",
+                "ReportFile",
+                string.Join(";", forcedItems.Select(file => file.Name)),
+                $"Importazione forzata con plugin '{plugin.Name}'.",
+                new
+                {
+                    Plugin = plugin.Name,
+                    plugin.Version,
+                    Files = forcedItems.Select(file => new { file.Name, file.FullPath }).ToList()
+                });
+
+            await ImportSelectedFilesAsync(forcedItems);
         }
 
         private void File_ExportValidator_Click(object? sender, RoutedEventArgs e)
@@ -1864,7 +1935,7 @@ namespace RRDA.RepImp
                 //Properties.Settings.Default.Save();
 
                 Log($"Cartella plugin impostata su '{first}' tramite drag & drop.");
-                LoadPlugins();
+                LoadPlugins(PluginsListBox);
 
                 e.Effects = DragDropEffects.Copy;
             }
@@ -1904,7 +1975,7 @@ namespace RRDA.RepImp
                         _cache.Compact(1.0);
                         ApplySettings();
                         LoadFolders();
-                        LoadPlugins();
+                        LoadPlugins(PluginsListBox);
                         if (TryGetScanDepth(out var depth))
                             await RescanCurrentFolderAsync(depth);
                         Log("Impostazioni aggiornate dall'utente e ricaricate.");

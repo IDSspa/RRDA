@@ -1,0 +1,72 @@
+@{
+    ViewData["Title"] = "RepImp – Validatori";
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+    <div>
+        <a asp-action="Index" class="help-back">← Help online</a>
+        <h4 class="mt-2 mb-1" style="color:#c9d1d9;font-weight:600;">RRDA.RepImp · Validatori</h4>
+        <p class="rrda-muted mb-0">Riferimento al file XML <code>ValidationConfig</code> usato per descrivere i dati da estrarre dai file Excel.</p>
+    </div>
+    <span class="help-status">Versione corrente</span>
+</div>
+
+<section class="rrda-card mb-4">
+    <h5>Struttura essenziale</h5>
+    <p class="rrda-muted mb-3">L'ordine degli elementi deve rispettare lo schema: <code>Sheets</code>, <code>Cells</code>, <code>FieldMappings</code>, <code>FieldRules</code>, <code>CalculatedFields</code>, <code>RowRules</code>, <code>CustomValidators</code>.</p>
+<pre class="help-code mb-0"><code>&lt;ValidationConfig subjectKeyField="SerialeApparato" failOnError="true" culture="it-IT"&gt;
+  &lt;Sheets&gt;&lt;Sheet Name="Misure" /&gt;&lt;/Sheets&gt;
+  &lt;FieldRules&gt;
+    &lt;Field definedName="Attenuazione" type="double" unit="dB" /&gt;
+  &lt;/FieldRules&gt;
+&lt;/ValidationConfig&gt;</code></pre>
+</section>
+
+<section class="rrda-card mb-4">
+    <h5>Attributi dell'elemento <code>ValidationConfig</code></h5>
+    <div class="table-responsive"><table class="table help-table mb-0">
+        <thead><tr><th>Attributo</th><th>Obbligatorio</th><th>Descrizione</th></tr></thead>
+        <tbody>
+            <tr><td><code>subjectKeyField</code></td><td>Sì</td><td>Defined name del campo che identifica il soggetto. Viene confrontato senza distinzione tra maiuscole e minuscole.</td></tr>
+            <tr><td><code>failOnError</code></td><td>No</td><td>Booleano; il valore predefinito letto è <code>true</code>. Al momento viene caricato nella configurazione ma non modifica il flusso di importazione.</td></tr>
+            <tr><td><code>culture</code></td><td>No</td><td>Nome di cultura .NET, ad esempio <code>it-IT</code>. Influenza l'interpretazione dei valori numerici per i campi calcolati.</td></tr>
+        </tbody>
+    </table></div>
+</section>
+
+<section class="rrda-card mb-4">
+    <h5>Sezioni operative</h5>
+    <div class="accordion" id="validatorSections">
+        <details open><summary><code>Sheets</code> — fogli ammessi</summary><div class="help-details"><p>Elenca i fogli Excel da cui RepImp può estrarre dati. Se la sezione è assente, nessun foglio risulta ammesso e i campi non vengono importati.</p><code>&lt;Sheet Name="Misure" /&gt;</code><p class="mb-0"><code>Name</code> è obbligatorio e corrisponde al nome del foglio.</p></div></details>
+        <details><summary><code>Cells</code> — celle senza defined name nel file Excel</summary><div class="help-details"><p>Crea un defined name virtuale a partire da una coordinata diretta.</p><code>&lt;Cell coordinate="Misure!$C$3" definedNameAlias="PotenzaIngresso" /&gt;</code><p class="mb-0"><code>coordinate</code> e <code>definedNameAlias</code> sono obbligatori. L'alias può poi essere usato da <code>FieldRules</code>.</p></div></details>
+        <details><summary><code>FieldMappings</code> — metadati e alias</summary><div class="help-details"><p>Collega un defined name a metadati destinati alla UI. <code>alias</code> sostituisce il nome della chiave importata; <code>visibleInPivot</code> decide se il campo compare nella Pivot.</p><code>&lt;Map definedName="StazioneMisura" field="StazioneMisura" alias="Stazione" visibleInPivot="true" filterable="true" /&gt;</code><p class="mb-0"><code>definedName</code>, <code>field</code> e <code>filterable</code> sono obbligatori. Il generatore imposta <code>filterable="true"</code> solo per i campi numerici che non sono la chiave soggetto né riferimenti; per tutti gli altri imposta <code>false</code>. Impostare <code>visibleInPivot="true"</code> per rendere visibile anche un campo stringa; <code>false</code> lo esclude esplicitamente. Se omesso, viene mantenuto il comportamento storico: i campi numerici sono visibili, quelli stringa no. Con <code>filterable="true"</code> il campo è disponibile nei filtri Pivot: numeri e date usano un intervallo, le stringhe una ricerca testuale e i booleani un selettore vero/falso. È sufficiente una nuova importazione che dichiari il campo filtrabile: il filtro viene applicato anche ai report storici con la stessa chiave.<br /> <code>statEnabled</code>, <code>statMenu</code> e <code>uiDataType</code> sono letti come metadati ma non sono oggi usati dalla Web UI.</p></div></details>
+        <details><summary><code>FieldRules</code> — campi da estrarre</summary><div class="help-details"><p>È l'unica sezione obbligatoria. Ogni <code>Field</code> identifica un defined name nel file Excel; se è trovato su un foglio ammesso, il valore viene importato.</p><code>&lt;Field definedName="Attenuazione" type="double" unit="dB"&gt;&lt;Range rowCount="12" colCount="1" /&gt;&lt;/Field&gt;</code><ul><li><code>definedName</code>: obbligatorio.</li><li><code>type</code>: <code>string</code> (default), <code>int</code>, <code>double</code>, <code>datetime</code> o <code>bool</code>; è salvato come metadato del dato importato.</li><li><code>unit</code>: unità salvata con il valore, ad esempio <code>dB</code> o <code>dBm</code>.</li><li><code>Range</code>: opzionale; <code>rowCount</code> e <code>colCount</code> sono interi e, se omessi o non positivi, valgono 1. Un campo con riferimento a un altro report non può essere un range.</li><li><code>referenceReportType</code> e <code>referenceKeyField</code>: devono comparire insieme; creano un riferimento al report indicato.</li></ul><p class="mb-0">Gli attributi <code>required</code>, <code>min</code>, <code>max</code>, <code>pattern</code>, <code>format</code>, <code>maxLength</code>, <code>table</code> e <code>column</code> sono ammessi dallo schema, ma nelle versioni correnti non producono controlli né trasformazioni sui valori importati.</p></div></details>
+        <details><summary><code>CalculatedFields</code> — valori derivati</summary><div class="help-details"><p>Aggiunge valori numerici calcolati dopo l'estrazione. <code>alias</code> e <code>formula</code> sono obbligatori; <code>type</code> può essere solo <code>double</code> (predefinito) o <code>int</code>. <code>unit</code> è opzionale.</p><code>&lt;Field alias="AbsoluteGain" formula="Gain_dB - Attenuation_dB" type="double" unit="dB" /&gt;</code><h6 class="mt-3">Valori disponibili nella formula</h6><ul><li><strong>Scalare</strong>: un campo estratto da una singola cella o un precedente campo calcolato. Può essere usato con operatori aritmetici e con tutte le funzioni. Esempio: <code>Gain_dB - Attenuation_dB</code>.</li><li><strong>Range</strong>: un campo con elemento <code>Range</code>, che rappresenta tutti i valori numerici delle relative celle. Non può essere usato direttamente in un'operazione aritmetica: <code>Measurements * 2</code> non è valido. Va prima ridotto con un'aggregazione, ad esempio <code>Avg(Measurements)</code>.</li><li><strong>Costante numerica</strong>: può essere passata come argomento, ad esempio <code>Max(Gain_dB, 0)</code>.</li></ul><p>I nomi non distinguono maiuscole e minuscole. Un alias deve iniziare con una lettera o <code>_</code> e può poi contenere lettere, cifre e <code>_</code>. Non può sovrapporsi a un campo estratto; un campo calcolato può riferirsi a un altro campo calcolato, purché non si creino dipendenze cicliche.</p><h6 class="mt-3">Funzioni ammesse</h6><div class="table-responsive"><table class="table help-table mb-2"><thead><tr><th>Funzione</th><th>Parametri</th><th>Risultato ed esempio</th></tr></thead><tbody><tr><td><code>Abs(x)</code></td><td>1 scalare</td><td>Valore assoluto. <code>Abs(Deviation_dB)</code></td></tr><tr><td><code>Log(base, value)</code></td><td>2 scalari</td><td>Logaritmo di <code>value</code> in base <code>base</code>. Base &gt; 0 e diversa da 1; valore &gt; 0. <code>Log(10, LinearPower)</code></td></tr><tr><td><code>Pow(base, exponent)</code></td><td>2 scalari</td><td>Potenza. <code>Pow(10, Gain_dB / 10)</code></td></tr><tr><td><code>Min(...)</code></td><td>Uno o più scalari e/o range</td><td>Minimo. <code>Min(Measurements, Limit_dB)</code></td></tr><tr><td><code>Max(...)</code></td><td>Uno o più scalari e/o range</td><td>Massimo. <code>Max(Measurements)</code></td></tr><tr><td><code>Avg(...)</code></td><td>Uno o più scalari e/o range</td><td>Media aritmetica. <code>Avg(Measurements)</code></td></tr><tr><td><code>Sum(...)</code></td><td>Uno o più scalari e/o range</td><td>Somma. <code>Sum(Measurements, Correction_dB)</code></td></tr><tr><td><code>Count(...)</code></td><td>Uno o più scalari e/o range</td><td>Numero dei valori. <code>Count(Measurements)</code></td></tr><tr><td><code>StdDev(...)</code></td><td>Uno o più scalari e/o range</td><td>Deviazione standard della popolazione, con divisione per <code>n</code>. <code>StdDev(Measurements)</code></td></tr></tbody></table></div><p class="mb-0">Le funzioni non riconosciute e valori nulli, non numerici, infiniti o <code>NaN</code> producono un errore. I nomi delle funzioni non distinguono maiuscole e minuscole. Se <code>type="int"</code>, il risultato deve essere un intero esatto.</p></div></details>
+    </div>
+    <div class="help-precedence-note mt-3">
+        <strong>Regola di precedenza.</strong> Se l'<code>alias</code> di un <code>Field</code> in <code>CalculatedFields</code> coincide con il <code>definedName</code> di un <code>Field</code> in <code>FieldRules</code>, prevale sempre <code>FieldRules</code>. Il campo calcolato omonimo viene ignorato e il valore estratto dal report viene mantenuto.
+    </div>
+</section>
+
+<section class="rrda-card">
+    <h5>Sezioni accettate dallo schema, ma non eseguite</h5>
+    <p class="rrda-muted mb-2"><code>RowRules</code> viene letto dal file XML, ma le espressioni <code>Condition</code>, i messaggi e <code>severity</code> non vengono ancora valutati durante l'importazione.</p>
+    <p class="rrda-muted mb-0"><code>CustomValidators</code> e gli attributi <code>key</code>, <code>type</code>, <code>failIfMissing</code> sono accettati dall'XSD, ma non vengono caricati né invocati dal software attuale. Non usarli per regole che debbano essere applicate.</p>
+</section>
+
+<style>
+    .help-back { color:#58a6ff; text-decoration:none; font-size:.85rem; }
+    .help-status { background:#3fb95022; border:1px solid #3fb95044; color:#3fb950; border-radius:20px; font-size:.75rem; padding:3px 10px; }
+    .help-code { background:#0d1117; border:1px solid #30363d; border-radius:6px; color:#c9d1d9; font-size:.82rem; padding:1rem; white-space:pre-wrap; }
+    .help-table td { min-width:130px; }
+    .accordion details { border-top:1px solid #21262d; padding:.7rem 0; }
+    .accordion details:first-child { border-top:0; }
+    .accordion summary { cursor:pointer; color:#58a6ff; font-weight:500; }
+    .help-details { color:#c9d1d9; font-size:.875rem; padding:.8rem 1.25rem .1rem; }
+    .help-details p, .help-details ul { margin-bottom:.75rem; }
+    .help-precedence-note { border-left:3px solid #58a6ff; background:#58a6ff12; color:#c9d1d9; border-radius:4px; padding:.8rem 1rem; font-size:.875rem; }
+    html[data-theme="light"] .help-code { background:#f8fafc; border-color:#cbd5e1; color:#263449; }
+    html[data-theme="light"] .accordion details { border-color:#dbe3ec; }
+    html[data-theme="light"] .help-details { color:#263449; }
+    html[data-theme="light"] .help-precedence-note { color:#263449; background:#0d6efd0d; }
+</style>

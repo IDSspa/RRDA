@@ -233,8 +233,8 @@ namespace RRDA.Plugins.IBASP
                                 ["col_index"] = "-1",
                                 ["is_subject_key"] = isSubjectKey ? "1" : "0",
                                 ["data_type"] = SerializeDataType(rule.DataType),
-                                ["visible_in_pivot"] = visibleInPivot.HasValue ? (visibleInPivot.Value ? "1" : "0") : string.Empty
-                                ,["filterable"] = filterable.HasValue ? (filterable.Value ? "1" : "0") : string.Empty
+                                ["visible_in_pivot"] = visibleInPivot.HasValue ? (visibleInPivot.Value ? "1" : "0") : string.Empty,
+                                ["filterable"] = filterable.HasValue ? (filterable.Value ? "1" : "0") : string.Empty
                             }
                         });
                     }
@@ -268,9 +268,9 @@ namespace RRDA.Plugins.IBASP
                                         ["unit"] = rule.Unit ?? string.Empty,
                                         ["row_index"] = dr.ToString(),
                                         ["col_index"] = dc.ToString(),
-                                ["data_type"] = SerializeDataType(rule.DataType),
-                                ["visible_in_pivot"] = visibleInPivot.HasValue ? (visibleInPivot.Value ? "1" : "0") : string.Empty
-                                ,["filterable"] = filterable.HasValue ? (filterable.Value ? "1" : "0") : string.Empty
+                                        ["data_type"] = SerializeDataType(rule.DataType),
+                                        ["visible_in_pivot"] = visibleInPivot.HasValue ? (visibleInPivot.Value ? "1" : "0") : string.Empty,
+                                        ["filterable"] = filterable.HasValue ? (filterable.Value ? "1" : "0") : string.Empty
                                     }
                                 });
                             }

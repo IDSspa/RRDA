@@ -205,6 +205,7 @@
                                     <MenuItem x:Name="FileSelectAll" Header="Seleziona tutti..." Click="FileSelectAll_Click" IsEnabled="False" />
                                     <MenuItem x:Name="FileOpenMenuItem" Header="Apri..." Click="File_Open_Click" IsEnabled="False"/>
                                     <MenuItem x:Name="FileOpenFolderMenuItem" Header="Apri percorso..." Click="File_OpenPath_Click" IsEnabled="False"/>
+                                    <MenuItem x:Name="FileForceMenuItem" Header="Forza importazione..." Click="File_ForceImport_Click" IsEnabled="False"/>
                                     <MenuItem x:Name="FileImportMenuItem" Header="Importa" Click="File_Import_Click" IsEnabled="False"/>
                                     <MenuItem x:Name="FileExportValidatorMenuItem" Header="Esporta validatore" Click="File_ExportValidator_Click" IsEnabled="False"/>
                                 </ContextMenu>
