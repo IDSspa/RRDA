@@ -24,6 +24,23 @@ public sealed class ValidationConfigTests
     }
 
     [Fact]
+    public void Load_ReadsDirectSubjectKeyAlias()
+    {
+        using var stream = Xml("""
+            <ValidationConfig subjectKeyField="Procedura!I7" subjectKeyAlias="Serial2">
+              <FieldRules>
+                <Field definedName="Serial" />
+              </FieldRules>
+            </ValidationConfig>
+            """);
+
+        var config = ValidationConfig.Load(stream);
+
+        Assert.Equal("Procedura!I7", config.SubjectKeyField);
+        Assert.Equal("Serial2", config.SubjectKeyAlias);
+    }
+
+    [Fact]
     public void Load_RejectsSubjectKeyFieldOnFieldRules()
     {
         using var stream = Xml("""

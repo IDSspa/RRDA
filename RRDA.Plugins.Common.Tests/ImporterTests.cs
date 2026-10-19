@@ -165,6 +165,33 @@ public sealed class ImporterTests
         Assert.Equal("dB", calculated.Properties["unit"]);
     }
 
+    [Fact]
+    public async Task ImportAsync_ImportsDirectSubjectKeyUsingAlias()
+    {
+        var importer = new ReferenceImporter();
+        var config = new ValidationConfig
+        {
+            SubjectKeyField = "Procedura!I7",
+            SubjectKeyAlias = "Serial2",
+            Sheets = [new Sheet { Name = "Procedura" }],
+            FieldRules =
+            [
+                new FieldRule { DefinedName = "Source" },
+                new FieldRule { DefinedName = "Serial" }
+            ]
+        };
+        using var workbook = CreateWorkbook("Source", "source-value");
+
+        var result = await importer.ImportAsync(workbook, config);
+
+        Assert.True(result.Success);
+        var subjectKey = Assert.Single(result.Entities!, entity =>
+            entity.Properties.TryGetValue("is_subject_key", out var value) && value == "1");
+        Assert.Equal("Serial2", subjectKey.Key);
+        Assert.Equal("actual-serial", subjectKey.Properties["value"]);
+        Assert.Equal("string", subjectKey.Properties["data_type"]);
+    }
+
     private class CustomImporter : BaseImporter
     {
         public override string Name => "CUSTOM";
@@ -277,7 +304,8 @@ public sealed class ImporterTests
             workbookPart.Workbook = new Workbook();
             var sharedStringsPart = workbookPart.AddNewPart<SharedStringTablePart>();
             sharedStringsPart.SharedStringTable = new SharedStringTable(
-                new SharedStringItem(new Text(value)));
+                new SharedStringItem(new Text(value)),
+                new SharedStringItem(new Text("actual-serial")));
             var worksheetPart = workbookPart.AddNewPart<WorksheetPart>();
             worksheetPart.Worksheet = new Worksheet(
                 new SheetData(
@@ -292,6 +320,12 @@ public sealed class ImporterTests
                         {
                             CellReference = "A2",
                             DataType = CellValues.Number,
+                            CellValue = new CellValue("1")
+                        },
+                        new Cell
+                        {
+                            CellReference = "I7",
+                            DataType = CellValues.SharedString,
                             CellValue = new CellValue("1")
                         })));
 

@@ -2,6 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:converters="clr-namespace:RRDA.RepImp"
+        xmlns:controls="clr-namespace:RRDA.RepImp.Controls"
         Title="RRDA RepImp" 
         Height="600" 
         Width="900"
@@ -122,27 +123,55 @@
                                 <Button Content="↑" ToolTip="Cartella superiore" Click="NavigateUp_Click" Margin="2,0" Padding="6,2"/>
                                 <Button Content="↻" ToolTip="Riscansiona i report della cartella corrente" Click="Rescan_Click" Margin="2,0" Padding="6,2"/>
                                 <TextBlock Text="Prof." VerticalAlignment="Center" Margin="5,0,2,0"/>
-                                <TextBox x:Name="ScanDepthTextBox" Width="32" Text="0" VerticalContentAlignment="Center"
-                                         TextChanged="ScanDepthTextBox_TextChanged"
-                                         ToolTip="Profondità ricorsiva (0 = solo cartella corrente)"/>
+                                <controls:NumericSpinner x:Name="ScanDepthSpinner" Width="52" Height="24" Value="0" Minimum="0"
+                                                         ValueChanged="ScanDepthSpinner_ValueChanged"
+                                                         ToolTip="Profondità ricorsiva (0 = solo cartella corrente)"/>
                             </StackPanel>
                         </Grid>
-                        <ListBox x:Name="FoldersListBox"
-                                    DisplayMemberPath="Name"
-                                    HorizontalContentAlignment="Stretch"
-                                    AllowDrop="True"
-                                    DragOver="FoldersListBox_DragOver"
-                                    Drop="FoldersListBox_Drop"
-                                    MouseDoubleClick="FoldersListBox_MouseDoubleClick">
-                            <ListBox.ContextMenu>
-                                <ContextMenu>
-                                    <MenuItem Header="Riscansiona" Click="Rescan_Click"/>
-                                    <Separator/>
-                                    <MenuItem Header="Cartella superiore" Click="NavigateUp_Click"/>
-                                    <MenuItem Header="Seleziona cartella radice" Click="SelectRootFolder_Click"/>
-                                </ContextMenu>
-                            </ListBox.ContextMenu>
-                        </ListBox>
+                        <Grid>
+                            <ListBox x:Name="FoldersListBox"
+                                     HorizontalContentAlignment="Stretch"
+                                     AllowDrop="True"
+                                     DragOver="FoldersListBox_DragOver"
+                                     Drop="FoldersListBox_Drop"
+                                     MouseDoubleClick="FoldersListBox_MouseDoubleClick">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="📁" Margin="2,0,6,0"/>
+                                            <TextBlock Text="{Binding Name}"/>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                                <ListBox.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem Header="Riscansiona" Click="Rescan_Click"/>
+                                        <Separator/>
+                                        <MenuItem Header="Cartella superiore" Click="NavigateUp_Click"/>
+                                        <MenuItem Header="Seleziona cartella radice" Click="SelectRootFolder_Click"/>
+                                    </ContextMenu>
+                                </ListBox.ContextMenu>
+                            </ListBox>
+                            <StackPanel x:Name="FoldersEmptyStatePanel"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        Visibility="Collapsed"
+                                        IsHitTestVisible="True">
+                                <TextBlock Text="Nessuna sottocartella"
+                                           FontWeight="SemiBold"
+                                           HorizontalAlignment="Center"/>
+                                <TextBlock Text="I report presenti qui possono comunque essere elaborati."
+                                           Margin="0,4,0,10"
+                                           Foreground="Gray"
+                                           TextAlignment="Center"/>
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                    <Button Content="↻  Riscansiona" ToolTip="Riscansiona i report della cartella corrente"
+                                            Click="Rescan_Click" Margin="2,0" Padding="6,2"/>
+                                    <Button Content="↑  Cartella superiore" ToolTip="Cartella superiore"
+                                            Click="NavigateUp_Click" Margin="2,0" Padding="6,2"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Grid>
                     </DockPanel>
 
                     <!-- GridSplitter verticale interno (tra cartelle e plugins) -->

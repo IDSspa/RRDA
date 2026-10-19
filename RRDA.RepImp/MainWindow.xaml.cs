@@ -154,6 +154,9 @@ namespace RRDA.RepImp
             }
 
             FoldersListBox.ItemsSource = folders;
+            FoldersEmptyStatePanel.Visibility = folders.Count == 0
+                ? Visibility.Visible
+                : Visibility.Collapsed;
         }
 
         private void NavigateToFolder(string folderPath)
@@ -168,7 +171,7 @@ namespace RRDA.RepImp
             try
             {
                 _currentReportsFolder = folderPath;
-                ScanDepthTextBox.Text = "0";
+                ScanDepthSpinner.Value = 0;
                 FoldersListBox.SelectedItem = null;
                 LoadFolders();
             }
@@ -180,14 +183,8 @@ namespace RRDA.RepImp
 
         private bool TryGetScanDepth(out int depth)
         {
-            if (int.TryParse(ScanDepthTextBox.Text, out depth) && depth >= 0)
-                return true;
-
-            MessageBox.Show(this, "La profondità di scansione deve essere un numero intero maggiore o uguale a zero.",
-                "Profondità non valida", MessageBoxButton.OK, MessageBoxImage.Information);
-            ScanDepthTextBox.Focus();
-            ScanDepthTextBox.SelectAll();
-            return false;
+            depth = ScanDepthSpinner.Value;
+            return true;
         }
 
         private async Task LoadFiles(string folderPath, int maxDepth, bool forceReload)
@@ -1047,15 +1044,12 @@ namespace RRDA.RepImp
             await RescanCurrentFolderAsync(depth);
         }
 
-        private async void ScanDepthTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        private async void ScanDepthSpinner_ValueChanged(object? sender, EventArgs e)
         {
             if (_isNavigatingFolders || string.IsNullOrWhiteSpace(_currentReportsFolder))
                 return;
 
-            if (!int.TryParse(ScanDepthTextBox.Text, out var depth) || depth < 0)
-                return;
-
-            await RescanCurrentFolderAsync(depth);
+            await RescanCurrentFolderAsync(ScanDepthSpinner.Value);
         }
 
         private async Task RescanCurrentFolderAsync(int depth)

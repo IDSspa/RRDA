@@ -116,6 +116,39 @@ namespace RRDA.Plugins.Common
 
         private void ValidateSubjectKeyConfiguration(ValidationConfig config)
         {
+            if (!string.IsNullOrWhiteSpace(config.SubjectKeyAlias))
+            {
+                try
+                {
+                    OpenXmlExcelReader.ParseCellCoordinate(config.SubjectKeyField);
+                }
+                catch (ArgumentException ex)
+                {
+                    throw new InvalidDataException(
+                        "Quando subjectKeyAlias è valorizzato, subjectKeyField deve essere una cella qualificata nel formato 'NomeFoglio!I7'.",
+                        ex);
+                }
+
+                var mappedNames = config.FieldRules
+                    .Select(rule =>
+                    {
+                        var alias = config.Mappings
+                            .FirstOrDefault(mapping => string.Equals(
+                                mapping.DefinedName,
+                                rule.DefinedName,
+                                StringComparison.OrdinalIgnoreCase))?.Alias;
+                        return string.IsNullOrWhiteSpace(alias) ? rule.DefinedName : alias;
+                    })
+                    .Where(name => !string.IsNullOrWhiteSpace(name));
+                if (mappedNames.Contains(config.SubjectKeyAlias, StringComparer.OrdinalIgnoreCase))
+                {
+                    throw new InvalidDataException(
+                        $"L'alias della SubjectKey '{config.SubjectKeyAlias}' è già usato da un altro campo del validatore.");
+                }
+
+                return;
+            }
+
             if (string.IsNullOrWhiteSpace(SubjectKeyDefinedName))
             {
                 throw new InvalidDataException(
@@ -271,10 +304,11 @@ namespace RRDA.Plugins.Common
                         // SINGOLA CELLA  →  row_index = -1, col_index = -1
                         // -----------------------------------------------------------------
                         var cellValue = OpenXmlExcelReader.ReadCellValue(wsPart, startAddress, sharedStrings, wbPart);
-                        var isSubjectKey = string.Equals(
-                            definedName,
-                            SubjectKeyDefinedName,
-                            StringComparison.OrdinalIgnoreCase);
+                        var isSubjectKey = string.IsNullOrWhiteSpace(config.SubjectKeyAlias)
+                            && string.Equals(
+                                definedName,
+                                SubjectKeyDefinedName,
+                                StringComparison.OrdinalIgnoreCase);
 
                         entities.Add(new ReportEntityDto
                         {
@@ -335,6 +369,45 @@ namespace RRDA.Plugins.Common
                     }
 
                     index++;
+                }
+
+                if (!string.IsNullOrWhiteSpace(config.SubjectKeyAlias))
+                {
+                    var (sheetName, cellAddress) = OpenXmlExcelReader.ParseCellCoordinate(config.SubjectKeyField);
+                    if (!allowedSheets.Contains(sheetName))
+                    {
+                        throw new InvalidDataException(
+                            $"Il foglio '{sheetName}' della SubjectKey diretta non è abilitato nel validatore.");
+                    }
+
+                    if (!sheetIndex.TryGetValue(sheetName, out var subjectKeySheet))
+                    {
+                        throw new InvalidDataException(
+                            $"Il foglio '{sheetName}' della SubjectKey diretta non è presente nel workbook.");
+                    }
+
+                    var subjectKeyValue = OpenXmlExcelReader.ReadCellValue(
+                        subjectKeySheet,
+                        cellAddress,
+                        sharedStrings,
+                        wbPart);
+                    entities.Add(new ReportEntityDto
+                    {
+                        EntityKind = sheetName,
+                        Key = config.SubjectKeyAlias,
+                        Properties = new Dictionary<string, string>
+                        {
+                            ["name"] = config.SubjectKeyAlias,
+                            ["value"] = subjectKeyValue,
+                            ["unit"] = string.Empty,
+                            ["row_index"] = "-1",
+                            ["col_index"] = "-1",
+                            ["is_subject_key"] = "1",
+                            ["data_type"] = "string",
+                            ["visible_in_pivot"] = string.Empty,
+                            ["filterable"] = string.Empty
+                        }
+                    });
                 }
             }
             finally

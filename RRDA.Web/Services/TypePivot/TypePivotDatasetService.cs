@@ -71,7 +71,11 @@ public sealed class TypePivotDatasetService(RRDADbContext db) : ITypePivotDatase
                 entityKey: null,
                 cancellationToken);
             var allowedFileIds = pairs
-                .Where(p => MatchesNumericRange(p.Value, request.SubjectKeyFrom, request.SubjectKeyTo))
+                .Where(p => MatchesFilter(
+                    p.Value,
+                    p.DataType ?? "string",
+                    request.SubjectKeyFrom,
+                    request.SubjectKeyTo))
                 .Select(p => p.FileId)
                 .ToHashSet();
             filteredFileIds = [.. filteredFileIds.Where(allowedFileIds.Contains)];

@@ -21,6 +21,11 @@ namespace RRDA.Core.Validator
 
         public string SubjectKeyField { get; set; } = string.Empty;
         /// <summary>
+        /// Alias da usare quando <see cref="SubjectKeyField"/> indica una cella
+        /// diretta (<c>NomeFoglio!I7</c>) invece di un DefinedName.
+        /// </summary>
+        public string? SubjectKeyAlias { get; set; }
+        /// <summary>
         /// Caricamento e validazione file XML.
         /// </summary>
         /// <param name="xmlStream">Stream XML da caricare</param>
@@ -216,6 +221,7 @@ namespace RRDA.Core.Validator
             }
 
             cfg.SubjectKeyField = (string?)root.Attribute("subjectKeyField") ?? string.Empty;
+            cfg.SubjectKeyAlias = (string?)root.Attribute("subjectKeyAlias");
 
             var rowRules = root.Element("RowRules")?.Elements("Rule") ?? [];
             
