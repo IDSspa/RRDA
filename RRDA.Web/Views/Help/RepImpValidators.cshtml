@@ -27,11 +27,47 @@
     <div class="table-responsive"><table class="table help-table mb-0">
         <thead><tr><th>Attributo</th><th>Obbligatorio</th><th>Descrizione</th></tr></thead>
         <tbody>
-            <tr><td><code>subjectKeyField</code></td><td>Sì</td><td>Defined name del campo che identifica il soggetto. Viene confrontato senza distinzione tra maiuscole e minuscole.</td></tr>
+            <tr><td><code>subjectKeyField</code></td><td>Sì</td><td>Identifica la chiave del soggetto. Senza <code>subjectKeyAlias</code> è il defined name richiesto dal plugin; con <code>subjectKeyAlias</code> è una cella diretta nel formato <code>NomeFoglio!A1</code>.</td></tr>
+            <tr><td><code>subjectKeyAlias</code></td><td>No</td><td>Abilita l'estrazione della chiave da una cella diretta e definisce il nome con cui la chiave è importata.</td></tr>
             <tr><td><code>failOnError</code></td><td>No</td><td>Booleano; il valore predefinito letto è <code>true</code>. Al momento viene caricato nella configurazione ma non modifica il flusso di importazione.</td></tr>
             <tr><td><code>culture</code></td><td>No</td><td>Nome di cultura .NET, ad esempio <code>it-IT</code>. Influenza l'interpretazione dei valori numerici per i campi calcolati.</td></tr>
         </tbody>
     </table></div>
+</section>
+
+<section class="rrda-card mb-4">
+    <h5>Identificazione del soggetto: <code>subjectKeyField</code> e <code>subjectKeyAlias</code></h5>
+    <p>Ogni report importato deve contenere una proprietà marcata come chiave del soggetto. RRDA.Web usa tale valore per associare le misure allo stesso apparato/soggetto nei report dello stesso tipo. I due attributi consentono due modalità alternative.</p>
+
+    <h6 class="mt-3">1. Chiave basata su un defined name</h6>
+    <p>È la modalità ordinaria: si specifica soltanto <code>subjectKeyField</code>, con il defined name che il plugin dichiara come SubjectKey. Il confronto tra validatore e plugin non distingue maiuscole e minuscole. Il campo deve essere presente anche in <code>FieldRules</code>, essere una singola cella e viene importato con <code>is_subject_key=1</code>.</p>
+<pre class="help-code"><code>&lt;ValidationConfig subjectKeyField="SerialeApparato"&gt;
+  &lt;Sheets&gt;&lt;Sheet Name="Misure" /&gt;&lt;/Sheets&gt;
+  &lt;FieldRules&gt;
+    &lt;Field definedName="SerialeApparato" type="string" /&gt;
+    &lt;Field definedName="Guadagno" type="double" unit="dB" /&gt;
+  &lt;/FieldRules&gt;
+&lt;/ValidationConfig&gt;</code></pre>
+    <p class="mb-0">In questo esempio la chiave importata si chiama <code>SerialeApparato</code>. Se il plugin richiede un defined name diverso, l'importazione viene interrotta prima della lettura del file.</p>
+
+    <h6 class="mt-4">2. Chiave letta da una cella diretta</h6>
+    <p>Usare questa modalità quando il file Excel non espone il seriale/identificativo come defined name, ma lo contiene in una cella nota. La presenza di <code>subjectKeyAlias</code> cambia il significato di <code>subjectKeyField</code>: non è più un defined name, ma una coordinata completa di foglio.</p>
+<pre class="help-code"><code>&lt;ValidationConfig subjectKeyField="Misure!B3" subjectKeyAlias="SerialeApparato"&gt;
+  &lt;Sheets&gt;&lt;Sheet Name="Misure" /&gt;&lt;/Sheets&gt;
+  &lt;FieldRules&gt;
+    &lt;Field definedName="Guadagno" type="double" unit="dB" /&gt;
+    &lt;Field definedName="Attenuazione" type="double" unit="dB" /&gt;
+  &lt;/FieldRules&gt;
+&lt;/ValidationConfig&gt;</code></pre>
+    <p>RepImp legge <code>Misure!B3</code> una sola volta, crea una proprietà di tipo <code>string</code> denominata <code>SerialeApparato</code> e la marca come SubjectKey. La cella non deve essere riportata in <code>FieldRules</code>.</p>
+
+    <h6 class="mt-3">Vincoli della modalità con alias</h6>
+    <ul class="mb-0">
+        <li><code>subjectKeyField</code> deve avere esattamente il formato <code>NomeFoglio!A1</code>; un defined name, una cella senza foglio o un range non sono validi.</li>
+        <li>Il foglio indicato deve essere presente in <code>Sheets</code> e nel workbook; altrimenti l'importazione fallisce.</li>
+        <li><code>subjectKeyAlias</code> non può coincidere, senza distinzione tra maiuscole e minuscole, con il nome finale di un altro campo in <code>FieldRules</code>, incluso un eventuale alias definito in <code>FieldMappings</code>.</li>
+        <li>La chiave diretta non eredita <code>unit</code>, <code>visibleInPivot</code> o <code>filterable</code>: viene sempre importata come chiave stringa e non è proposta come filtro o colonna Pivot.</li>
+    </ul>
 </section>
 
 <section class="rrda-card mb-4">
